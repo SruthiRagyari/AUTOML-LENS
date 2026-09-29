@@ -1,0 +1,111 @@
+{
+  "model_name": "random_forest_clf",
+  "display_name": "Random Forest",
+  "target_column": "Churn",
+  "problem_type": "classification",
+  "features": [
+    "numerical__CustomerID",
+    "numerical__Age",
+    "numerical__Income",
+    "numerical__CreditScore",
+    "numerical__YearsEmployed",
+    "numerical__NumProducts",
+    "numerical__HasCreditCard",
+    "numerical__IsActive",
+    "numerical__Balance",
+    "categorical__Gender_Female",
+    "categorical__Gender_Male",
+    "categorical__Geography_Rural",
+    "categorical__Geography_Suburban",
+    "categorical__Geography_Urban"
+  ],
+  "preprocessing_summary": {
+    "numerical_columns": [
+      "CustomerID",
+      "Age",
+      "Income",
+      "CreditScore",
+      "YearsEmployed",
+      "NumProducts",
+      "HasCreditCard",
+      "IsActive",
+      "Balance"
+    ],
+    "categorical_columns": [
+      "Gender",
+      "Geography"
+    ],
+    "text_columns": [],
+    "datetime_columns": [],
+    "dropped_columns": [],
+    "datetime_extracted_features": {},
+    "total_features_in": 11,
+    "total_features_out": 14,
+    "numerical_strategy": "median imputation + standard scaling",
+    "categorical_strategy": "mode imputation + one-hot encoding (max 20 categories)",
+    "text_strategy": "N/A"
+  },
+  "best_params": {
+    "n_estimators": 63,
+    "max_depth": 25,
+    "min_samples_split": 10,
+    "min_samples_leaf": 2
+  },
+  "metrics": {
+    "accuracy": 0.8666666666666667,
+    "precision_weighted": 0.8665071770334928,
+    "recall_weighted": 0.8666666666666667,
+    "f1_weighted": 0.8655699177438307,
+    "balanced_accuracy": 0.8541666666666666,
+    "roc_auc": 0.9016203703703703,
+    "pr_auc": 0.8978691955498117,
+    "confusion_matrix": [
+      [
+        33,
+        3
+      ],
+      [
+        5,
+        19
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.868421052631579,
+        "recall": 0.9166666666666666,
+        "f1-score": 0.8918918918918919,
+        "support": 36.0
+      },
+      "1": {
+        "precision": 0.8636363636363636,
+        "recall": 0.7916666666666666,
+        "f1-score": 0.8260869565217391,
+        "support": 24.0
+      },
+      "accuracy": 0.8666666666666667,
+      "macro avg": {
+        "precision": 0.8660287081339713,
+        "recall": 0.8541666666666666,
+        "f1-score": 0.8589894242068155,
+        "support": 60.0
+      },
+      "weighted avg": {
+        "precision": 0.8665071770334928,
+        "recall": 0.8666666666666667,
+        "f1-score": 0.8655699177438307,
+        "support": 60.0
+      }
+    },
+    "class_distribution": {
+      "0": 36,
+      "1": 24
+    }
+  },
+  "random_seed": 42,
+  "timestamp": "2026-09-29 02:38:09.499279",
+  "library_versions": {
+    "scikit-learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.4.6"
+  }
+}
