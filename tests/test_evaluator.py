@@ -1,4 +1,4 @@
-﻿"""Tests for the evaluator."""
+"""Tests for the evaluator."""
 import pytest
 import numpy as np
 import sys, os

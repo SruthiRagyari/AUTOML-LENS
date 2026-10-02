@@ -1,4 +1,4 @@
-﻿from app.services.profiler import DatasetProfiler
+from app.services.profiler import DatasetProfiler
 from app.services.preprocessor import PreprocessingEngine
 from app.services.feature_engineer import FeatureEngineer
 from app.services.model_registry import ModelRegistry

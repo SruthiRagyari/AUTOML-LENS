@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 export default function EmptyState({ icon = '📭', title, description, action }) {
   return (
     <div className="empty-state">

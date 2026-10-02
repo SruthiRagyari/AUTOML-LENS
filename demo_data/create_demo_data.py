@@ -1,4 +1,4 @@
-﻿"""Generate demo datasets for AutoML-Lens testing."""
+"""Generate demo datasets for AutoML-Lens testing."""
 import pandas as pd
 import numpy as np
 import os

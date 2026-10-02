@@ -1,4 +1,4 @@
-﻿"""Integration test — full training pipeline."""
+"""Integration test — full training pipeline."""
 import pytest
 import pandas as pd
 import numpy as np

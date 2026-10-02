@@ -1,4 +1,4 @@
-﻿"""Report generation service - produces professional HTML reports."""
+"""Report generation service - produces professional HTML reports."""
 import os
 import datetime
 from typing import Any

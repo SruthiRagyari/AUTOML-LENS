@@ -1,4 +1,4 @@
-﻿"""Tests for the dataset profiler."""
+"""Tests for the dataset profiler."""
 import pytest
 import pandas as pd
 import numpy as np

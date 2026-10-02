@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import Plot from 'react-plotly.js'
 
 export default function ConfusionMatrix({ matrix = [], labels = [] }) {

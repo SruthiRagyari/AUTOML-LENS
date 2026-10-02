@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 const MAP = {
   completed: 'badge-success', success: 'badge-success',
   running: 'badge-warning', training: 'badge-warning', optimizing: 'badge-warning', analyzing: 'badge-warning',

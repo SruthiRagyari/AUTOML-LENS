@@ -1,4 +1,4 @@
-﻿"""Input validation utilities."""
+"""Input validation utilities."""
 import re
 from typing import Any
 

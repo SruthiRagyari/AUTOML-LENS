@@ -1,4 +1,4 @@
-﻿"""Security utilities for file upload sanitization and path traversal prevention."""
+"""Security utilities for file upload sanitization and path traversal prevention."""
 import os
 import re
 import uuid

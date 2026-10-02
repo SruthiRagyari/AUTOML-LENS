@@ -1,4 +1,4 @@
-﻿"""Chat API route for AI assistant."""
+"""Chat API route for AI assistant."""
 import json
 import logging
 from fastapi import APIRouter, Depends
