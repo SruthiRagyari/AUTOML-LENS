@@ -1,0 +1,39 @@
+# Normalize line endings on commit; check out with LF everywhere.
+* text=auto eol=lf
+
+# Explicit text types (never treated as binary, always LF)
+*.py   text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini  text eol=lf
+*.cfg  text eol=lf
+*.names text eol=lf
+
+# Windows scripts keep CRLF so they stay runnable by cmd.exe
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binary — never diff, never normalize
+*.joblib binary
+*.pkl    binary
+*.db     binary
+*.sqlite3 binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.zip    binary
+*.gz     binary

@@ -1,0 +1,33 @@
+# AutoML-Lens — working rules
+
+1. **No fabrication.** Never invent results, metrics, test counts, benchmark numbers,
+   timings, or file sizes. Every number that appears in docs, READMEs, summaries, or
+   commit messages must come from a command actually executed in this session. If a
+   number could not be produced by running something, write `not verified` instead of
+   guessing or extrapolating.
+
+2. **No out-of-scope deletion.** Never delete a file unless the current task explicitly
+   asks for it. Before removing anything, print the full list of paths to be deleted and
+   wait for confirmation. This includes scratch files, logs, caches, and build output.
+
+3. **Secrets stay secret.** Never print, log, echo, or commit secrets, API keys, tokens,
+   or credentials. Do not read `backend/.env` (or any `.env`) at all. Use `.env.example`
+   for documenting configuration. Do not add keys to the shell environment to make tests
+   pass; key-gated tests are expected to skip.
+
+4. **Test after every change.** After each change, run `python -m pytest tests -q` from
+   the repo root. Do not continue to the next change if the suite regressed. Report the
+   real exit code and the real passed/failed/skipped totals — never a rounded or assumed
+   count.
+
+5. **Conventional commits, small and logical.** Use `feat:`, `fix:`, `chore:`, `docs:`,
+   `test:`, `ci:` prefixes. One logical change per commit; do not bundle unrelated edits.
+   Never push unless explicitly asked.
+
+6. **Windows / PowerShell.** This is a Windows machine. Use PowerShell-compatible
+   commands (`;` to sequence, quote paths, avoid bash-only syntax). Prefer
+   `python -m ...` over bare tool names, and avoid interactive prompts and pagers.
+
+7. **Close every task with a summary.** State (a) what changed and in which files,
+   (b) what could not be verified and why, and (c) what failed, including any error
+   output. Do not mark a task complete while a claim in it is unverified.
