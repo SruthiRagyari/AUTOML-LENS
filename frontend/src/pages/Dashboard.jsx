@@ -402,7 +402,8 @@ export default function Dashboard() {
       <div className="card">
         <h2>Recent Experiments</h2>
         {loading ? <LoadingSpinner message="Loading experiments..." /> :
-          experiments.length === 0 ? (
+          error && !showForm ? <div className="alert alert-danger">{error}</div> :
+            experiments.length === 0 ? (
             <EmptyState icon="🧪" title="No experiments yet" description="Upload a dataset and start your first AutoML experiment."
               action={<button className="btn btn-primary" onClick={() => setShowForm(true)}><FiPlus /> New Experiment</button>} />
           ) : (
