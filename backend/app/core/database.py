@@ -1,5 +1,6 @@
-﻿"""SQLite database setup using SQLAlchemy."""
+"""SQLite database setup using SQLAlchemy."""
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import (
@@ -9,6 +10,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
@@ -45,6 +49,10 @@ class Experiment(Base):
     llm_analysis_json = Column(Text)
     preprocessing_json = Column(Text)
     feature_engineering_json = Column(Text)
+    model_selection_json = Column(Text)  # model-selection research trace
+    # Last observed training-progress snapshot (real state only: no
+    # percentage, no ETA). Null when the experiment has never trained.
+    progress_json = Column(Text)
     results_json = Column(Text)
     best_model_name = Column(String(255))
     best_score = Column(Float)
@@ -73,6 +81,9 @@ class TrainingRun(Base):
     best_params_json = Column(Text)
     cv_scores_json = Column(Text)
     optimization_history_json = Column(Text)
+    # Real Optuna provenance: metric/scoring/direction, trial counts, folds,
+    # best CV score, status and the real error when the search failed.
+    optimization_json = Column(Text)
     training_time = Column(Float)
     prediction_time = Column(Float)
     error_message = Column(Text)
@@ -104,12 +115,18 @@ _SessionLocal = None
 def get_engine():
     global _engine
     if _engine is None:
-        db_path = Path("automl_lens.db")
+        # Respect DATABASE_URL (relative SQLite paths are anchored to backend/);
+        # the default stays the local SQLite file so nothing changes out of the box.
+        url = settings.resolved_database_url
+        engine_kwargs: dict = {"echo": False}
+        connect_args: dict = {}
+        if url.startswith("sqlite"):
+            connect_args = {"check_same_thread": False}
+            engine_kwargs["poolclass"] = StaticPool
         _engine = create_engine(
-            f"sqlite:///{db_path}",
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-            echo=False,
+            url,
+            connect_args=connect_args,
+            **engine_kwargs,
         )
     return _engine
 
@@ -130,10 +147,45 @@ def get_db():
     try:
         yield db
     finally:
-        db.close()
+        # Tearing down a request-scoped session must never turn an already
+        # served response into a 500. SQLite can raise "cannot rollback - no
+        # transaction is active" here when the background training thread
+        # writes a progress snapshot to the same file while this request is
+        # being finalised. The route's own work is already done at this
+        # point, so the failure is logged and the connection dropped.
+        try:
+            db.close()
+        except Exception as exc:  # pragma: no cover - best-effort teardown
+            logger.warning("Database session teardown failed: %s", exc)
 
 
 def init_db():
-    """Create all tables."""
+    """Create all tables, upgrading existing databases in place."""
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
+    # create_all never adds columns to existing tables; upgrade older
+    # SQLite files so the model-selection research trace can be stored.
+    try:
+        from sqlalchemy import inspect, text
+        columns = {c["name"] for c in inspect(engine).get_columns("experiments")}
+        if "model_selection_json" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE experiments ADD COLUMN model_selection_json TEXT"
+                ))
+        if "progress_json" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE experiments ADD COLUMN progress_json TEXT"
+                ))
+        run_columns = {c["name"] for c in inspect(engine).get_columns("training_runs")}
+        if "optimization_json" not in run_columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE training_runs ADD COLUMN optimization_json TEXT"
+                ))
+    except Exception as exc:  # pragma: no cover - best effort
+        import logging
+        logging.getLogger(__name__).warning(
+            f"Could not migrate experiments table: {exc}"
+        )

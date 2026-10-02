@@ -1,16 +1,26 @@
-﻿"""Application configuration using pydantic-settings."""
-import os
+"""Application configuration using pydantic-settings.
+
+Configuration is anchored to the ``backend/`` directory instead of the current
+working directory, so ``uvicorn`` behaves identically whether it is launched
+from ``backend/`` or from the repository root.
+"""
 from pathlib import Path
-from pydantic_settings import BaseSettings
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-# Load .env from project root
-_project_root = Path(__file__).resolve().parent.parent.parent.parent
-load_dotenv(_project_root / ".env")
+# backend/  (this file lives at backend/app/core/config.py)
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+ENV_FILE = BACKEND_DIR / ".env"
+
+# Load backend/.env explicitly (a missing file is not an error).
+load_dotenv(ENV_FILE)
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    """Application settings loaded from environment variables / backend/.env."""
+
+    model_config = SettingsConfigDict(env_file=str(ENV_FILE), extra="ignore")
 
     # App
     APP_NAME: str = "AutoML-Lens"
@@ -30,7 +40,7 @@ class Settings(BaseSettings):
     # LLM
     LLM_PROVIDER: str = "fallback"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-flash-lite-latest"
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o-mini"
@@ -40,8 +50,25 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     @property
+    def resolved_database_url(self) -> str:
+        """Return DATABASE_URL with relative SQLite paths anchored to backend/."""
+        url = (self.DATABASE_URL or "").strip()
+        if not url.startswith("sqlite:///"):
+            return url
+        raw = url[len("sqlite:///"):]
+        if not raw or raw == ":memory:":
+            return url
+        path = Path(raw)
+        if not path.is_absolute():
+            path = BACKEND_DIR / path
+        return f"sqlite:///{path.as_posix()}"
+
+    @property
     def storage_path(self) -> Path:
+        """Root storage directory (relative values resolve inside backend/)."""
         p = Path(self.STORAGE_PATH)
+        if not p.is_absolute():
+            p = BACKEND_DIR / p
         p.mkdir(parents=True, exist_ok=True)
         return p
 
@@ -68,10 +95,6 @@ class Settings(BaseSettings):
         p = self.storage_path / "predictions"
         p.mkdir(parents=True, exist_ok=True)
         return p
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
 
 
 settings = Settings()
