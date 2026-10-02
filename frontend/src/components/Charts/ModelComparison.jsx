@@ -11,18 +11,19 @@ export default function ModelComparison({ models = [], metric = 'Score' }) {
         x: sorted.map(m => (m.score ?? 0).toFixed(4)),
         y: sorted.map(m => m.display_name),
         orientation: 'h',
-        marker: { color: sorted.map((_, i) => i === 0 ? '#4361ee' : '#8ba7ff') },
+        marker: { color: sorted.map((_, i) => i === 0 ? '#E50914' : '#6d6d6d') },
         text: sorted.map(m => (m.score ?? 0).toFixed(4)),
         textposition: 'auto',
+        textfont: { color: '#ffffff' },
       }]}
       layout={{
-        title: { text: `Model Comparison — ${metric}`, font: { size: 15 } },
-        xaxis: { title: metric },
-        yaxis: { autorange: 'reversed' },
+        title: { text: `Model Comparison — ${metric}`, font: { size: 15, color: '#ffffff' } },
+        xaxis: { title: metric, tickfont: { color: '#b3b3b3' }, gridcolor: 'rgba(255,255,255,0.08)', zerolinecolor: 'rgba(255,255,255,0.15)' },
+        yaxis: { autorange: 'reversed', tickfont: { color: '#b3b3b3' } },
         margin: { l: 180, r: 40, t: 50, b: 50 },
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
-        font: { family: 'Inter, sans-serif', size: 13 },
+        font: { family: 'Helvetica Neue, Arial, sans-serif', size: 13, color: '#b3b3b3' },
         height: 300 + sorted.length * 36,
       }}
       useResizeHandler

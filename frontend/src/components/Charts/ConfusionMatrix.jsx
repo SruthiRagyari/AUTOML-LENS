@@ -14,14 +14,15 @@ export default function ConfusionMatrix({ matrix = [], labels = [] }) {
         text: matrix.map(row => row.map(v => String(v))),
         texttemplate: '%{text}',
         showscale: true,
+        colorbar: { tickfont: { color: '#b3b3b3' } },
       }]}
       layout={{
-        title: { text: 'Confusion Matrix', font: { size: 15 } },
-        xaxis: { title: 'Predicted' },
-        yaxis: { title: 'Actual', autorange: 'reversed' },
+        title: { text: 'Confusion Matrix', font: { size: 15, color: '#ffffff' } },
+        xaxis: { title: 'Predicted', tickfont: { color: '#b3b3b3' }, gridcolor: 'rgba(255,255,255,0.08)' },
+        yaxis: { title: 'Actual', autorange: 'reversed', tickfont: { color: '#b3b3b3' } },
         margin: { l: 80, r: 40, t: 50, b: 80 },
         paper_bgcolor: 'transparent',
-        font: { family: 'Inter, sans-serif', size: 12 },
+        font: { family: 'Helvetica Neue, Arial, sans-serif', size: 12, color: '#b3b3b3' },
         height: 360,
       }}
       useResizeHandler

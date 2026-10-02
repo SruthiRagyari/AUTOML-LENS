@@ -564,7 +564,7 @@ export default function Experiment() {
                   </div>
                 )}
                 {results.selection && (
-                  <div style={{ background: '#f8f9fc', border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, lineHeight: 1.8 }}>
+                  <div style={{ background: '#1f1f1f', border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, lineHeight: 1.8 }}>
                     <strong>Selection protocol:</strong> ranked by{' '}
                     <code>{results.selection.evidence_source?.replace(/_/g, ' ')}</code>{' '}
                     using <code>{results.selection.selection_metric}</code>{' '}
@@ -583,7 +583,7 @@ export default function Experiment() {
                   </div>
                 )}
                 {results.llm_explanation && (
-                  <div style={{ background: '#f8f9fc', border: '1px solid var(--border)', borderRadius: 8, padding: 16, marginBottom: 20, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                  <div style={{ background: '#1f1f1f', border: '1px solid var(--border)', borderRadius: 8, padding: 16, marginBottom: 20, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     {results.llm_explanation}
                   </div>
                 )}
@@ -630,7 +630,7 @@ export default function Experiment() {
                         const holdout = realMetrics(met, problemType)
                         const failed = m.status === 'FAILED'
                         return (
-                          <tr key={m.model_name} style={m.is_best ? { background: '#eef1ff' } : {}}>
+                          <tr key={m.model_name} style={m.is_best ? { background: 'rgba(229,9,20,0.12)' } : {}}>
                             <td><strong>{m.display_name}</strong>{m.is_best ? ' 🏆' : ''}</td>
                             <td><StatusBadge status={m.status} /></td>
                             <td title="Cross-validated score: the evidence model selection ranked on">
