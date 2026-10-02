@@ -1,6 +1,8 @@
-# 🔬 AutoML-Lens
+# AutoML-Lens
 
-> **LLM-Powered Automated Machine Learning Framework**
+> **LLM-guided AutoML platform**
+
+AutoML-Lens is a full-stack, LLM-guided AutoML platform: upload a raw tabular dataset and it profiles the data, runs LLM-guided problem analysis with Google Gemini, OpenAI, or a deterministic fallback, selects and tunes models with leakage-safe cross-validated selection, explains the winning model with SHAP, and exports a self-contained HTML report - from a React UI backed by FastAPI.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141-green)](https://fastapi.tiangolo.com)
@@ -11,13 +13,7 @@
 
 ---
 
-**B.Tech Final Year Project — Computer Science Engineering (AI/ML Specialization)**
-
-*"Construction of Automated Machine Learning Framework Based on Large Language Models"*
-
----
-
-## 📋 Overview
+## Overview
 
 AutoML-Lens is a full-stack web application that implements an LLM-integrated AutoML pipeline. It takes a raw tabular dataset and produces a trained, evaluated, and explainable machine learning model — fully automated with optional AI guidance from Google Gemini or OpenAI.
 
@@ -38,7 +34,7 @@ AutoML-Lens is a full-stack web application that implements an LLM-integrated Au
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -77,7 +73,7 @@ Visit **http://localhost:5173** in your browser.
 
 ---
 
-## 🎮 Demo
+## Demo
 
 1. Go to **Dashboard** → **New Experiment**
 2. Upload `demo_data/classification.csv` (customer churn) or `demo_data/regression.csv` (house prices)
@@ -88,7 +84,7 @@ Visit **http://localhost:5173** in your browser.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 automl-lens/
@@ -114,7 +110,7 @@ automl-lens/
 
 ---
 
-## 🔬 Hyperparameter Optimization (Optuna)
+## Hyperparameter Optimization (Optuna)
 
 Optuna runs on the models that survive LLM-recommendation validation, using
 each model's own search space. Key guarantees:
@@ -157,7 +153,7 @@ presenting a short run as a full one.
 
 ---
 
-## 🎯 Model Selection & Evaluation Protocol
+## Model Selection & Evaluation Protocol
 
 The winner is chosen from **training/CV evidence only**. The holdout never
 decides which model wins — otherwise the test score leaks into selection and
@@ -249,7 +245,7 @@ The outcome is persisted under `selection.tie_break`:
 
 ---
 
-## ⏱️ Training Runtime & Real Progress
+## Training Runtime & Real Progress
 
 Training is genuinely CPU-bound: a single SVM fit on ~39k rows can take longer
 than every other model combined. The pipeline therefore runs **off the asyncio
@@ -285,7 +281,7 @@ time.
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 Copy `backend/.env.example` to `backend/.env`:
 
@@ -306,7 +302,7 @@ OPENAI_MODEL=gpt-4o-mini
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 ```bash
 cd automl-lens
@@ -319,7 +315,7 @@ model selection, training progress, and the full end-to-end pipeline.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 User Browser
@@ -342,7 +338,7 @@ React 18 (Vite) ──── /api proxy ────▶ FastAPI (Uvicorn)
 
 ---
 
-## 📊 ML Pipeline
+## ML Pipeline
 
 1. **Dataset Upload** — CSV/XLSX up to 100MB
 2. **Profiling** — Column statistics, type inference, quality warnings
@@ -357,7 +353,7 @@ React 18 (Vite) ──── /api proxy ────▶ FastAPI (Uvicorn)
 
 ---
 
-## 📚 References
+## References
 
 - Feurer et al. (2015). *Auto-sklearn: Efficient and Robust Automated Machine Learning*. NeurIPS.
 - He et al. (2021). *AutoML: A Survey of the State-of-the-Art*. IEEE TKDE.
@@ -365,6 +361,6 @@ React 18 (Vite) ──── /api proxy ────▶ FastAPI (Uvicorn)
 
 ---
 
-## 📄 License
+## License
 
 MIT License — see [LICENSE](LICENSE) file.
