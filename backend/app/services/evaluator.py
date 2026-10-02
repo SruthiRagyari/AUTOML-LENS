@@ -1,5 +1,6 @@
-﻿"""Model evaluation with comprehensive metrics."""
+"""Model evaluation with comprehensive metrics."""
 import logging
+from dataclasses import dataclass
 import numpy as np
 from typing import Any, Optional
 from sklearn.metrics import (
@@ -38,16 +39,85 @@ METRIC_TO_SCORING = {
 }
 
 
+# Metrics where a LARGER raw value is WORSE (errors / losses). Every other
+# metric in the registry (accuracy, f1_weighted, r2, ...) is a score where a
+# larger value is better.
+LOWER_IS_BETTER_METRICS = frozenset({
+    "mse", "rmse", "mae", "mape",
+    "mean_squared_error", "mean_absolute_error", "root_mean_squared_error",
+    "mean_squared_log_error", "neg_mean_squared_log_error",
+    "neg_mean_squared_error", "neg_mean_absolute_error",
+    "neg_root_mean_squared_error",
+})
+
+
+@dataclass(frozen=True)
+class MetricSpec:
+    """Explicit, persisted metric -> sklearn scoring -> direction contract.
+
+    metric         user-facing metric name stored on the experiment.
+    scoring        sklearn scoring string actually passed to cross_val_score.
+    direction      direction Optuna must use on the value `scoring` returns.
+                   sklearn negates every loss scorer (the ``neg_*`` family), so
+                   the returned value is always "higher is better" and the
+                   study direction is always ``maximize``. This is *derived*
+                   from `negated`, never assumed, so a future raw (un-negated)
+                   loss scorer cannot silently invert the study.
+    raw_direction  direction of the un-negated metric the user sees in the
+                   evaluation table (``minimize`` for rmse/mae/mse).
+    negated        whether sklearn already flipped the sign for us.
+    """
+
+    metric: str
+    scoring: str
+    direction: str
+    raw_direction: str
+    negated: bool
+
+    @property
+    def is_higher_better(self) -> bool:
+        return self.direction == "maximize"
+
+    def to_dict(self) -> dict:
+        return {
+            "metric": self.metric,
+            "scoring": self.scoring,
+            "direction": self.direction,
+            "raw_direction": self.raw_direction,
+            "negated": self.negated,
+        }
+
+
 def is_higher_better(metric_name: str) -> bool:
-    """Return True if higher metric values are better."""
-    lower_is_better = {"mse", "rmse", "mae", "neg_mean_squared_error",
-                        "neg_mean_absolute_error", "neg_root_mean_squared_error"}
-    return metric_name not in lower_is_better
+    """Return True if higher RAW metric values are better."""
+    return metric_name not in LOWER_IS_BETTER_METRICS
 
 
 def get_scoring_string(metric_name: str) -> str:
     """Convert metric name to sklearn scoring string."""
     return METRIC_TO_SCORING.get(metric_name, metric_name)
+
+
+def get_metric_spec(metric_name: str) -> MetricSpec:
+    """Resolve metric -> sklearn scoring -> Optuna direction, explicitly.
+
+    Single source of truth for "which direction do we optimize", shared by the
+    optimizer, the trainer and the persisted provenance so the study direction
+    can never drift from the metric that gets reported to the user.
+    """
+    scoring = get_scoring_string(metric_name)
+    # A `neg_*` scorer already returns a sign-flipped value, so a bigger number
+    # is better no matter what the underlying loss is. Any other
+    # lower-is-better metric would arrive as a RAW loss and must be minimized.
+    negated = scoring.startswith("neg_")
+    direction = "maximize" if negated or is_higher_better(metric_name) else "minimize"
+    return MetricSpec(
+        metric=metric_name,
+        scoring=scoring,
+        direction=direction,
+        raw_direction="maximize" if is_higher_better(metric_name) else "minimize",
+        negated=negated,
+    )
 
 
 class Evaluator:
