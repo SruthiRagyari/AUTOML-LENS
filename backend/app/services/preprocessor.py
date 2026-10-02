@@ -1,4 +1,4 @@
-﻿"""Preprocessing engine using sklearn pipelines to prevent data leakage."""
+"""Preprocessing engine using sklearn pipelines to prevent data leakage."""
 import logging
 from typing import Any, Optional
 import pandas as pd
@@ -21,12 +21,26 @@ class PreprocessingEngine:
         self.dropped_columns: list[str] = []
         self.datetime_features: dict[str, list[str]] = {}
         self.summary: dict[str, Any] = {}
+        # Feature-engineering wiring (filled by build_and_fit so transform()
+        # reproduces exactly the columns the model was fitted on).
+        self.feature_engineer: Optional[Any] = None
+        self.numeric_input_columns: list[str] = []
+        self.categorical_input_columns: list[str] = []
+        self.text_input_columns: list[str] = []
 
     def build_and_fit(
         self, df: pd.DataFrame, target_column: str,
-        column_profiles: list[dict], problem_type: str
+        column_profiles: list[dict], problem_type: str,
+        extra_numeric: Optional[list[str]] = None,
+        feature_engineer: Optional[Any] = None,
     ) -> tuple[np.ndarray, list[str]]:
-        """Build preprocessing pipeline and fit-transform the data."""
+        """Build preprocessing pipeline and fit-transform the data.
+
+        ``extra_numeric`` carries engineered numeric columns (interactions,
+        frequency encodings, datetime parts) so they are actually fed to the
+        model instead of being discarded by ``remainder="drop"``.
+        """
+        self.feature_engineer = feature_engineer
         # Categorize columns by type
         numerical_cols = []
         categorical_cols = []
@@ -80,6 +94,11 @@ class PreprocessingEngine:
                     work_df = work_df.drop(columns=[col], errors="ignore")
 
         numerical_cols = [c for c in numerical_cols if c in work_df.columns] + new_num_cols
+        # Engineered numeric features (interactions / frequency encodings / datetime
+        # parts) must be part of the numeric transformer or remainder="drop" loses them.
+        engineered_cols = [c for c in (extra_numeric or [])
+                           if c in work_df.columns and c not in numerical_cols]
+        numerical_cols = numerical_cols + engineered_cols
         categorical_cols = [c for c in categorical_cols if c in work_df.columns]
         text_cols = [c for c in text_cols if c in work_df.columns]
 
@@ -94,7 +113,7 @@ class PreprocessingEngine:
 
         if numerical_cols:
             num_pipeline = Pipeline([
-                ("imputer", SimpleImputer(strategy="median")),
+                ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
                 ("scaler", StandardScaler()),
             ])
             transformers.append(("numerical", num_pipeline, numerical_cols))
@@ -126,6 +145,12 @@ class PreprocessingEngine:
             self.feature_names_out = []
             return np.array([]).reshape(len(df), 0), []
 
+        # Remember exactly which columns the transformer needs so transform()
+        # can backfill anything missing from partial (prediction) inputs.
+        self.numeric_input_columns = list(numerical_cols)
+        self.categorical_input_columns = list(categorical_cols)
+        self.text_input_columns = list(text_cols)
+
         self.preprocessor = ColumnTransformer(
             transformers=transformers,
             remainder="drop",
@@ -150,6 +175,7 @@ class PreprocessingEngine:
             "dropped_columns": drop_cols,
             "datetime_extracted_features": self.datetime_features,
             "total_features_in": len(numerical_cols) + len(categorical_cols) + len(text_cols),
+            "engineered_columns": engineered_cols,
             "total_features_out": X.shape[1],
             "numerical_strategy": "median imputation + standard scaling",
             "categorical_strategy": "mode imputation + one-hot encoding (max 20 categories)",
@@ -163,12 +189,17 @@ class PreprocessingEngine:
         )
         return X, self.feature_names_out
 
-    def transform(self, df: pd.DataFrame, target_column: str) -> np.ndarray:
+    def transform(self, df: pd.DataFrame, target_column: str = None) -> np.ndarray:
         """Transform new data using fitted preprocessor."""
         if self.preprocessor is None:
             raise RuntimeError("Preprocessor not fitted. Call build_and_fit first.")
 
-        work_df = df.drop(columns=[target_column] + self.dropped_columns, errors="ignore")
+        if self.feature_engineer is not None:
+            # Reproduce the engineered columns learned on the training split.
+            df = self.feature_engineer.transform(df)
+
+        cols_to_drop = ([target_column] if target_column else []) + self.dropped_columns
+        work_df = df.drop(columns=cols_to_drop, errors="ignore")
 
         # Extract datetime features
         for col, new_cols in self.datetime_features.items():
@@ -183,7 +214,27 @@ class PreprocessingEngine:
                 except Exception:
                     work_df = work_df.drop(columns=[col], errors="ignore")
 
+        work_df = self._backfill_expected_columns(work_df)
         return self.preprocessor.transform(work_df)
+
+    def _backfill_expected_columns(self, work_df: pd.DataFrame) -> pd.DataFrame:
+        """Add any expected column missing from a partial input frame.
+
+        Guarantees the transformer always receives the columns it was fitted on
+        (numeric -> NaN for median imputation, categorical -> None for mode
+        imputation, text -> empty string for TF-IDF).
+        """
+        for col in self.numeric_input_columns:
+            if col not in work_df.columns:
+                work_df[col] = np.nan
+        for col in self.categorical_input_columns:
+            if col not in work_df.columns:
+                work_df[col] = None
+        for col in self.text_input_columns:
+            if col not in work_df.columns:
+                work_df[col] = ""
+        return work_df
 
     def get_summary(self) -> dict[str, Any]:
         return self.summary
+

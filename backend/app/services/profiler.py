@@ -1,4 +1,4 @@
-﻿"""Dataset profiling service - analyzes dataset structure and quality."""
+"""Dataset profiling service - analyzes dataset structure and quality."""
 import logging
 from typing import Any, Optional
 import pandas as pd
@@ -133,14 +133,29 @@ class DatasetProfiler:
         if unique_count <= 1:
             return "constant"
 
-        # Boolean
-        if series.dtype == bool or (
-            unique_count <= 3
-            and set(str(v).lower() for v in non_null.unique()).issubset(
-                {"true", "false", "yes", "no", "0", "1", "0.0", "1.0"}
-            )
-        ):
+        # Boolean, but only when the column really is binary in a way the
+        # numeric pipeline can consume: a genuine bool dtype, or numbers that
+        # are exactly 0/1.
+        #
+        # Text such as 'yes'/'no' must NOT be reported as boolean. The
+        # preprocessing engine routes boolean columns into the numeric imputer,
+        # so a text boolean reached the median imputer as a string and failed
+        # with "Cannot use median strategy with non-numeric data". Such a
+        # column is an ordinary two-valued category and is now treated as one,
+        # which one-hot encodes correctly.
+        if series.dtype == bool:
             return "boolean"
+        if unique_count <= 3 and len(non_null) > 0:
+            try:
+                observed = set(pd.unique(non_null.to_numpy()))
+                if observed and all(
+                    isinstance(v, (int, float, bool)) and not pd.isna(v)
+                    and float(v) in (0.0, 1.0)
+                    for v in observed
+                ):
+                    return "boolean"
+            except (TypeError, ValueError):
+                pass
 
         # Datetime
         if pd.api.types.is_datetime64_any_dtype(series):
@@ -171,7 +186,7 @@ class DatasetProfiler:
 
             # Try parsing as datetime
             try:
-                pd.to_datetime(non_null.head(20), infer_datetime_format=True)
+                pd.to_datetime(non_null.head(20), format='mixed', dayfirst=False)
                 return "datetime"
             except Exception:
                 pass
@@ -287,6 +302,7 @@ class DatasetProfiler:
         if isinstance(val, (np.ndarray,)):
             return val.tolist()
         return val
+
 
 
 
