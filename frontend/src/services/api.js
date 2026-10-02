@@ -1,4 +1,4 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 
 const API = axios.create({ baseURL: '/api' })
 
@@ -43,6 +43,15 @@ export const api = {
   },
   getReport: (id) => API.get(`/experiments/${id}/report`),
   getInputSchema: (id) => API.get(`/experiments/${id}/input-schema`),
+// Suitability: blocking issues vs warnings, target distribution, task type.
+  getSuitability: (id, targetColumn, problemType) => {
+    const params = {}
+    if (targetColumn) params.target_column = targetColumn
+    if (problemType && problemType !== 'auto') params.problem_type = problemType
+    return API.get(`/datasets/${id}/suitability`, { params })
+  },
+  // Real observed training state (live, or the persisted final snapshot).
+  getProgress: (id) => API.get(`/experiments/${id}/progress`),
   downloadModelUrl: (id) => `/api/experiments/${id}/download-model`,
   downloadMetaUrl: (id) => `/api/experiments/${id}/download-metadata`,
 

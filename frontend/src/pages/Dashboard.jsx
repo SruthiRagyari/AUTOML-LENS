@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
 import { FiPlus, FiZap } from 'react-icons/fi'
@@ -10,6 +10,111 @@ import EmptyState from '../components/Common/EmptyState'
 const DEFAULT_METRICS = {
   classification: ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted', 'balanced_accuracy', 'roc_auc'],
   regression: ['r2', 'neg_root_mean_squared_error', 'neg_mean_absolute_error', 'neg_mean_squared_error'],
+}
+
+function pctText(n) {
+  return n == null ? '—' : `${Number(n).toFixed(1)}%`
+}
+
+/**
+ * Real suitability report for the uploaded file.
+ *
+ * Every value here comes straight from GET /api/datasets/{id}/suitability.
+ * Blocking issues mean the dataset cannot drive a meaningful experiment, so
+ * the Create button is disabled and the reasons are listed. Nothing is
+ * inferred client-side and nothing is invented when a field is null.
+ */
+function SuitabilityReport({ suit, form }) {
+  if (!suit) return null
+  const t = suit.target || {}
+  const blocking = suit.blocking_issues || []
+  const warnings = [...(suit.warnings || []), ...(suit.warnings_from_profile || [])]
+  const types = suit.column_type_summary || {}
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <h2>Dataset Readiness</h2>
+
+      <div className={`alert ${suit.suitable ? 'alert-success' : 'alert-danger'}`} style={{ marginBottom: 16 }}>
+        {suit.suitable
+          ? <>✅ This dataset can be used for AutoML{suit.task_type ? <> — detected task: <strong>{suit.task_type}</strong></> : null}.</>
+          : <>⛔ This dataset cannot be used for AutoML yet. Fix the issues below and re-upload or change the target.</>}
+        {suit.task_reason && (
+          <div style={{ fontSize: 12, marginTop: 6, opacity: 0.85 }}>{suit.task_reason}</div>
+        )}
+      </div>
+
+      <div className="metrics-grid" style={{ marginBottom: 16 }}>
+        <div className="metric-card"><div className="metric-value">{suit.rows}</div><div className="metric-label">Rows</div></div>
+        <div className="metric-card"><div className="metric-value">{suit.columns}</div><div className="metric-label">Columns</div></div>
+        <div className="metric-card"><div className="metric-value">{suit.usable_feature_count}</div><div className="metric-label">Usable features</div></div>
+        <div className="metric-card"><div className="metric-value">{pctText(suit.total_missing_percentage)}</div><div className="metric-label">Missing cells</div></div>
+      </div>
+
+      {Object.keys(types).length > 0 && (
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+          Column types:{' '}
+          {Object.entries(types).map(([k, v]) => <span key={k} className="tag" style={{ marginRight: 6 }}>{k}: {v}</span>)}
+          {suit.duplicate_rows > 0 && (
+            <span className="tag" style={{ marginLeft: 6 }}>duplicate rows: {suit.duplicate_rows} ({suit.duplicate_percentage}%)</span>
+          )}
+        </div>
+      )}
+
+      {blocking.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="section-title">Blocking issues</div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: 'var(--danger)' }}>
+            {blocking.map((b, i) => <li key={i}>{b}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {t.found && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="section-title">Target &ldquo;{t.name}&rdquo;</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            inferred type <code>{t.inferred_type ?? 'unknown'}</code>
+            {' '}· {t.unique_count} distinct value(s)
+            {' '}· {pctText(t.missing_percentage)} missing
+            {t.summary ? <> · {t.summary}</> : null}
+          </div>
+          {t.distribution_kind === 'classes' && t.distribution && (
+            <>
+              <div className="table-container" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                <table>
+                  <thead><tr><th>Class</th><th>Rows</th><th>Share</th></tr></thead>
+                  <tbody>
+                    {Object.entries(t.distribution).map(([k, v]) => (
+                      <tr key={k}>
+                        <td><code>{k}</code></td>
+                        <td>{v}</td>
+                        <td>{pctText((v / suit.rows) * 100)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {t.distribution_truncated && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                  Showing the 20 most frequent values; the rest are not listed.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {warnings.length > 0 && (
+        <div>
+          <div className="section-title">Warnings</div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)' }}>
+            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -28,6 +133,31 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
+  const [suitability, setSuitability] = useState(null)
+  const [suitLoading, setSuitLoading] = useState(false)
+
+  // The backend stays the source of truth for whether this dataset can be
+  // used: re-ask it whenever the target or task choice changes.
+  const refreshSuitability = useCallback(async (datasetId, target, ptype) => {
+    if (!datasetId) return
+    setSuitLoading(true)
+    try {
+      const r = await api.getSuitability(datasetId, target, ptype)
+      setSuitability(r.data)
+    } catch {
+      setSuitability(null)
+    } finally {
+      setSuitLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (uploadedDataset?.id) {
+      refreshSuitability(uploadedDataset.id, form.target_column, form.problem_type)
+    } else {
+      setSuitability(null)
+    }
+  }, [uploadedDataset?.id, form.target_column, form.problem_type, refreshSuitability])
 
   const fetchExperiments = async () => {
     try {
@@ -159,6 +289,12 @@ export default function Dashboard() {
                 ✅ Uploaded: <strong>{uploadedDataset.original_filename}</strong> — {uploadedDataset.rows.toLocaleString()} rows × {uploadedDataset.columns} columns
                 {profileData?.suggested_target && ` · Suggested target: ${profileData.suggested_target}`}
               </div>
+
+              <SuitabilityReport suit={suitability} />
+              {suitLoading && !suitability && (
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Checking dataset readiness...</p>
+              )}
+
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Experiment Name</label>
@@ -223,13 +359,24 @@ export default function Dashboard() {
                     placeholder="e.g., Predict customer churn for telecom..." />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button type="submit" className="btn btn-primary">
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button type="submit" className="btn btn-primary"
+                  disabled={creating || (suitability && !suitability.suitable) || !form.target_column}
+                  title={
+                    suitability && !suitability.suitable
+                      ? 'Fix the blocking issues above before creating an experiment.'
+                      : ''
+                  }>
                   ▶ Create Experiment
                 </button>
-                <button type="button" className="btn" onClick={() => { setStep(1); setUploadedDataset(null) }}>
+                <button type="button" className="btn" onClick={() => { setStep(1); setUploadedDataset(null); setSuitability(null) }}>
                   ← Change File
                 </button>
+                {suitability && !suitability.suitable && (
+                  <span style={{ fontSize: 13, color: 'var(--danger)' }}>
+                    Creation blocked: {suitability.blocking_issues[0]}
+                  </span>
+                )}
               </div>
             </form>
           )}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../services/api'
 import { FiMessageCircle, FiX, FiSend, FiDownload, FiRefreshCw, FiZap } from 'react-icons/fi'
@@ -7,6 +7,42 @@ import FeatureImportance from '../components/Charts/FeatureImportance'
 import ConfusionMatrix from '../components/Charts/ConfusionMatrix'
 import StatusBadge from '../components/Common/StatusBadge'
 import LoadingSpinner from '../components/Common/LoadingSpinner'
+import TrainingProgressPanel from '../components/Common/TrainingProgressPanel'
+
+/** Human label for a metric key the backend actually reported. */
+const METRIC_LABELS = {
+  accuracy: 'Accuracy',
+  precision_weighted: 'Precision (weighted)',
+  recall_weighted: 'Recall (weighted)',
+  f1_weighted: 'F1 (weighted)',
+  balanced_accuracy: 'Balanced accuracy',
+  roc_auc: 'ROC-AUC',
+  pr_auc: 'PR-AUC',
+  r2: 'R²',
+  mse: 'MSE',
+  rmse: 'RMSE',
+  mae: 'MAE',
+  mape: 'MAPE (%)',
+}
+
+/** Metrics worth showing, in a fixed readable order, per task type. */
+const DISPLAY_METRICS = {
+  classification: ['accuracy', 'precision_weighted', 'recall_weighted', 'f1_weighted', 'balanced_accuracy', 'roc_auc', 'pr_auc'],
+  regression: ['r2', 'rmse', 'mae', 'mse', 'mape'],
+}
+
+/**
+ * The metrics a model actually computed, in DISPLAY_METRICS order.
+ * A metric that was not calculated is simply absent - never defaulted, never
+ * substituted with a different metric.
+ */
+function realMetrics(metrics, problemType) {
+  if (!metrics) return []
+  const keys = DISPLAY_METRICS[problemType] || DISPLAY_METRICS.classification
+  return keys
+    .filter(k => typeof metrics[k] === 'number' && Number.isFinite(metrics[k]))
+    .map(k => ({ key: k, label: METRIC_LABELS[k] || k, value: metrics[k] }))
+}
 
 const STEPS = [
   { key: 'dataset', label: 'Dataset' },
@@ -20,6 +56,92 @@ const STEPS = [
   { key: 'prediction', label: 'Predict' },
   { key: 'report', label: 'Report' },
 ]
+
+/**
+ * Renders the REAL per-trial Optuna history persisted at train time.
+ * Only trials the backend actually recorded are shown: no progress bar, no
+ * invented counts, no placeholder rows. A model whose search failed shows its
+ * recorded status and the real error message instead of a trial table.
+ */
+function OptunaTrials({ models }) {
+  const [selected, setSelected] = useState(
+    models.find(m => m.is_best)?.model_name || models[0]?.model_name
+  )
+  const model = models.find(m => m.model_name === selected)
+  const trials = model?.optimization_history || []
+  const opt = model?.optimization || {}
+
+  if (!model) return null
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div className="section-title">Optuna Trials (real search history)</div>
+      <div style={{ marginBottom: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {models.map(m => (
+          <button
+            key={m.model_name}
+            className={m.model_name === selected ? 'btn btn-primary' : 'btn btn-secondary'}
+            style={{ fontSize: 12, padding: '6px 10px' }}
+            onClick={() => setSelected(m.model_name)}
+          >
+            {m.display_name}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-secondary)' }}>
+        {trials.length === 0 ? (
+          <>No trials were run for this model ({opt.status || 'unknown'}).</>
+        ) : (
+          <>
+            {trials.length} recorded trial{trials.length === 1 ? '' : 's'} ·
+            metric <code>{opt.metric}</code> ·
+            scoring <code>{opt.scoring}</code> ·
+            study direction <code>{opt.direction}</code> ·
+            reported metric <code>{opt.raw_direction}</code> ·
+            {opt.n_folds_used} × {opt.cv_strategy} CV on the training split ·
+            seed {opt.seed}
+          </>
+        )}
+      </div>
+
+      {opt.error && (
+        <div className="alert alert-danger" style={{ marginBottom: 10, fontSize: 13 }}>
+          Optimization status <strong>{opt.status}</strong>: {opt.error}
+        </div>
+      )}
+      {opt.fold_note && (
+        <div className="alert alert-warning" style={{ marginBottom: 10, fontSize: 13 }}>
+          {opt.fold_note}
+        </div>
+      )}
+
+      {trials.length > 0 && (
+        <div className="table-container" style={{ maxHeight: 320, overflowY: 'auto' }}>
+          <table>
+            <thead>
+              <tr><th>Trial</th><th>Status</th><th>CV Score</th><th>Duration (s)</th><th>Params</th><th>Error</th></tr>
+            </thead>
+            <tbody>
+              {trials.map(t => (
+                <tr key={t.trial_number}>
+                  <td>{t.trial_number}</td>
+                  <td>{t.status}</td>
+                  <td>{t.score != null ? t.score.toFixed(6) : '—'}</td>
+                  <td>{t.duration?.toFixed(3)}</td>
+                  <td style={{ fontSize: 11, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {Object.entries(t.params || {}).map(([k, v]) => `${k}=${v}`).join(', ') || '—'}
+                  </td>
+                  <td style={{ fontSize: 11, color: 'var(--danger)' }}>{t.error || ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Experiment() {
   const { id } = useParams()
@@ -44,6 +166,7 @@ export default function Experiment() {
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatBottom = useRef(null)
+  const pollRef = useRef(null)
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +182,8 @@ export default function Experiment() {
           try { const ex = await api.getExplainability(id); setExplainability(ex.data) } catch {}
           try { const sc = await api.getInputSchema(id); setInputSchema(sc.data?.fields || []) } catch {}
         }
+        // The persisted final snapshot, so progress survives a refresh.
+        try { const pg = await api.getProgress(id); setProgress(pg.data) } catch {}
       }
     } catch { setError('Failed to load experiment') }
     finally { setLoading(false) }
@@ -81,8 +206,42 @@ export default function Experiment() {
     finally { setActionLoading(false); setActionMsg('') }
   }
 
+  const [progress, setProgress] = useState(null)
+  const [polling, setPolling] = useState(false)
+
+  // Poll the REAL progress endpoint while a training request is in flight.
+  // The endpoint reports observed state only, so there is nothing to fake
+  // here; when the run ends, the last snapshot stays on screen.
+  const startProgressPolling = useCallback(() => {
+    if (polling) return
+    setPolling(true)
+    const tick = async () => {
+      try {
+        const r = await api.getProgress(id)
+        setProgress(r.data)
+        const st = r.data?.progress?.status
+        if (st && st !== 'running' && st !== 'queued') setPolling(false)
+      } catch {
+        // A failed poll is not a failed run: keep polling silently.
+      }
+    }
+    tick()
+    pollRef.current = setInterval(tick, 1500)
+  }, [id, polling])
+
+  const stopProgressPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = null
+    setPolling(false)
+  }, [])
+
+  useEffect(() => () => {
+    if (pollRef.current) clearInterval(pollRef.current)
+  }, [])
+
   const runTraining = async (fastDemo) => {
     setActionLoading(true); setActionMsg(fastDemo ? 'Fast demo: 3 models, 5 trials...' : 'Training all models with Optuna optimization...')
+    startProgressPolling()
     try {
       const r = await api.trainExperiment(id, fastDemo)
       setResults(r.data)
@@ -90,7 +249,12 @@ export default function Experiment() {
       setActiveStep(6)
     }
     catch (e) { setError(`Training failed: ${e.response?.data?.detail || e.message}`) }
-    finally { setActionLoading(false); setActionMsg('') }
+    finally {
+      setActionLoading(false); setActionMsg('')
+      stopProgressPolling()
+      // Always take a final reading so the persisted snapshot is shown.
+      try { const r = await api.getProgress(id); setProgress(r.data) } catch {}
+    }
   }
 
   const runPredict = async () => {
@@ -139,11 +303,16 @@ export default function Experiment() {
 
   const models = results?.models || []
   const bestModel = results?.best_model || {}
-  const comparisonData = models.filter(m => m.status === 'COMPLETED').map(m => {
-    const met = m.optimized_metrics || m.baseline_metrics || {}
-    const score = Object.values(met).find(v => typeof v === 'number')
-    return { display_name: m.display_name, score, model_name: m.model_name }
-  })
+  const problemType = results?.problem_type || exp?.problem_type
+  // Comparison chart uses the backend-resolved primary metric. It used to take
+  // "the first number in the metrics dict", which showed accuracy for an F1
+  // experiment - a real, silently wrong number.
+  const comparisonData = models.filter(m => m.status === 'COMPLETED').map(m => ({
+    display_name: m.display_name,
+    score: m.holdout_primary ?? null,
+    metric_key: m.holdout_primary_key,
+    model_name: m.model_name,
+  }))
 
   const expl = explainability || {}
   const cm = models.find(m => m.is_best)?.optimized_metrics?.confusion_matrix || []
@@ -267,12 +436,15 @@ export default function Experiment() {
             ) : (
               <div>
                 <div className="alert alert-info" style={{ marginBottom: 20 }}>
-                  <strong>Provider:</strong> {llmAnalysis.provider_used || 'Fallback'} · <strong>Confidence:</strong> {((llmAnalysis.confidence || 0.8) * 100).toFixed(0)}%
+                  <strong>Provider:</strong> {llmAnalysis.provider_used || 'Fallback'}{llmAnalysis.is_fallback ? ' (rule-based — no LLM API key)' : ''} · <strong>Confidence:</strong> {llmAnalysis.confidence != null ? `${(llmAnalysis.confidence * 100).toFixed(0)}%` : 'not reported'}
                 </div>
                 <div className="metrics-grid" style={{ marginBottom: 20 }}>
                   <div className="metric-card"><div className="metric-value" style={{ fontSize: 18, textTransform: 'capitalize' }}>{llmAnalysis.problem_type}</div><div className="metric-label">Problem Type</div></div>
                   <div className="metric-card"><div className="metric-value" style={{ fontSize: 16 }}>{llmAnalysis.recommended_metric}</div><div className="metric-label">Recommended Metric</div></div>
                 </div>
+                {llmAnalysis.problem_understanding && (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}><strong>Understanding:</strong> {llmAnalysis.problem_understanding}</p>
+                )}
                 <div className="section-title">Reasoning</div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>{llmAnalysis.reasoning}</p>
                 {llmAnalysis.candidate_models?.length > 0 && (
@@ -281,11 +453,47 @@ export default function Experiment() {
                     {llmAnalysis.candidate_models.map(m => <span key={m} className="tag">{m}</span>)}
                   </div></>
                 )}
+                {llmAnalysis.model_recommendations?.length > 0 && (
+                  <><div className="section-title">Model Recommendations · {llmAnalysis.model_selection_source === 'provider' ? 'LLM registry-validated' : llmAnalysis.model_selection_source === 'deterministic_defaults' ? 'deterministic (rule-based)' : llmAnalysis.model_selection_source}</div>
+                  <ul style={{ paddingLeft: 20, fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                    {llmAnalysis.model_recommendations.map((r, i) => (
+                      <li key={i}><strong>{r.display_name || r.model_id}</strong>{r.reason ? ` — ${r.reason}` : ''}</li>
+                    ))}
+                  </ul></>
+                )}
+                {llmAnalysis.rejected_model_recommendations?.length > 0 && (
+                  <><div className="section-title">Rejected Model Suggestions</div>
+                  <ul style={{ paddingLeft: 20, fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                    {llmAnalysis.rejected_model_recommendations.map((r, i) => (
+                      <li key={i}><strong>{r.model_id}</strong> — {r.reason}</li>
+                    ))}
+                  </ul></>
+                )}
                 {llmAnalysis.preprocessing?.length > 0 && (
                   <><div className="section-title">Preprocessing Advice</div>
                   <ul style={{ paddingLeft: 20, fontSize: 14, color: 'var(--text-secondary)' }}>
                     {llmAnalysis.preprocessing.map((p, i) => <li key={i}><strong>{p.column}</strong>: {p.action} — {p.reason}</li>)}
                   </ul></>
+                )}
+                {(llmAnalysis.suggested_operations?.length > 0 || llmAnalysis.rejected_operations?.length > 0) && (
+                  <><div className="section-title">Feature Operations · {llmAnalysis.operation_source === 'provider' ? 'registry-validated' : 'deterministic defaults'}</div>
+                  {llmAnalysis.suggested_operations?.length > 0 && (
+                    <ul style={{ paddingLeft: 20, fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                      {llmAnalysis.suggested_operations.map((op, i) => (
+                        <li key={i}><strong>{op.column}</strong>: {op.operation}{op.params && Object.keys(op.params).length > 0 ? ` (${Object.entries(op.params).map(([k, v]) => `${k}=${v}`).join(', ')})` : ''}{op.reason ? ` — ${op.reason}` : ''}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {llmAnalysis.rejected_operations?.length > 0 && (
+                    <details style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                      <summary>{llmAnalysis.rejected_operations.length} suggestion(s) rejected by the safety registry</summary>
+                      <ul style={{ paddingLeft: 20, marginTop: 8 }}>
+                        {llmAnalysis.rejected_operations.map((op, i) => (
+                          <li key={i}>{op.column ? <><strong>{op.column}</strong> {op.operation} — </> : null}{op.reason}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}</>
                 )}
                 {llmAnalysis.warnings?.length > 0 && (
                   <div className="alert alert-warning" style={{ marginTop: 16 }}>
@@ -331,7 +539,10 @@ export default function Experiment() {
         )}
 
         {/* Step 6: Evaluation */}
-        {activeStep === 6 && (
+        {progress && (
+              <TrainingProgressPanel payload={progress} />
+            )}
+            {activeStep === 6 && (
           <div>
             <h2>📈 Model Evaluation</h2>
             {!results ? (
@@ -348,6 +559,25 @@ export default function Experiment() {
                     🏆 <strong>Best Model:</strong> {results.best_model_name} · Score: <strong>{results.best_score?.toFixed(4)}</strong> · Metric: {results.primary_metric}
                   </div>
                 )}
+                {results.selection && (
+                  <div style={{ background: '#f8f9fc', border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, lineHeight: 1.8 }}>
+                    <strong>Selection protocol:</strong> ranked by{' '}
+                    <code>{results.selection.evidence_source?.replace(/_/g, ' ')}</code>{' '}
+                    using <code>{results.selection.selection_metric}</code>{' '}
+                    (scoring <code>{results.selection.selection_scoring}</code>, direction{' '}
+                    <code>{results.selection.selection_direction}</code>).{' '}
+                    Selected on CV score{' '}
+                    <strong>
+                      {results.selection.selected_model_cv_score != null
+                        ? results.selection.selected_model_cv_score.toFixed(4)
+                        : 'n/a'}
+                    </strong>{' '}
+                    over {results.selection.selected_model_cv_folds ?? '?'} folds.
+                    <br />
+                    Final holdout metrics were computed <strong>once, after selection</strong>;
+                    the holdout was not used to choose the model.
+                  </div>
+                )}
                 {results.llm_explanation && (
                   <div style={{ background: '#f8f9fc', border: '1px solid var(--border)', borderRadius: 8, padding: 16, marginBottom: 20, fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                     {results.llm_explanation}
@@ -357,21 +587,78 @@ export default function Experiment() {
                   <ModelComparison models={comparisonData} metric={results.primary_metric} />
                 </div>
                 <div className="section-title" style={{ marginTop: 20 }}>Model Results Table</div>
+                {results.optimization_budget && (
+                  <div style={{ fontSize: 13, marginBottom: 10, color: 'var(--text-secondary)' }}>
+                    Optuna: metric <code>{results.optimization_budget.metric_spec?.metric}</code>{' '}
+                    · scoring <code>{results.optimization_budget.metric_spec?.scoring}</code>{' '}
+                    · study direction <code>{results.optimization_budget.metric_spec?.direction}</code>
+                    {results.optimization_budget.metric_spec?.raw_direction !== results.optimization_budget.metric_spec?.direction && (
+                      <> (reported metric: {results.optimization_budget.metric_spec?.raw_direction})</>
+                    )}
+                    {' '}· {results.optimization_budget.n_trials_used} trials ×{' '}
+                    {results.optimization_budget.n_folds_used} folds per model
+                    {' '}· seed {results.optimization_budget.seed}
+                    {results.optimization_budget.fast_demo && (
+                      <strong> · fast demo: reduced search budget</strong>
+                    )}
+                  </div>
+                )}
                 <div className="table-container">
                   <table>
-                    <thead><tr><th>Model</th><th>Status</th><th>CV Score</th><th>Test Score</th><th>Train Time</th><th>Best Params</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Model</th>
+                        <th>Status</th>
+                        <th title="Cross-validated score - the evidence selection ranked on">CV score (selection)</th>
+                        <th title="Standard deviation of the CV fold scores">CV std</th>
+                        <th>Folds</th>
+                        <th>Optuna</th>
+                        <th>Trials</th>
+                        <th title={`Holdout evaluation, computed once after selection`}>Holdout {METRIC_LABELS[results.models?.find(mm => mm.holdout_primary_key)?.holdout_primary_key] || ''}</th>
+                        <th>Train time</th>
+                        <th>Best params</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {models.map(m => {
-                        const met = m.optimized_metrics || m.baseline_metrics || {}
-                        const score = Object.values(met).find(v => typeof v === 'number' && !Array.isArray(v))
-                        const cvMean = m.cv_scores?.length ? (m.cv_scores.reduce((a, b) => a + b, 0) / m.cv_scores.length).toFixed(4) : 'N/A'
+                        const met = m.optimized_metrics || m.baseline_metrics
+                        const o = m.optimization || {}
+                        const holdout = realMetrics(met, problemType)
+                        const failed = m.status === 'FAILED'
                         return (
                           <tr key={m.model_name} style={m.is_best ? { background: '#eef1ff' } : {}}>
                             <td><strong>{m.display_name}</strong>{m.is_best ? ' 🏆' : ''}</td>
                             <td><StatusBadge status={m.status} /></td>
-                            <td>{cvMean}</td>
-                            <td>{score !== undefined ? score?.toFixed(4) : 'N/A'}</td>
-                            <td>{m.training_time?.toFixed(2)}s</td>
+                            <td title="Cross-validated score: the evidence model selection ranked on">
+                              {m.selection_score != null ? m.selection_score.toFixed(4) : '—'}
+                            </td>
+                            <td title="Spread of the CV fold scores — lower means more fold-stable">
+                              {m.selection_cv_std != null ? m.selection_cv_std.toFixed(4) : '—'}
+                            </td>
+                            <td>{m.selection_cv_folds ?? '—'}</td>
+                            <td title={o.error ? `Error: ${o.error}` : (o.fold_note || '')}>
+                              {o.status || '—'}
+                            </td>
+                            <td>
+                              {o.n_trials_completed != null
+                                ? `${o.n_trials_completed}/${o.n_trials_requested}`
+                                : '—'}
+                              {o.n_trials_failed > 0 ? ` (${o.n_trials_failed} failed)` : ''}
+                            </td>
+                            <td>
+                              {failed ? (
+                                <span style={{ color: 'var(--danger)', fontSize: 12 }}>
+                                  not evaluated — {m.error_message || 'training failed'}
+                                </span>
+                              ) : holdout.length === 0 ? (
+                                <span style={{ color: 'var(--text-muted)' }}>—</span>
+                              ) : (
+                                <span title={`Keys: ${holdout.map(h => h.key).join(', ')}`}>
+                                  {holdout.map(h => `${METRIC_LABELS[h.key] || h.key} ${h.value.toFixed(4)}`).join(' · ')}
+                                </span>
+                              )}
+                            </td>
+                            <td>{m.training_time != null ? `${m.training_time.toFixed(2)}s` : '—'}</td>
                             <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {Object.entries(m.best_params || {}).map(([k, v]) => `${k}=${v}`).join(', ') || '—'}
                             </td>
@@ -381,6 +668,13 @@ export default function Experiment() {
                     </tbody>
                   </table>
                 </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+                  CV columns come from cross-validation on the training split and are what
+                  selection ranked on. Holdout columns were computed once, after selection,
+                  on rows the model never saw. A metric is listed only when the evaluator
+                  actually computed it.
+                </p>
+                <OptunaTrials models={models} />
                 {cm.length > 0 && (
                   <div style={{ marginTop: 20 }}>
                     <div className="section-title">Confusion Matrix (Best Model)</div>
