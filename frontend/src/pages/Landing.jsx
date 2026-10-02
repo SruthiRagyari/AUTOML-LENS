@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const FEATURES = [
@@ -28,9 +28,20 @@ const TECH = [
 ]
 
 export default function Landing() {
+  // The top nav is transparent over the hero and turns solid once the page
+  // scrolls, so the wordmark stays readable on every section.
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <div className="landing">
-      <nav className="landing-nav">
+      <nav className={`landing-nav${scrolled ? ' scrolled' : ''}`}>
         <span className="landing-nav-logo">AutoML-Lens</span>
         <div className="landing-nav-links">
           <Link to="/methodology">Methodology</Link>
@@ -41,20 +52,20 @@ export default function Landing() {
       </nav>
 
       <div className="landing-hero">
-        <div className="hero-badge">LLM-guided AutoML platform</div>
+        
         <h1 className="hero-title">
           <span className="gradient-text">AutoML-Lens</span>
         </h1>
         <p className="hero-subtitle">
-          LLM-Powered Automated Machine Learning Framework — from raw dataset to optimized ML model with intelligent AI assistance.
+          LLM-guided AutoML platform
         </p>
         <div className="hero-buttons">
-          <Link to="/dashboard" className="btn-hero-primary">Start Experiment</Link>
+          <Link to="/dashboard" className="btn-hero-primary">Start experiment</Link>
           <Link to="/methodology" className="btn-hero-secondary">How it works</Link>
         </div>
       </div>
 
-      <div style={{ background: '#fff' }}>
+      <div>
         <div className="landing-section">
           <div className="section-header">
             <h2>Why AutoML-Lens?</h2>
@@ -88,7 +99,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <div style={{ background: '#fff' }}>
+      <div>
         <div className="landing-section">
           <div className="section-header">
             <h2>Technology Stack</h2>
