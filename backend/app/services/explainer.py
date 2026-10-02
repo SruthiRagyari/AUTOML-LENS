@@ -1,4 +1,4 @@
-﻿"""Model explainability using SHAP, feature importance, and permutation importance."""
+"""Model explainability using SHAP, feature importance, and permutation importance."""
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -101,6 +101,7 @@ class Explainer:
             top = [x["feature"] for x in fi[:10]]
             text = Explainer._make_text(fi[:5])
 
+            fi = Explainer._clean_fi_list(fi); top = [x["feature"] for x in fi[:10]]
             return ExplainabilityResult("shap", fi, top, text, sv)
         except Exception as e:
             logger.warning(f"SHAP failed: {e}")
@@ -115,6 +116,7 @@ class Explainer:
             key=lambda x: abs(x["importance"]), reverse=True
         )
         top = [x["feature"] for x in fi[:10]]
+        fi = Explainer._clean_fi_list(fi); top = [x["feature"] for x in fi[:10]]
         return ExplainabilityResult("feature_importance", fi, top, Explainer._make_text(fi[:5]))
 
     @staticmethod
@@ -128,6 +130,7 @@ class Explainer:
             key=lambda x: abs(x["importance"]), reverse=True
         )
         top = [x["feature"] for x in fi[:10]]
+        fi = Explainer._clean_fi_list(fi); top = [x["feature"] for x in fi[:10]]
         return ExplainabilityResult("coefficients", fi, top, Explainer._make_text(fi[:5]))
 
     @staticmethod
@@ -139,7 +142,24 @@ class Explainer:
             key=lambda x: abs(x["importance"]), reverse=True
         )
         top = [x["feature"] for x in fi[:10]]
+        fi = Explainer._clean_fi_list(fi); top = [x["feature"] for x in fi[:10]]
         return ExplainabilityResult("permutation", fi, top, Explainer._make_text(fi[:5]))
+
+    @staticmethod
+    def _clean_feature_name(name: str) -> str:
+        """Remove sklearn ColumnTransformer prefixes like numerical__, categorical__x0_."""
+        import re
+        # Remove transformer prefix: numerical__, categorical__, text__
+        name = re.sub(r"^(numerical|categorical|text|datetime)__", "", name)
+        # Remove OneHotEncoder class prefix: x0_ x1_ etc
+        name = re.sub(r"^x\d+_", "", name)
+        # Replace underscores with spaces for readability but keep snake_case for short names
+        return name
+
+    @staticmethod
+    def _clean_fi_list(fi: list[dict]) -> list[dict]:
+        """Clean feature names in feature importance list."""
+        return [{"feature": Explainer._clean_feature_name(f["feature"]), "importance": f["importance"]} for f in fi]
 
     @staticmethod
     def _make_text(top_features: list[dict]) -> str:
@@ -154,3 +174,4 @@ class Explainer:
             f"The features {feat_str} had a strong influence on the model's predictions. "
             f"These attributes are the primary drivers of the model's decision-making process."
         )
+
