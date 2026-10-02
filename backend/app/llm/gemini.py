@@ -1,8 +1,9 @@
-﻿"""Google Gemini LLM provider."""
+"""Google Gemini LLM provider."""
 import json
 import logging
 from typing import Optional
 from app.llm.base import LLMProvider, DatasetAnalysisResult
+from app.services.model_registry import get_model_catalog
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 class GeminiProvider(LLMProvider):
     """LLM provider using Google Gemini API."""
 
-    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash"):
+    def __init__(self, api_key: str, model_name: str = "gemini-flash-lite-latest"):
         self.api_key = api_key
         self.model_name = model_name
         self._available: Optional[bool] = None
@@ -51,47 +52,80 @@ class GeminiProvider(LLMProvider):
             text = text[:-3]
         return json.loads(text.strip())
 
-    async def analyze_dataset(self, dataset_context: dict) -> DatasetAnalysisResult:
-        if not self.client:
-            raise RuntimeError("Gemini client not initialized")
+    def _build_analysis_prompt(self, dataset_context: dict) -> str:
+        """Build the analysis prompt from the compact description when available."""
+        description_text = dataset_context.get("description_text")
+        if not description_text:
+            description_text = (
+                "Dataset Context:\n"
+                f"- Shape: {dataset_context.get('shape')}\n"
+                f"- Columns: {dataset_context.get('columns')}\n"
+                f"- Data Types: {json.dumps(dataset_context.get('dtypes', {}))}\n"
+                f"- Missing Percentages: {json.dumps(dataset_context.get('missing_percentages', {}))}\n"
+                f"- Unique Value Counts: {json.dumps(dataset_context.get('unique_counts', {}))}\n"
+                f"- Target Column: {dataset_context.get('target_column', 'unknown')}\n"
+                f"- Target Statistics: {json.dumps(dataset_context.get('target_stats', {}))}\n"
+                f"- Sample Rows: {json.dumps(dataset_context.get('sample_rows', []))}\n"
+                f"- Task Description: {dataset_context.get('task_description', 'Not provided')}"
+            )
+        catalog = json.dumps(
+            dataset_context.get("feature_operation_catalog") or {}, default=str
+        )
+        clf_models = ", ".join(
+            m["name"] for m in get_model_catalog("classification"))
+        reg_models = ", ".join(
+            m["name"] for m in get_model_catalog("regression"))
+        return f"""You are an expert data scientist. Analyze this dataset and return ONLY a valid JSON object.
 
-        prompt = f"""You are an expert data scientist. Analyze this dataset and return ONLY a valid JSON object.
+{description_text}
 
-Dataset Context:
-- Shape: {dataset_context.get('shape')}
-- Columns: {dataset_context.get('columns')}
-- Data Types: {json.dumps(dataset_context.get('dtypes', {}))}
-- Missing Percentages: {json.dumps(dataset_context.get('missing_percentages', {}))}
-- Unique Value Counts: {json.dumps(dataset_context.get('unique_counts', {}))}
-- Target Column: {dataset_context.get('target_column', 'unknown')}
-- Target Statistics: {json.dumps(dataset_context.get('target_stats', {}))}
-- Sample Rows: {json.dumps(dataset_context.get('sample_rows', []))}
-- Task Description: {dataset_context.get('task_description', 'Not provided')}
-
-Return this exact JSON structure (no markdown fences, no extra text):
+Return this exact JSON structure (no markdown fences, no extra text). Never invent numbers or statistics; if you cannot justify a confidence value, use null for it.
 {{
     "problem_type": "classification" or "regression",
     "target_column": "column_name",
     "reasoning": "Detailed explanation of your analysis",
+    "problem_understanding": "1-2 sentences describing the task and what success looks like",
     "preprocessing": [{{"column": "col", "action": "action", "reason": "why"}}],
     "feature_engineering": [{{"name": "feature", "description": "what", "type": "type"}}],
+    "suggested_operations": [{{"column": "col", "operation": "operation_name", "params": {{}}, "reason": "why"}}],
+    "model_recommendations": [{{"model_id": "registry_model_name", "reason": "why this model fits", "suitability": "fit for this dataset", "strengths": "expected strengths", "limitations": "expected limitations"}}],
+    "useful_feature_candidates": ["column_with_signal"],
+    "potentially_irrelevant_columns": ["redundant_or_noisy_column"],
+    "leakage_warnings": ["risk_of_target_leakage"],
+    "modelling_considerations": ["class_imbalance", "small_sample", "scaling_needed"],
     "candidate_models": ["model_name_1", "model_name_2"],
     "recommended_metric": "metric_name",
     "optimization_strategy": "optuna",
     "warnings": ["warning1"],
-    "confidence": 0.85
+    "confidence": null or a number between 0 and 1 you can justify
 }}
 
-Available model names: logistic_regression, decision_tree_clf, random_forest_clf, gradient_boosting_clf, hist_gradient_boosting_clf, knn_clf, svm_clf, naive_bayes, linear_regression, ridge, lasso, decision_tree_reg, random_forest_reg, gradient_boosting_reg, hist_gradient_boosting_reg, knn_reg, svr
+Feature-engineering rules (hard requirements):
+- "suggested_operations" may ONLY use operation names allowed for each column in this per-column catalog: {catalog}
+- Never suggest an operation for the target column; the label is never an input.
+- Entry shape: {{"column": "...", "operation": "...", "params": {{}}, "reason": "..."}}. "interaction" requires params.with_column (a numeric column); "rare_category_grouping" accepts params.threshold (0-0.5) and params.group_label.
+- Do not write code. The pipeline validates every entry against a fixed operation registry and executes only what passes; rejected entries are reported back, so stay within the catalog.
+- Prefer at most 12 operations, only where they plausibly add signal.
+Model-selection rules (hard requirements):
+- "model_recommendations" and "candidate_models" may ONLY use model_id values from the registry lists below, and only models compatible with this problem type. Recommend 2-6 models ordered by expected suitability.
+- Never invent model names and never write Python or model code; the pipeline validates every model_id against the registry and reports rejections.
+
+Available model names (registry-validated - use ONLY these): classification: {clf_models} | regression: {reg_models}
 
 Available classification metrics: accuracy, f1_weighted, precision_weighted, recall_weighted, balanced_accuracy, roc_auc
 Available regression metrics: r2, neg_mean_squared_error, neg_mean_absolute_error, neg_root_mean_squared_error"""
+
+    async def analyze_dataset(self, dataset_context: dict) -> DatasetAnalysisResult:
+        if not self.client:
+            raise RuntimeError("Gemini client not initialized")
+
+        prompt = self._build_analysis_prompt(dataset_context)
 
         for attempt in range(2):
             try:
                 response = await self.client.generate_content_async(prompt)
                 raw = self._parse_json_response(response.text)
-                return self.validate_analysis(raw)
+                return self.validate_analysis(raw, dataset_context)
             except Exception as e:
                 if attempt == 0:
                     logger.warning(f"Gemini analysis attempt 1 failed: {e}, retrying...")

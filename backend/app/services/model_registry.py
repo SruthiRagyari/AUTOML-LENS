@@ -1,4 +1,4 @@
-﻿"""Central model registry with hyperparameter search spaces for Optuna."""
+"""Central model registry with hyperparameter search spaces for Optuna."""
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
@@ -278,3 +278,102 @@ class ModelRegistry:
         if task == "classification":
             return ["logistic_regression", "random_forest_clf", "hist_gradient_boosting_clf"]
         return ["ridge", "random_forest_reg", "hist_gradient_boosting_reg"]
+
+# --- Controlled model-selection validation -------------------------------
+MAX_MODEL_RECOMMENDATIONS = 6
+
+
+def _normalize_model_id(raw: Any) -> str:
+    """Normalize a provider-supplied model identifier for registry lookup."""
+    if not isinstance(raw, str):
+        return ""
+    return raw.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _clean_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, (list, tuple)):
+        return "; ".join(str(v).strip() for v in value if str(v).strip())
+    return str(value)
+
+
+def validate_model_recommendations(recommendations: Any,
+                                   problem_type: str) -> tuple[list[dict], list[dict]]:
+    """Validate LLM model recommendations against the live model registry.
+
+    The LLM may only ever name models, never supply code. Only identifiers that
+    exist in the registry AND are compatible with ``problem_type`` survive;
+    duplicates and budget overflow are also refused. Returns
+    ``(accepted, rejected)`` where every rejected entry carries a reason.
+    """
+    registry = ModelRegistry()
+    accepted: list[dict] = []
+    rejected: list[dict] = []
+    seen: set[str] = set()
+    for entry in recommendations or []:
+        if isinstance(entry, str):
+            entry = {"model_id": entry}
+        if not isinstance(entry, dict):
+            rejected.append({"model_id": "",
+                             "reason": "entry was not an object or model name"})
+            continue
+        raw_id = (entry.get("model_id") or entry.get("model")
+                  or entry.get("name") or entry.get("id") or "")
+        model_id = _normalize_model_id(raw_id)
+        if not model_id:
+            rejected.append({"model_id": str(raw_id),
+                             "reason": "no model_id provided"})
+            continue
+        model_def = registry.get_model(model_id)
+        if model_def is None:
+            rejected.append({"model_id": model_id,
+                             "reason": f"'{model_id}' is not in the model registry"})
+            continue
+        if problem_type in ("classification", "regression") \
+                and model_def.task != problem_type:
+            rejected.append({
+                "model_id": model_id,
+                "reason": (f"'{model_id}' is a {model_def.task} model, "
+                           f"incompatible with {problem_type}"),
+            })
+            continue
+        if model_id in seen:
+            rejected.append({"model_id": model_id,
+                             "reason": "duplicate recommendation"})
+            continue
+        if len(accepted) >= MAX_MODEL_RECOMMENDATIONS:
+            rejected.append({
+                "model_id": model_id,
+                "reason": (f"budget cap of {MAX_MODEL_RECOMMENDATIONS} "
+                           f"recommendations reached"),
+            })
+            continue
+        seen.add(model_id)
+        accepted.append({
+            "model_id": model_id,
+            "display_name": model_def.display_name,
+            "reason": _clean_text(entry.get("reason")),
+            "suitability": _clean_text(entry.get("suitability")),
+            "strengths": _clean_text(entry.get("strengths")),
+            "limitations": _clean_text(entry.get("limitations")),
+        })
+    return accepted, rejected
+
+
+def get_model_catalog(task: Optional[str] = None) -> list[dict]:
+    """Registry model names for prompts - generated, never hardcoded."""
+    registry = ModelRegistry()
+    if task:
+        names = registry.get_all_model_names(task)
+    else:
+        names = list(registry._models.keys())
+    return [
+        {"name": name,
+         "display_name": registry.get_model(name).display_name,
+         "task": registry.get_model(name).task}
+        for name in names
+    ]
+

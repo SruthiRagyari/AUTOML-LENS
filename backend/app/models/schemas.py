@@ -1,4 +1,4 @@
-﻿"""Pydantic schemas for API request/response models."""
+"""Pydantic schemas for API request/response models."""
 from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
@@ -91,13 +91,33 @@ class LLMAnalysisResponse(BaseModel):
     problem_type: str
     target_column: str
     reasoning: str
+    problem_understanding: Optional[str] = None
     preprocessing: list[dict]
     feature_engineering: list[dict]
     candidate_models: list[str]
     recommended_metric: str
     optimization_strategy: str
     warnings: list[str]
-    confidence: float
+    # Registry-validated feature operations: only entries that survived
+    # validate_operations() appear in suggested_operations; everything else is
+    # listed in rejected_operations with the reason it was refused.
+    suggested_operations: list[dict] = []
+    rejected_operations: list[dict] = []
+    operation_source: str = "none"  # provider | deterministic_defaults | none
+    # Registry-validated model recommendations: only models that exist in the
+    # registry AND match the problem type appear in model_recommendations;
+    # refused entries live in rejected_model_recommendations with a reason.
+    model_recommendations: list[dict] = []
+    rejected_model_recommendations: list[dict] = []
+    model_selection_source: str = "none"  # provider | deterministic_defaults | none
+    useful_feature_candidates: list[str] = []
+    potentially_irrelevant_columns: list[str] = []
+    leakage_warnings: list[str] = []
+    modelling_considerations: list[str] = []
+    provider_used: str = ""
+    is_fallback: bool = False
+    # None when the provider did not report a confidence (never fabricated).
+    confidence: Optional[float] = None
 
 
 # ─── Training ─────────────────────────────────────────────

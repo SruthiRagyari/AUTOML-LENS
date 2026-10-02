@@ -1,9 +1,10 @@
-﻿"""OpenAI-compatible LLM provider using httpx."""
+"""OpenAI-compatible LLM provider using httpx."""
 import json
 import logging
 from typing import Optional
 import httpx
 from app.llm.base import LLMProvider, DatasetAnalysisResult
+from app.services.model_registry import get_model_catalog
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +71,37 @@ class OpenAICompatProvider(LLMProvider):
             "You are an expert data scientist. Analyze the dataset and return ONLY "
             "a valid JSON object matching the specified schema. No markdown fences."
         )
+        description_text = dataset_context.get("description_text") or json.dumps(
+            dataset_context, default=str
+        )
+        catalog = json.dumps(
+            dataset_context.get("feature_operation_catalog") or {}, default=str
+        )
+        clf_models = ", ".join(
+            m["name"] for m in get_model_catalog("classification"))
+        reg_models = ", ".join(
+            m["name"] for m in get_model_catalog("regression"))
         user = (
-            f"Dataset: {json.dumps(dataset_context, default=str)}\n\n"
+            f"Dataset:\n{description_text}\n\n"
             "Return JSON with keys: problem_type, target_column, reasoning, "
+            "problem_understanding, "
             "preprocessing (list of {{column, action, reason}}), "
             "feature_engineering (list of {{name, description, type}}), "
-            "candidate_models (list of model names), recommended_metric, "
-            "optimization_strategy, warnings (list), confidence (0-1)."
+            "suggested_operations (list of {{column, operation, params, reason}}), "
+            "useful_feature_candidates, potentially_irrelevant_columns, "
+            "leakage_warnings, modelling_considerations, "
+            "candidate_models (list of registry model names), "
+            "model_recommendations (list of {{model_id, reason, suitability, strengths, limitations}}), recommended_metric, "
+            "optimization_strategy, warnings (list), confidence (0-1).\n\n"
+            "Feature-engineering rules: suggested_operations may ONLY use operation "
+            f"names allowed per column in this catalog {catalog}; never propose an "
+            "operation for the target column; do not write code - the registry "
+            "validates every entry and rejects anything unknown. "
+            "\n\nModel-selection rules: model_recommendations may ONLY use "
+            "registry model names for this problem type - "
+            f"classification: {clf_models}; regression: {reg_models} - "
+            "recommending 2-6 models. Never invent names and never write "
+            "code; unknown or incompatible model_ids are rejected with a reason."
         )
         for attempt in range(2):
             try:
@@ -85,7 +110,7 @@ class OpenAICompatProvider(LLMProvider):
                     {"role": "user", "content": user},
                 ])
                 raw = self._parse_json(text)
-                return self.validate_analysis(raw)
+                return self.validate_analysis(raw, dataset_context)
             except Exception as e:
                 if attempt == 0:
                     logger.warning(f"OpenAI analysis attempt 1 failed: {e}")

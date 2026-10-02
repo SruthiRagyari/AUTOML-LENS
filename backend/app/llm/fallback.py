@@ -1,4 +1,4 @@
-﻿"""Deterministic fallback LLM provider - works without any API key."""
+"""Deterministic fallback LLM provider - works without any API key."""
 from typing import Optional
 from app.llm.base import LLMProvider, DatasetAnalysisResult
 
@@ -127,19 +127,60 @@ class FallbackLLMProvider(LLMProvider):
         )
         reasoning = " ".join(reasoning_parts)
 
+        # Rule-based understanding for the AI panel; no model was consulted.
+        problem_understanding = (
+            f"Rule-based analysis: {shape[0]} rows x {shape[1]} columns; "
+            f"'{target_col}' marks a {problem_type} task with {target_unique} "
+            f"unique values. No LLM was consulted for this assessment."
+        )
+        # Feature-engineering stays deterministic: no operation is proposed
+        # through the registry, the FeatureEngineer's own heuristics run instead.
         raw = {
             "problem_type": problem_type,
             "target_column": target_col,
             "reasoning": reasoning,
+            "problem_understanding": problem_understanding,
             "preprocessing": preprocessing,
             "feature_engineering": feature_eng,
+            "suggested_operations": [],
+            "useful_feature_candidates": [c for c in num_cols if c != target_col][:8],
+            "potentially_irrelevant_columns": [
+                col for col, pct in missing_pct.items()
+                if col != target_col and pct > 50
+            ],
+            "leakage_warnings": [],
+            "modelling_considerations": [
+                f"Dataset has {n_rows} rows "
+                f"({'small' if n_rows < 1000 else 'moderate-to-large'}); "
+                "favour regularised models if signal is weak."
+            ],
+            # Structured model recommendations produced by the same
+            # deterministic heuristics - no LLM was consulted for these picks.
+            "model_recommendations": [
+                {
+                    "model_id": m,
+                    "reason": (
+                        f"Rule-based pick for a {problem_type} task: "
+                        f"{shape[0]} rows, {shape[1]} columns."
+                    ),
+                    "suitability": "deterministic heuristic, registry-validated",
+                    "strengths": "safe fast default confirmed in the registry",
+                    "limitations": "not tailored by a language model",
+                }
+                for m in candidate_models
+            ],
+            "model_selection_source": "deterministic_defaults",
             "candidate_models": candidate_models,
             "recommended_metric": recommended_metric,
             "optimization_strategy": "optuna",
             "warnings": warnings,
-            "confidence": 0.75,
+            # Rule-based heuristics: there is no model confidence to report.
+            "confidence": None,
+            "operation_source": "deterministic_defaults",
+            "provider_used": self.get_provider_name(),
+            "is_fallback": True,
         }
-        return self.validate_analysis(raw)
+        return self.validate_analysis(raw, dataset_context)
 
     async def explain_results(self, results_context: dict) -> str:
         """Generate deterministic explanation of experiment results."""
