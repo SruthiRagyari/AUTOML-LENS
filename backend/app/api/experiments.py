@@ -57,6 +57,16 @@ def _get_llm_manager():
     return llm_manager
 
 
+def _safe_json(text: Optional[str]):
+    """Parse a stored JSON column, returning ``None`` instead of raising."""
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except (TypeError, ValueError):
+        return None
+
+
 # ─────────────────────── input schema helpers ─────────────────────────
 # Columns the profiler judges non-informative are never asked of the user.
 _NON_INPUT_COLUMN_TYPES = ("id_like", "constant")
@@ -292,12 +302,34 @@ async def get_experiment(exp_id: int, db: Session = Depends(get_db)):
     return _exp_to_dict(exp)
 
 
+# Statuses whose stored analysis is already the answer for this experiment.
+# /analyze must never move one of these back, and must not re-call the provider
+# for them unless the caller asks for it explicitly (``?force=true``).
+_ANALYSIS_FROZEN_STATUSES = ("training", "completed")
+
+
 @router.post("/{exp_id}/analyze")
-async def analyze_experiment(exp_id: int, db: Session = Depends(get_db)):
-    """Run LLM analysis on the dataset."""
+async def analyze_experiment(exp_id: int, force: bool = False,
+                             db: Session = Depends(get_db)):
+    """Run LLM analysis on the dataset.
+
+    Idempotent for a run that already has a stored analysis and is training or
+    completed: the stored payload is returned unchanged. Re-running the analysis
+    used to reset a completed experiment's status to ``analyzed`` - which hid its
+    results from the UI - and the page re-ran it on every load. Pass
+    ``?force=true`` for a deliberate re-run.
+    """
     exp = db.query(Experiment).filter(Experiment.id == exp_id).first()
     if not exp:
         raise HTTPException(404, "Experiment not found")
+
+    if exp.llm_analysis_json and not force and exp.status in _ANALYSIS_FROZEN_STATUSES:
+        stored = _safe_json(exp.llm_analysis_json)
+        if isinstance(stored, dict):
+            return stored
+        logger.warning(
+            f"Stored analysis for experiment {exp_id} is unreadable; re-running."
+        )
 
     ds = db.query(Dataset).filter(Dataset.id == exp.dataset_id).first()
     df = load_dataframe(ds.file_path)
@@ -1245,6 +1277,12 @@ def _exp_to_dict(exp: Experiment) -> dict:
         "best_score": exp.best_score,
         "model_selection": json.loads(exp.model_selection_json)
         if exp.model_selection_json else None,
+        # Observable state, so the UI can hydrate from what is stored instead of
+        # re-running the analysis/LLM on every page load.
+        "has_analysis": bool(exp.llm_analysis_json),
+        "has_results": bool(exp.results_json),
+        "report_path": exp.report_path,
+        "llm_analysis": _safe_json(exp.llm_analysis_json),
         "error_message": exp.error_message,
         "created_at": str(exp.created_at),
         "updated_at": str(exp.updated_at),

@@ -174,16 +174,20 @@ export default function Experiment() {
       setExp(r.data)
       if (r.data.status === 'completed' || r.data.status === 'analyzed') {
         try { const pr = await api.profileDataset(r.data.dataset_id); setProfile(pr.data) } catch {}
-        if (r.data.llm_analysis_json || r.data.status !== 'created') {
+        // Hydrate from the stored analysis; only ask the backend to run one when
+        // there is none (and never while it is training or already completed).
+        if (r.data.has_analysis && r.data.llm_analysis) {
+          setLlmAnalysis(r.data.llm_analysis.result || r.data.llm_analysis)
+        } else if (!r.data.has_analysis && r.data.status !== 'completed') {
           try { const la = await api.analyzeExperiment(id); setLlmAnalysis(la.data?.result || la.data) } catch {}
         }
         if (r.data.status === 'completed') {
           try { const rs = await api.getResults(id); setResults(rs.data) } catch {}
           try { const ex = await api.getExplainability(id); setExplainability(ex.data) } catch {}
           try { const sc = await api.getInputSchema(id); setInputSchema(sc.data?.fields || []) } catch {}
+          try { const pg = await api.getProgress(id); setProgress(pg.data) } catch {}
         }
-        // The persisted final snapshot, so progress survives a refresh.
-        try { const pg = await api.getProgress(id); setProgress(pg.data) } catch {}
+        if (r.data.report_path) setReportUrl(`/reports/report_${id}.html`)
       }
     } catch { setError('Failed to load experiment') }
     finally { setLoading(false) }
