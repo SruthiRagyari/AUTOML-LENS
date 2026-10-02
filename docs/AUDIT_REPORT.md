@@ -132,18 +132,21 @@ Two defects compound:
 
 ## J. Consolidated register
 
-| # | Sev | Issue | Where | Real-data impact |
-|---|---|---|---|---|
-| C1 | 🔴 | `.xlsx/.xls` accepted, then `pd.read_csv` → 500 / empty columns | `datasets.py:135`, `experiments.py:94,159,479,550,666` | Spreadsheet uploads unusable |
-| C2 | 🔴 | `problem_type="auto"` → `/train` yields 0 models, status "completed" | `experiments.py:52,151-213` | False success, no model to predict with |
-| C3 | 🔴 | Page load re-runs `/analyze`, downgrading `completed` → `analyzed` | `experiments.py:145,690`, `Experiment.jsx:54` | Predictions/schema 400 after any refresh; wasted LLM calls |
-| C4 | 🟠 | FE features dropped by `remainder="drop"` | `preprocessor.build_and_fit` | Advertised FE never affects results |
-| C5 | 🟠 | Provider mislabelled + fabricated 0.75/0.8 confidence | `Experiment.jsx:270`, `base.py:42`, `fallback.py:140` | Misleading AI panel |
-| C6 | 🟠 | Async endpoint does blocking CPU work | `experiments.py:151` | Server frozen during training |
-| C7 | 🟠 | `.env`/DB/storage paths CWD-dependent; `DATABASE_URL` ignored; `run_project.bat` wrong var names | `config.py:9`, `database.py:107`, `run_project.bat:32-38` | Keys silently ignored, "lost" experiments |
-| C8 | 🟡 | Full dataset kept in memory per experiment | `experiments.py:367-375` | RAM blow-up on real data |
-| C9 | 🟡 | Per-model metric taken as "first numeric value" | `Experiment.jsx:144,366` | Chart/table can show accuracy under an `f1_weighted` label |
-| C10 | 🟡 | Fixed `batch_input_{exp_id}.csv`, no `Prediction` rows, empty report `metrics` | `experiments.py:571,583`, `reporter` | Overwrites on concurrency; no prediction history |
+| # | Sev | Issue | Where | Real-data impact | Resolution |
+|---|---|---|---|---|---|
+| C1 | 🔴 | `.xlsx/.xls` accepted, then `pd.read_csv` → 500 / empty columns | `datasets.py:135`, `experiments.py:94,159,479,550,666` | Spreadsheet uploads unusable | ✅ Already fixed at `9b3d650` — `load_dataframe` dispatches on suffix; verified by `test_c1_xlsx_is_read_not_merely_accepted` |
+| C2 | 🔴 | `problem_type="auto"` → `/train` yields 0 models, status "completed" | `experiments.py:52,151-213` | False success, no model to predict with | ✅ Fixed `31855e9` — `/train` now detects the task and defaults the metric from the target profile before model selection; verified by `test_c2_train_detects_problem_type_when_auto` |
+| C3 | 🔴 | Page load re-runs `/analyze`, downgrading `completed` → `analyzed` | `experiments.py:145,690`, `Experiment.jsx:54` | Predictions/schema 400 after any refresh; wasted LLM calls | ✅ Fixed `c49fb09` — `/analyze` is idempotent for stored analyses (`?force=true` to re-run), the detail payload exposes `has_analysis`, and the UI hydrates instead of calling the LLM; verified by both `test_c3_*` tests |
+| C4 | 🟠 | FE features dropped by `remainder="drop"` | `preprocessor.build_and_fit` | Advertised FE never affects results | ✅ Already fixed at `9b3d650` — `extra_numeric`/`feature_engineer` feed engineered columns into the numeric transformer; verified by `test_c4_engineered_columns_reach_the_model_matrix` |
+| C5 | 🟠 | Provider mislabelled + fabricated 0.75/0.8 confidence | `Experiment.jsx:270`, `base.py:42`, `fallback.py:140` | Misleading AI panel | ✅ Already fixed at `9b3d650` — provider provenance is returned by the API and nothing is invented in the UI; verified by both `test_c5_*` tests |
+| C6 | 🟠 | Async endpoint does blocking CPU work | `experiments.py:151` | Server frozen during training | ✅ Already fixed at `9b3d650` — training runs in `asyncio.to_thread`; verified by `test_c6_training_is_not_run_inline_on_the_event_loop` and `test_c6_health_responds_while_training_is_in_flight` |
+| C7 | 🟠 | `.env`/DB/storage paths CWD-dependent; `DATABASE_URL` ignored; `run_project.bat` wrong var names | `config.py:9`, `database.py:107`, `run_project.bat:32-38` | Keys silently ignored, "lost" experiments | ✅ Fixed `ef869bd` (launcher writes `STORAGE_PATH`); config/DB/storage anchoring was already fixed at `9b3d650`; verified by all three `test_c7_*` tests |
+| C8 | 🟡 | Full dataset kept in memory per experiment | `experiments.py:367-375` | RAM blow-up on real data | ✅ Fixed `ea880fe` — `_experiment_cache` is an LRU (`maxsize=8`, evicted entries reload from disk) and `df_original` is no longer stored; verified by both `test_c8_*` tests |
+| C9 | 🟡 | Per-model metric taken as "first numeric value" | `Experiment.jsx:144,366` | Chart/table can show accuracy under an `f1_weighted` label | ✅ Fixed `353621b` (report table + LLM prompt use the resolved primary metric); `holdout_primary`/`holdout_primary_key` were already returned at `9b3d650`; verified by both `test_c9_*` tests |
+| C10 | 🟡 | Fixed `batch_input_{exp_id}.csv`, no `Prediction` rows, empty report `metrics` | `experiments.py:571,583`, `reporter` | Overwrites on concurrency; no prediction history | ✅ Fixed `0f6dec6` (single + batch predictions recorded, uuid-suffixed batch input) and `353621b` (report labelled with the primary metric); verified by all four `test_c10_*` tests |
+
+Every row above is covered by `tests/test_audit_regressions.py` (20 tests) plus the
+pre-existing suite; `python -m pytest tests -q` was run after each change.
 
 ## K. Minimal fix plan for the blockers (no rewrite, no deletions)
 
@@ -166,5 +169,5 @@ Validation after each fix: `python -m pytest tests/ -q` (must stay 15/15) + re-r
 1. **LLM provider** — `backend/.env` is `LLM_PROVIDER=fallback` with empty keys. Should I (a) keep the deterministic fallback as the default and only make its labelling honest, (b) wire your Gemini key (needs your explicit go-ahead to use that key/quota), or (c) wire an OpenAI-compatible endpoint? Nothing in the fix list above needs a key — only this choice depends on your answer.
 2. **C4 scope** — include engineered features in the model (results change; requires storing the training-time frequency map so `transform()` stays consistent at prediction time) **or** keep the pipeline as-is and correct the README/Methodology/UI wording so nothing is over-claimed? The former changes results; the latter changes only text.
 
-*End of report. No files outside `docs/` were modified during this audit; the repo's uncommitted changes were left untouched.*
+*End of report. The audit itself modified no files outside `docs/`; the fixes that followed are recorded (with commit hashes) in the Resolution column of section J.*
 
