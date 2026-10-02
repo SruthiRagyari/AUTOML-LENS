@@ -398,6 +398,25 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
         profiler = DatasetProfiler()
         profile = profiler.profile(df)
 
+        # Resolve an "auto"/unspecified task before anything downstream reads it.
+        # /analyze always did this; /train did not, so an auto experiment chose
+        # models for task ``None``, trained nothing and still reported success.
+        if not exp.problem_type or exp.problem_type == "auto":
+            target_cp = next(
+                (cp for cp in profile["column_profiles"]
+                 if cp["name"] == exp.target_column), None)
+            exp.problem_type = (
+                profiler.detect_problem_type(target_cp)
+                if target_cp else "classification"
+            )
+        # Every metric lookup below assumes a name, so default it here too.
+        if not exp.primary_metric:
+            exp.primary_metric = (
+                "f1_weighted" if exp.problem_type == "classification"
+                else "neg_root_mean_squared_error"
+            )
+        db.commit()
+
         # Feature operations proposed by the LLM analysis, re-validated against the
         # fresh profile so only registry-approved, leakage-safe entries execute.
         # Defence in depth: even a hand-edited llm_analysis_json cannot inject one.
