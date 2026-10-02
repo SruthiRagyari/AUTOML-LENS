@@ -6,6 +6,7 @@ import { api } from '../services/api'
 import StatusBadge from '../components/Common/StatusBadge'
 import LoadingSpinner from '../components/Common/LoadingSpinner'
 import EmptyState from '../components/Common/EmptyState'
+import ScrollRow, { ExperimentTile, DatasetTile } from '../components/Common/ScrollRow'
 
 const DEFAULT_METRICS = {
   classification: ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted', 'balanced_accuracy', 'roc_auc'],
@@ -120,6 +121,7 @@ function SuitabilityReport({ suit, form }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const [experiments, setExperiments] = useState([])
+  const [datasetsById, setDatasetsById] = useState({})
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [step, setStep] = useState(1) // 1=upload, 2=configure, 3=creating
@@ -163,7 +165,15 @@ export default function Dashboard() {
     try {
       setLoading(true)
       const r = await api.listExperiments()
-      setExperiments(r.data.experiments || [])
+      const list = r.data.experiments || []
+      setExperiments(list)
+      // Dataset names are not part of the experiment payload, so ask the
+      // dataset endpoint for the ids we actually see. Failures are skipped.
+      const ids = [...new Set(list.map(e => e.dataset_id).filter(Boolean))]
+      const pairs = await Promise.all(ids.map(async id => {
+        try { const d = await api.getDataset(id); return [id, d.data] } catch { return null }
+      }))
+      setDatasetsById(Object.fromEntries(pairs.filter(Boolean)))
     } catch { setError('Failed to load experiments') }
     finally { setLoading(false) }
   }
@@ -270,6 +280,34 @@ export default function Dashboard() {
         <div className="card stat-card"><div className="stat-icon">⚡</div><div className="stat-value">{stats.running}</div><div className="stat-label">Running</div></div>
         <div className="card stat-card"><div className="stat-icon">🏆</div><div className="stat-value" style={{ fontSize: 24 }}>{stats.bestScore}</div><div className="stat-label">Best Score</div></div>
       </div>
+
+      {/* Scrollable rows - every card is built from API data */}
+      <ScrollRow
+        title="Recent experiments"
+        items={experiments.slice(0, 12)}
+        loading={loading}
+        error={showForm ? '' : error}
+        emptyTitle="No experiments yet"
+        emptyDescription="Upload a dataset and start your first AutoML experiment."
+        renderItem={e => <ExperimentTile experiment={e} datasetName={datasetsById[e.dataset_id]?.original_filename} />}
+      />
+      <ScrollRow
+        title="Completed"
+        items={experiments.filter(e => e.status === 'completed').slice(0, 12)}
+        loading={loading}
+        emptyTitle="Nothing completed yet"
+        emptyDescription="Experiments appear here once training finishes successfully."
+        renderItem={e => <ExperimentTile experiment={e} datasetName={datasetsById[e.dataset_id]?.original_filename} />}
+      />
+      <ScrollRow
+        title="Datasets"
+        items={Object.values(datasetsById)}
+        loading={loading}
+        emptyTitle="No datasets yet"
+        emptyDescription="Datasets you upload appear here."
+        emptyIcon="📁"
+        renderItem={d => <DatasetTile dataset={d} />}
+      />
 
       {/* New Experiment Form */}
       {showForm && (

@@ -626,6 +626,44 @@ tr:hover td { background: rgba(255,255,255,0.04); }
 .prob-bar { margin: 8px 0; }
 .prob-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
 
+/* ---- Scrollable card rows ---- */
+.scroll-row { margin-bottom: 32px; }
+.scroll-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.scroll-row-head h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+.scroll-row-arrows { display: flex; gap: 8px; }
+.row-arrow {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card-hover); color: var(--text-primary);
+  border: 1px solid var(--border); cursor: pointer;
+  font-size: 18px; transition: var(--transition);
+}
+.row-arrow:hover:not(:disabled) { background: #3a3a3a; border-color: #555555; }
+.row-arrow:disabled { opacity: 0.35; cursor: default; }
+.row-arrow:focus-visible, .scroll-row-track:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 2px; }
+.scroll-row-track {
+  display: flex; gap: 14px;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  padding: 4px 4px 12px;
+  scrollbar-width: thin; scrollbar-color: #4d4d4d transparent;
+}
+.scroll-row-track::-webkit-scrollbar { height: 8px; }
+.scroll-row-track::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 4px; }
+.scroll-row-item { flex: 0 0 auto; scroll-snap-align: start; }
+.tile {
+  width: 280px; min-height: 168px;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 18px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #ffffff; text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tile:hover, a.tile:focus-visible { transform: scale(1.04); box-shadow: 0 10px 26px rgba(0,0,0,0.55); }
+.tile-name { font-size: 17px; font-weight: 700; line-height: 1.3; word-break: break-word; }
+.tile-problem { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.72); }
+.tile-sub { font-size: 13px; color: rgba(255,255,255,0.88); margin-top: auto; }
+.tile-foot { margin-top: 4px; }
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-100%); }
@@ -647,4 +685,6 @@ tr:hover td { background: rgba(255,255,255,0.04); }
   .landing-nav-links a { font-size: 13px; }
   .landing-hero { padding: 150px 24px 90px; min-height: auto; }
   .hero-buttons { flex-direction: column; align-items: stretch; }
+  .tile { width: 236px; min-height: 152px; }
+  .scroll-row-head h2 { font-size: 18px; }
 }
