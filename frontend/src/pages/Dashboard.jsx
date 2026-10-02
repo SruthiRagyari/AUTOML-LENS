@@ -212,8 +212,14 @@ export default function Dashboard() {
 
   const handleMetricChange = (ptype) => {
     const pt = ptype || form.problem_type
-    const defaultMetric = pt === 'classification' ? 'f1_weighted' : 'neg_root_mean_squared_error'
-    setForm(f => ({ ...f, problem_type: pt, primary_metric: f.primary_metric || defaultMetric }))
+    // "Auto-detect" must leave the metric unset so the backend resolves it
+    // from the detected task; injecting a concrete metric here scored
+    // classification experiments with neg_RMSE.
+    const defaultMetric =
+      pt === 'classification' ? 'f1_weighted'
+        : pt === 'regression' ? 'neg_root_mean_squared_error'
+          : ''
+    setForm(f => ({ ...f, problem_type: pt, primary_metric: defaultMetric }))
   }
 
   const handleCreate = async (e) => {
@@ -226,8 +232,10 @@ export default function Dashboard() {
         dataset_id: uploadedDataset.id,
         name: form.name || `Experiment on ${uploadedDataset.original_filename}`,
         target_column: form.target_column,
-        problem_type: form.problem_type === 'auto' ? null : form.problem_type,
-        primary_metric: form.primary_metric || (form.problem_type === 'regression' ? 'neg_root_mean_squared_error' : 'f1_weighted'),
+        // "auto" and "Auto (based on problem type)" are real values the
+        // backend understands; sending null for them fails validation (422).
+        problem_type: form.problem_type,
+        primary_metric: form.primary_metric || null,
         mode: form.mode,
         n_folds: parseInt(form.n_folds),
         n_trials: parseInt(form.n_trials),
