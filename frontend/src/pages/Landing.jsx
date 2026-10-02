@@ -31,7 +31,7 @@ export default function Landing() {
   return (
     <div className="landing">
       <nav className="landing-nav">
-        <span className="landing-nav-logo">🔬 AutoML-Lens</span>
+        <span className="landing-nav-logo">AutoML-Lens</span>
         <div className="landing-nav-links">
           <Link to="/methodology">Methodology</Link>
           <Link to="/about">About</Link>
@@ -41,7 +41,7 @@ export default function Landing() {
       </nav>
 
       <div className="landing-hero">
-        <div className="hero-badge">B.Tech Final Year Project · CSE (AI/ML)</div>
+        <div className="hero-badge">LLM-guided AutoML platform</div>
         <h1 className="hero-title">
           <span className="gradient-text">AutoML-Lens</span>
         </h1>
@@ -49,8 +49,8 @@ export default function Landing() {
           LLM-Powered Automated Machine Learning Framework — from raw dataset to optimized ML model with intelligent AI assistance.
         </p>
         <div className="hero-buttons">
-          <Link to="/dashboard" className="btn-hero-primary">🚀 Start Experiment</Link>
-          <Link to="/methodology" className="btn-hero-secondary">📖 Methodology</Link>
+          <Link to="/dashboard" className="btn-hero-primary">Start Experiment</Link>
+          <Link to="/methodology" className="btn-hero-secondary">How it works</Link>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function Landing() {
         <div className="landing-section">
           <div className="section-header">
             <h2>Why AutoML-Lens?</h2>
-            <p>A research-grade framework that combines classical AutoML with Large Language Model intelligence.</p>
+            <p>AutoML-Lens combines classical AutoML with large language model guidance.</p>
           </div>
           <div className="features-grid">
             {FEATURES.map(f => (
@@ -105,8 +105,8 @@ export default function Landing() {
       </div>
 
       <div className="landing-footer">
-        <p><strong>AutoML-Lens</strong> — "Construction of Automated Machine Learning Framework Based on Large Language Models"</p>
-        <p style={{ marginTop: 8 }}>B.Tech Final Year Project · Computer Science Engineering (AI/ML Specialization)</p>
+        <p><strong>AutoML-Lens</strong> — LLM-guided AutoML platform</p>
+        <p style={{ marginTop: 8 }}>Profiling · LLM-guided analysis · leakage-safe model selection · explainability · reports</p>
       </div>
     </div>
   )

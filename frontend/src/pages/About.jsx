@@ -27,12 +27,15 @@ export default function About() {
     <div className="page">
       <div className="page-header"><h1>About AutoML-Lens</h1></div>
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2>Project Overview</h2>
+        <h2>Product Overview</h2>
         <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16 }}>
-          AutoML-Lens is a full-stack Automated Machine Learning web application developed as a final-year B.Tech project in Computer Science Engineering (AI/ML Specialization). It implements an LLM-integrated AutoML pipeline capable of taking a raw tabular dataset and producing a trained, evaluated, and explainable machine learning model — entirely automated with optional AI guidance.
+          AutoML-Lens is an LLM-guided AutoML platform. It takes a raw tabular dataset (CSV/Excel) and walks it through a complete machine-learning workflow: profiling and type inference, LLM-guided problem analysis, preprocessing, cross-validated and leakage-safe model selection with hyperparameter tuning, explainability, and a shareable HTML report — from a React UI backed by FastAPI.
+        </p>
+        <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 16 }}>
+          LLM output is advisory: recommendations are validated against the dataset before training, every metric is computed from real model predictions, and a deterministic fallback keeps the whole pipeline working without any API key.
         </p>
         <div className="alert alert-info">
-          <strong>Academic Positioning:</strong> This project investigates whether LLM guidance can improve dataset understanding and model selection compared to traditional AutoML heuristics in a controlled experimental setting.
+          <strong>How it works:</strong> upload a dataset → profile it → run LLM-guided analysis (Google Gemini, OpenAI, or the built-in fallback) → train candidate models with Optuna search → evaluate on a held-out test split → explain the winner → predict or export the report.
         </div>
       </div>
       <div className="card" style={{ marginBottom: 20 }}>
@@ -63,7 +66,7 @@ export default function About() {
         </div>
       </div>
       <div className="card">
-        <h2>Reference</h2>
+        <h2>References</h2>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
           Feurer, M., Klein, A., Eggensperger, K., Springenberg, J. T., Blum, M., & Hutter, F. (2015). <em>Efficient and Robust Automated Machine Learning</em>. Advances in Neural Information Processing Systems (NeurIPS).
         </p>

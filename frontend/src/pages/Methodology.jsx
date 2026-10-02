@@ -5,21 +5,21 @@ export default function Methodology() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>Research Methodology</h1>
-          <p>Construction of Automated Machine Learning Framework Based on Large Language Models</p>
+          <h1>Methodology</h1>
+          <p>LLM-guided AutoML platform</p>
         </div>
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2>1. Research Background</h2>
+        <h2>1. Background</h2>
         <div className="research-section">
-          <p>Traditional AutoML systems automate the ML pipeline through exhaustive search or evolutionary strategies but lack semantic understanding of the data. This project introduces an LLM-integrated AutoML framework that adds a reasoning layer: the language model analyzes dataset context, infers problem semantics, and guides model selection — while the classical ML pipeline handles preprocessing, training, and optimization with mathematical rigor.</p>
-          <p>Our approach is grounded in the intersection of three fields: <strong>Neural Architecture Search (NAS)</strong>, <strong>Hyperparameter Optimization (HPO)</strong>, and <strong>Large Language Model (LLM) reasoning</strong>.</p>
+          <p>Traditional AutoML systems automate the ML pipeline through exhaustive search or evolutionary strategies but lack semantic understanding of the data. AutoML-Lens adds a reasoning layer: the language model analyzes dataset context, infers problem semantics, and guides model selection — while the classical ML pipeline handles preprocessing, training, and optimization with mathematical rigor.</p>
+          <p>The approach combines three fields: <strong>Neural Architecture Search (NAS)</strong>, <strong>Hyperparameter Optimization (HPO)</strong>, and <strong>Large Language Model (LLM) reasoning</strong>.</p>
         </div>
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <h2>2. Three Research Modes</h2>
+        <h2>2. Three Operating Modes</h2>
         <div className="comparison-grid">
           <div className="comparison-col">
             <h4>Mode A: Baseline</h4>
