@@ -21,17 +21,21 @@ env/
 node_modules/
 frontend/node_modules/
 
-# Storage (runtime data)
-storage/datasets/*
-storage/models/*
-storage/reports/*
-storage/predictions/*
-!storage/datasets/.gitkeep
-!storage/models/.gitkeep
-!storage/reports/.gitkeep
-!storage/predictions/.gitkeep
+# Build output
+frontend/dist/
 
-# Database
+# Storage (runtime data -- keep the directory skeleton only)
+storage/**
+!storage/**/
+!storage/**/.gitkeep
+
+backend/storage/**
+!backend/storage/**/
+!backend/storage/**/.gitkeep
+
+# Model / database artifacts
+*.joblib
+*.pkl
 *.db
 *.sqlite3
 
@@ -47,13 +51,10 @@ storage/predictions/*
 Thumbs.db
 desktop.ini
 
-# Build
-frontend/dist/
-
 # Logs
 *.log
 
-# Test
+# Test / coverage
 .pytest_cache/
 htmlcov/
 .coverage
