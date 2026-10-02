@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import traceback
+from collections import OrderedDict
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
@@ -48,8 +49,68 @@ from app.utils.file_utils import load_dataframe
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# In-memory store for trained objects (in production, use proper persistence)
-_experiment_cache = {}
+# In-memory store for trained objects (in production, use proper persistence).
+# Deliberately bounded: a long-lived process must not pin every trained bundle
+# forever, and the uploaded dataset is never kept here at all — evicted
+# entries are rebuilt from the artifacts already written to disk.
+class _ExperimentCache:
+    """LRU mapping of experiment id -> trained-object bundle.
+
+    ``maxsize`` is exposed so the bound is visible to operators and tests; the
+    least-recently-used entry is dropped on insert once that bound is exceeded.
+    Dropping an entry is never a correctness problem: every reader falls back to
+    reloading the model, preprocessor and dataset from disk.
+    """
+
+    def __init__(self, maxsize: int = 8):
+        self.maxsize = maxsize
+        self._data: OrderedDict = OrderedDict()
+
+    @staticmethod
+    def _key(exp_id):
+        return int(exp_id)
+
+    def __setitem__(self, exp_id, value):
+        key = self._key(exp_id)
+        self._data[key] = value
+        self._data.move_to_end(key)
+        while len(self._data) > self.maxsize:
+            _evicted_key, _evicted = self._data.popitem(last=False)
+            logger.info(
+                f"Experiment cache full ({self.maxsize}); evicted experiment "
+                f"{_evicted_key} (reloadable from disk)."
+            )
+
+    def __getitem__(self, exp_id):
+        return self._data[self._key(exp_id)]
+
+    def __delitem__(self, exp_id):
+        del self._data[self._key(exp_id)]
+
+    def __contains__(self, exp_id):
+        return self._key(exp_id) in self._data
+
+    def get(self, exp_id, default=None):
+        key = self._key(exp_id)
+        if key not in self._data:
+            return default
+        self._data.move_to_end(key)
+        return self._data[key]
+
+    def keys(self):
+        return list(self._data.keys())
+
+    def clear(self):
+        self._data.clear()
+
+    def __len__(self):
+        return len(self._data)
+
+    def __repr__(self):
+        return f"<_ExperimentCache {len(self._data)}/{self.maxsize} entries>"
+
+
+_experiment_cache = _ExperimentCache()
 
 
 def _get_llm_manager():
@@ -787,7 +848,6 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
             "target_column": exp.target_column,
             "problem_type": exp.problem_type,
             "label_map": label_map,
-            "df_original": df,
         }
 
         total_time = sum(r.training_time for r in results)
@@ -1062,7 +1122,6 @@ async def predict(exp_id: int, features: dict, db: Session = Depends(get_db)):
                 "target_column": exp.target_column,
                 "problem_type": exp.problem_type,
                 "label_map": _label_map,
-                "df_original": _df,
             }
             cache = _experiment_cache[exp_id]
             logger.info(f"Restored experiment {exp_id} from disk.")
@@ -1131,7 +1190,7 @@ async def batch_predict(exp_id: int, file: UploadFile = File(...), db: Session =
                 "model": loaded_model, "preprocessor": _preprocessor2,
                 "feature_names": _fc2, "feature_names_transformed": _fn2,
                 "target_column": exp2.target_column, "problem_type": exp2.problem_type,
-                "label_map": None, "df_original": _df2,
+                "label_map": None,
             }
             _experiment_cache[exp_id] = cache
         except Exception as _e:
