@@ -33,7 +33,7 @@ if not exist ".env" (
     echo GEMINI_API_KEY=>> .env
     echo OPENAI_API_KEY=>> .env
     echo APP_NAME=AutoML-Lens>> .env
-    echo STORAGE_BASE_PATH=storage>> .env
+    echo STORAGE_PATH=storage>> .env
     echo DATABASE_URL=sqlite:///./automl_lens.db>> .env
     echo CORS_ORIGINS=http://localhost:5173,http://localhost:3000>> .env
 )
