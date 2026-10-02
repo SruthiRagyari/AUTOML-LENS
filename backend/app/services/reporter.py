@@ -7,6 +7,54 @@ from typing import Any
 class ReportGenerator:
     """Generate comprehensive HTML experiment reports."""
 
+    # The stored primary metric may be the sklearn scoring name while the
+    # evaluator reports the short display name; same alias table as the API.
+    _PRIMARY_METRIC_ALIASES = {"neg_root_mean_squared_error": "rmse"}
+
+    @classmethod
+    def _primary_metric_key(cls, payload: dict) -> str:
+        """Name the metric this report should present as *the* score.
+
+        Read from the payload the API passes in (``primary_metric`` or
+        ``metrics.primary_metric``), falling back to the winner's own declared
+        metric. Returns ``None`` when nothing names a metric, in which case the
+        report keeps the old "first numeric value" behaviour but labels the key.
+        """
+        metrics = payload.get("metrics") or {}
+        candidate = payload.get("primary_metric") or metrics.get("primary_metric")
+        if not isinstance(candidate, str) or not candidate:
+            candidate = (payload.get("best_model") or {}).get("metric")
+        if not isinstance(candidate, str) or not candidate:
+            return None
+        return cls._PRIMARY_METRIC_ALIASES.get(candidate, candidate)
+
+    @staticmethod
+    def _metric_value(metrics, primary_key):
+        """Return ``(value, key_shown)`` for a model's metrics.
+
+        The primary metric is preferred; when a model did not report it, the key
+        actually used is returned as well, so the number can be labelled
+        honestly instead of implying it is the primary metric.
+        """
+        if not metrics:
+            return None, None
+        value = metrics.get(primary_key) if primary_key else None
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value), primary_key
+        for key, other in metrics.items():
+            if isinstance(other, (int, float)) and not isinstance(other, bool):
+                return float(other), key
+        return None, None
+
+    @staticmethod
+    def _format_metric(value, key, primary_key) -> str:
+        if value is None:
+            return "N/A"
+        text = f"{value:.4f}"
+        if key and primary_key and key != primary_key:
+            text += f' <span style="font-size:11px;color:#888">({key})</span>'
+        return text
+
     def generate_html_report(self, data: dict[str, Any]) -> str:
         exp_id = data.get("experiment_id", "N/A")
         ts = data.get("timestamp", datetime.datetime.now().isoformat())
@@ -21,17 +69,20 @@ class ReportGenerator:
         expl = data.get("explainability", {})
         metrics = data.get("metrics", {})
 
-        # Build models table
+        # Build the models table. The score column shows the experiment's PRIMARY
+        # metric; a model that did not report it shows the key actually used in
+        # parentheses, instead of a number that looks like the primary metric.
+        primary_key = self._primary_metric_key(data)
+        score_header = f"Score ({primary_key})" if primary_key else "Score"
         model_rows = ""
         for m in models:
             name = m.get("display_name", m.get("model_name", ""))
             cv = m.get("cv_scores", [])
             cv_mean = f"{sum(cv)/len(cv):.4f}" if cv else "N/A"
             met = m.get("optimized_metrics") or m.get("baseline_metrics", {})
-            primary = list(met.values())[0] if met else "N/A"
-            if isinstance(primary, (int, float)):
-                primary = f"{primary:.4f}"
-            tt = m.get("training_time", 0)
+            value, key_used = self._metric_value(met, primary_key)
+            primary = self._format_metric(value, key_used, primary_key)
+            tt = m.get("training_time", 0) or 0
             status = m.get("status", "N/A")
             is_best = " &#9733;" if m.get("model_name") == best.get("model_name") else ""
             model_rows += f"<tr><td>{name}{is_best}</td><td>{cv_mean}</td><td>{primary}</td><td>{tt:.2f}s</td><td>{status}</td></tr>"
@@ -52,8 +103,9 @@ class ReportGenerator:
         best_met = best.get("optimized_metrics") or best.get("baseline_metrics", {})
         met_html = ""
         for k, v in best_met.items():
+            label = f"{k} (primary)" if k == primary_key else k
             if isinstance(v, (int, float)):
-                met_html += f"<tr><td>{k}</td><td>{v:.4f}</td></tr>"
+                met_html += f"<tr><td>{label}</td><td>{v:.4f}</td></tr>"
             elif k not in ("confusion_matrix", "classification_report", "class_distribution", "residuals_summary"):
                 met_html += f"<tr><td>{k}</td><td>{v}</td></tr>"
 
@@ -122,7 +174,7 @@ li{{margin-bottom:6px}}
 <div class="section">
 <h2>5. Models Trained</h2>
 <table>
-<thead><tr><th>Model</th><th>CV Score</th><th>Test Score</th><th>Time</th><th>Status</th></tr></thead>
+<thead><tr><th>Model</th><th>CV Score</th><th>{score_header}</th><th>Time</th><th>Status</th></tr></thead>
 <tbody>{model_rows}</tbody>
 </table>
 <p style="font-size:12px;color:#888;margin-top:8px">&#9733; = Best Model</p>

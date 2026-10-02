@@ -726,10 +726,22 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
         llm = _get_llm_manager()
         if best:
             try:
+                # Resolve every model's score through the experiment's own primary
+                # metric. Taking "the first number in the metrics dict" used to
+                # label an accuracy value as if it were f1_weighted.
+                best_score_for_prompt, _ = _best_score_and_metric(
+                    exp, best.optimized_metrics or best.baseline_metrics
+                )
+                per_model_scores = {
+                    r.model_name: _best_score_and_metric(
+                        exp, r.optimized_metrics or r.baseline_metrics
+                    )[0]
+                    for r in results
+                }
                 results_context = {
                     "best_model": best.model_name,
                     "best_display_name": best.display_name,
-                    "best_score": float(list((best.optimized_metrics or best.baseline_metrics).values())[0]) if (best.optimized_metrics or best.baseline_metrics) else None,
+                    "best_score": best_score_for_prompt,
                     "metric_name": exp.primary_metric,
                     "problem_type": exp.problem_type,
                     "best_params": best.best_params,
@@ -738,7 +750,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
                         {
                             "model_name": r.model_name,
                             "display_name": r.display_name,
-                            "score": float(list((r.optimized_metrics or r.baseline_metrics).values())[0]) if (r.optimized_metrics or r.baseline_metrics) else None,
+                            "score": per_model_scores.get(r.model_name),
                             "status": r.status,
                         }
                         for r in results
@@ -1264,7 +1276,10 @@ async def generate_report(exp_id: int, db: Session = Depends(get_db)):
             {}
         ),
         "explainability": json.loads(exp.explainability_json) if exp.explainability_json else {},
-        "metrics": {},
+        # The report labels its score column with this name; without it the
+        # generator had to guess which metric it was showing.
+        "primary_metric": exp.primary_metric,
+        "metrics": {"primary_metric": exp.primary_metric},
     }
 
     reporter = ReportGenerator()
