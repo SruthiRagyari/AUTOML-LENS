@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import traceback
+import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Optional
@@ -16,7 +17,7 @@ import joblib
 from sklearn.model_selection import train_test_split
 
 from app.core.config import settings
-from app.core.database import get_db, Dataset, Experiment, TrainingRun
+from app.core.database import get_db, Dataset, Experiment, TrainingRun, Prediction
 from app.services.profiler import DatasetProfiler
 from app.services.preprocessor import PreprocessingEngine
 from app.services.feature_engineer import FeatureEngineer
@@ -1161,7 +1162,40 @@ async def predict(exp_id: int, features: dict, db: Session = Depends(get_db)):
         result["prediction"] = cache["label_map"].get(pred_val, pred_val)
 
     result["model_name"] = exp.best_model_name
+
+    # Keep a durable record of every single prediction: the predictions table
+    # exists for this history, and it used to stay permanently empty.
+    _record_prediction(db, exp_id, "single", cleaned_inputs, result)
     return result
+
+
+def _record_prediction(db: Session, exp_id: int, prediction_type: str,
+                       inputs: dict, result: dict,
+                       batch_file_path: Optional[str] = None) -> None:
+    """Persist one prediction run to the ``predictions`` table.
+
+    Best effort by design: a failure to write history must never turn a
+    successful prediction into an error, so it is logged and swallowed.
+    ``result`` is stored as returned by the predictor (compact: batch responses
+    carry a path, a count and a ≤10-row preview, not the full output file).
+    """
+    try:
+        db.add(Prediction(
+            experiment_id=exp_id,
+            prediction_type=prediction_type,
+            input_json=json.dumps(inputs, default=str),
+            result_json=json.dumps(result, default=str),
+            batch_file_path=batch_file_path,
+        ))
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.exception(
+            f"Could not record {prediction_type} prediction for experiment {exp_id}"
+        )
 
 
 @router.post("/{exp_id}/batch-predict")
@@ -1208,9 +1242,12 @@ async def batch_predict(exp_id: int, file: UploadFile = File(...), db: Session =
         except Exception as _e:
             raise HTTPException(400, f"Model restore failed: {str(_e)}")
 
-    # Save uploaded file
+    # Save the uploaded file under a unique name: a fixed
+    # ``batch_input_{exp_id}.csv`` let concurrent users overwrite each other.
     content = await file.read()
-    temp_path = settings.predictions_path / f"batch_input_{exp_id}.csv"
+    temp_path = settings.predictions_path / (
+        f"batch_input_{exp_id}_{uuid.uuid4().hex[:12]}.csv"
+    )
     with open(temp_path, "wb") as f:
         f.write(content)
 
@@ -1241,6 +1278,19 @@ async def batch_predict(exp_id: int, file: UploadFile = File(...), db: Session =
     if "error" in result:
         raise HTTPException(400, result["error"])
 
+    # Record the batch run too, including the unique input path it consumed, so
+    # the predictions table doubles as an audit trail of what was uploaded.
+    _record_prediction(
+        db, exp_id, "batch",
+        {
+            "file_name": file.filename,
+            "input_path": str(temp_path),
+            "columns": sorted(file_columns),
+            "num_predictions": result.get("num_predictions"),
+        },
+        result,
+        batch_file_path=str(temp_path),
+    )
     return result
 
 
