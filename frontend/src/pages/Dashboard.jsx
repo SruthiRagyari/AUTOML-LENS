@@ -274,7 +274,7 @@ export default function Dashboard() {
       {/* New Experiment Form */}
       {showForm && (
         <div className="card" style={{ marginBottom: 24 }}>
-          <h2>🆕 New Experiment</h2>
+          <h2>New Experiment</h2>
           {error && <div className="alert alert-danger">{error}</div>}
 
           {step === 1 && (

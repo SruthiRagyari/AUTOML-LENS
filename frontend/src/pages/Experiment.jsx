@@ -329,7 +329,7 @@ export default function Experiment() {
 
       <div className="page-header">
         <div>
-          <h1>📊 {exp?.name || 'Experiment'}</h1>
+          <h1>{exp?.name || 'Experiment'}</h1>
           <p style={{ marginTop: 4 }}>Dataset #{exp?.dataset_id} · Target: <strong>{exp?.target_column}</strong> · <StatusBadge status={exp?.status} /></p>
         </div>
         <button className="btn btn-sm" onClick={load}><FiRefreshCw /> Refresh</button>
@@ -431,7 +431,7 @@ export default function Experiment() {
         {/* Step 2: AI Analysis */}
         {activeStep === 2 && (
           <div>
-            <h2>🤖 AI Analysis</h2>
+            <h2>AI Analysis</h2>
             {!llmAnalysis ? (
               <div>
                 <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>The LLM will analyze your dataset structure and recommend the optimal ML strategy.</p>
@@ -548,7 +548,7 @@ export default function Experiment() {
             )}
             {activeStep === 6 && (
           <div>
-            <h2>📈 Model Evaluation</h2>
+            <h2>Model Evaluation</h2>
             {!results ? (
               <div>
                 <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>Run training to see evaluation results.</p>
@@ -695,7 +695,7 @@ export default function Experiment() {
         {/* Step 7: Explainability */}
         {activeStep === 7 && (
           <div>
-            <h2>🔍 Explainability</h2>
+            <h2>Explainability</h2>
             {!expl.feature_importance ? (
               <p style={{ color: 'var(--text-secondary)' }}>Complete training to see feature importance.</p>
             ) : (
@@ -725,7 +725,7 @@ export default function Experiment() {
         {/* Step 8: Prediction */}
         {activeStep === 8 && (
           <div>
-            <h2>🎯 Prediction</h2>
+            <h2>Prediction</h2>
             {exp?.status !== 'completed' ? (
               <p style={{ color: 'var(--text-secondary)' }}>Complete training first to make predictions.</p>
             ) : (
@@ -812,7 +812,7 @@ export default function Experiment() {
         {/* Step 9: Report */}
         {activeStep === 9 && (
           <div>
-            <h2>📄 Report & Download</h2>
+            <h2>Report & Download</h2>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
               <button className="btn btn-primary" onClick={runReport} disabled={actionLoading}>
                 📄 Generate HTML Report
@@ -857,7 +857,7 @@ export default function Experiment() {
       {chatOpen && (
         <div className="chat-panel">
           <div className="chat-header">
-            <h3>🤖 AI Assistant</h3>
+            <h3>AI Assistant</h3>
             <button className="chat-close" onClick={() => setChatOpen(false)}><FiX /></button>
           </div>
           <div className="chat-messages">

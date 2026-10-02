@@ -14,8 +14,8 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-logo">
-        <h1>🔬 AutoML-Lens</h1>
-        <span>LLM-Powered AutoML</span>
+        <h1>AutoML-Lens</h1>
+        <span>LLM-guided AutoML platform</span>
       </div>
       <nav className="sidebar-nav">
         {LINKS.map(({ to, icon, label }) => (
@@ -30,7 +30,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="sidebar-footer">
-        <p>B.Tech Final Year Project</p>
+
         <span className="version-badge">v1.0.0</span>
       </div>
     </div>
