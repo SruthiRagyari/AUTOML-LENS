@@ -1,0 +1,588 @@
+[
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 87,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "fallback",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.824724,
+          0.852675,
+          0.823469
+        ],
+        "cv_mean": 0.833623,
+        "cv_std": 0.013482,
+        "selection_score": 0.833623,
+        "holdout_score": 0.806967,
+        "training_time": 0.0314,
+        "best_params": {
+          "C": 0.31489116479568624,
+          "solver": "lbfgs"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.811033,
+          0.832636,
+          0.818934
+        ],
+        "cv_mean": 0.820868,
+        "cv_std": 0.008925,
+        "selection_score": 0.820868,
+        "holdout_score": 0.787764,
+        "training_time": 0.2832,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.5,
+          "random_forest_clf": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.832218,
+        "cv_mean": 0.832218,
+        "holdout_score": 0.80467,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 1.0,
+          "random_forest_clf": 0.0
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.833623,
+        "cv_mean": 0.833623,
+        "holdout_score": 0.806967,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.5,
+          "random_forest_clf": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.83803,
+        "cv_mean": 0.83803,
+        "holdout_score": 0.800375,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "logistic_regression",
+    "best_individual_cv_score": 0.833623,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.83803,
+    "best_ensemble_holdout_score": 0.800375,
+    "overall_winner": "ensemble_stacking",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.83803,
+    "overall_holdout_score": 0.800375,
+    "ensemble_improvement_cv": 0.004408,
+    "ensemble_improvement_holdout": -0.006593,
+    "llm_provider": "Fallback (Deterministic)",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0322,
+    "training_time": 2.1465,
+    "total_time": 3.3054,
+    "timestamp": "2026-10-03 23:27:11"
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 83,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "fallback_with_llm_features",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.81043,
+          0.857209,
+          0.821534
+        ],
+        "cv_mean": 0.829724,
+        "cv_std": 0.019956,
+        "selection_score": 0.829724,
+        "holdout_score": 0.800516,
+        "training_time": 0.0295,
+        "best_params": {
+          "C": 0.31489116479568624,
+          "solver": "lbfgs"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.822186,
+          0.837428,
+          0.812231
+        ],
+        "cv_mean": 0.823948,
+        "cv_std": 0.010362,
+        "selection_score": 0.823948,
+        "holdout_score": 0.798376,
+        "training_time": 0.3022,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.5,
+          "random_forest_clf": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.837651,
+        "cv_mean": 0.837651,
+        "holdout_score": 0.80266,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.5,
+          "random_forest_clf": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.837651,
+        "cv_mean": 0.837651,
+        "holdout_score": 0.80266,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.5,
+          "random_forest_clf": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.842139,
+        "cv_mean": 0.842139,
+        "holdout_score": 0.794112,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "logistic_regression",
+    "best_individual_cv_score": 0.829724,
+    "best_individual_holdout_score": 0.800516,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.842139,
+    "best_ensemble_holdout_score": 0.794112,
+    "overall_winner": "ensemble_stacking",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.842139,
+    "overall_holdout_score": 0.794112,
+    "ensemble_improvement_cv": 0.012415,
+    "ensemble_improvement_holdout": -0.006404,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf"
+    ],
+    "llm_proposed_operations": [
+      {
+        "operation": "log1p",
+        "column": "capital_gain",
+        "new_column_name": "capital_gain_log1p"
+      },
+      {
+        "operation": "frequency_encoding",
+        "column": "workclass",
+        "new_column_name": "workclass_freq"
+      }
+    ],
+    "operations_accepted": [
+      {
+        "column": "capital_gain",
+        "operation": "log1p",
+        "params": {},
+        "reason": null,
+        "category": "numeric",
+        "features": [
+          "capital_gain_log1p"
+        ]
+      },
+      {
+        "column": "workclass",
+        "operation": "frequency_encoding",
+        "params": {},
+        "reason": null,
+        "category": "categorical",
+        "features": [
+          "workclass_freq"
+        ]
+      }
+    ],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0025,
+    "training_time": 1.9344,
+    "total_time": 3.2142,
+    "timestamp": "2026-10-03 23:27:14"
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "fallback",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.63603,
+          -0.676312,
+          -0.648871
+        ],
+        "cv_mean": -0.653738,
+        "cv_std": 0.016801,
+        "selection_score": -0.653738,
+        "holdout_score": 0.619917,
+        "training_time": 0.004,
+        "best_params": {
+          "alpha": 0.31489116479568624
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.62712,
+          -0.620842,
+          -0.610135
+        ],
+        "cv_mean": -0.619366,
+        "cv_std": 0.007012,
+        "selection_score": -0.619366,
+        "holdout_score": 0.551109,
+        "training_time": 0.3268,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.5,
+          "random_forest_reg": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.622644,
+        "cv_mean": -0.622644,
+        "holdout_score": 0.57148,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.193629,
+          "random_forest_reg": 0.806371
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.617223,
+        "cv_mean": -0.617223,
+        "holdout_score": 0.555377,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.5,
+          "random_forest_reg": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.62163,
+        "cv_mean": -0.62163,
+        "holdout_score": 0.557055,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.619366,
+    "best_individual_holdout_score": 0.551109,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.617223,
+    "best_ensemble_holdout_score": 0.555377,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.617223,
+    "overall_holdout_score": 0.555377,
+    "ensemble_improvement_cv": -0.002143,
+    "ensemble_improvement_holdout": -0.004268,
+    "llm_provider": "Fallback (Deterministic)",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0,
+    "training_time": 1.7318,
+    "total_time": 2.5169,
+    "timestamp": "2026-10-03 23:27:17"
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 13,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "fallback_with_llm_features",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.636337,
+          -0.677176,
+          -0.648892
+        ],
+        "cv_mean": -0.654135,
+        "cv_std": 0.01708,
+        "selection_score": -0.654135,
+        "holdout_score": 0.620075,
+        "training_time": 0.0027,
+        "best_params": {
+          "alpha": 0.31489116479568624
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.625439,
+          -0.620165,
+          -0.610204
+        ],
+        "cv_mean": -0.618603,
+        "cv_std": 0.006317,
+        "selection_score": -0.618603,
+        "holdout_score": 0.550511,
+        "training_time": 0.2877,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.5,
+          "random_forest_reg": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.622427,
+        "cv_mean": -0.622427,
+        "holdout_score": 0.571139,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.183581,
+          "random_forest_reg": 0.816419
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.616651,
+        "cv_mean": -0.616651,
+        "holdout_score": 0.554503,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.5,
+          "random_forest_reg": 0.5
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.621004,
+        "cv_mean": -0.621004,
+        "holdout_score": 0.55622,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.618603,
+    "best_individual_holdout_score": 0.550511,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.616651,
+    "best_ensemble_holdout_score": 0.554503,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.616651,
+    "overall_holdout_score": 0.554503,
+    "ensemble_improvement_cv": -0.001951,
+    "ensemble_improvement_holdout": -0.003992,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg"
+    ],
+    "llm_proposed_operations": [
+      {
+        "operation": "log1p",
+        "column": "residual sugar",
+        "new_column_name": "residual_sugar_log1p"
+      },
+      {
+        "operation": "zscore",
+        "column": "alcohol",
+        "new_column_name": "alcohol_zscore"
+      }
+    ],
+    "operations_accepted": [
+      {
+        "column": "residual sugar",
+        "operation": "log1p",
+        "params": {},
+        "reason": null,
+        "category": "numeric",
+        "features": [
+          "residual sugar_log1p"
+        ]
+      },
+      {
+        "column": "alcohol",
+        "operation": "zscore",
+        "params": {},
+        "reason": null,
+        "category": "numeric",
+        "features": [
+          "alcohol_zscore"
+        ]
+      }
+    ],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.002,
+    "training_time": 1.5885,
+    "total_time": 2.4043,
+    "timestamp": "2026-10-03 23:27:19"
+  }
+]

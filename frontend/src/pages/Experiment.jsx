@@ -142,6 +142,105 @@ function ModelFusionSection({ ensembleCandidates, models, bestModelName, primary
 }
 
 /**
+ * Renders the Research-Grade Benchmarking & Evaluation Section.
+ */
+function ResearchEvaluationSection({ results, exp }) {
+  const evalData = results?.research_evaluation
+  if (!evalData) return null
+
+  const isEnsemble = evalData.winner_type === 'ensemble'
+  const isLlm = evalData.condition === 'llm_assisted'
+  const repro = evalData.reproducibility || {}
+  const advisory = evalData.llm_advisory || {}
+
+  return (
+    <div style={{ marginTop: 24, padding: 18, background: '#141414', border: '1px solid var(--border)', borderRadius: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>📊 Research Benchmarking &amp; Evaluation</span>
+          <span className="tag" style={{ background: isLlm ? 'rgba(156,39,176,0.2)' : 'rgba(33,150,243,0.2)', color: isLlm ? '#ce93d8' : '#64b5f6', borderColor: isLlm ? '#ce93d8' : '#64b5f6' }}>
+            Condition: {isLlm ? 'LLM-Assisted' : 'Deterministic Fallback'}
+          </span>
+          {isEnsemble ? (
+            <span className="tag" style={{ background: 'rgba(76,175,80,0.2)', color: '#81c784', borderColor: '#81c784' }}>
+              Ensemble Winner
+            </span>
+          ) : (
+            <span className="tag" style={{ background: 'rgba(255,152,0,0.2)', color: '#ffb74d', borderColor: '#ffb74d' }}>
+              Single Winner
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          Seed <code>{repro.seed ?? '42'}</code> · {repro.n_folds ?? 3} Folds · {repro.n_trials ?? 5} Trials
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Dataset &amp; Task</div>
+          <div style={{ fontWeight: 600, fontSize: 14, wordBreak: 'break-all' }}>{evalData.dataset_name || exp?.name || 'Dataset'}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            {evalData.dataset_rows ? `${evalData.dataset_rows} rows × ` : ''}{evalData.dataset_columns ? `${evalData.dataset_columns} cols` : ''} · <span style={{ textTransform: 'capitalize' }}>{evalData.problem_type}</span>
+          </div>
+        </div>
+
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Empirical Winner</div>
+          <div style={{ fontWeight: 600, fontSize: 14, color: '#fff' }}>
+            {evalData.winner_name || results?.best_model_name}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            Ranked by {evalData.primary_metric} CV evidence
+          </div>
+        </div>
+
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Cross-Validation Score</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#4caf50' }}>
+            {evalData.winner_cv_score != null ? evalData.winner_cv_score.toFixed(4) : '—'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+            Evidence used for selection (training split)
+          </div>
+        </div>
+
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Holdout Score</div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#7090ff' }}>
+            {evalData.winner_holdout_score != null ? evalData.winner_holdout_score.toFixed(4) : '—'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+            Evaluated once, strictly post-selection
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: '#181818', border: '1px solid #262626', borderRadius: 6, padding: 12, fontSize: 13, lineHeight: 1.6 }}>
+        <div style={{ fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>🔍 LLM Advisory vs. Empirical ML Reality:</span>
+        </div>
+        <div style={{ color: 'var(--text-secondary)' }}>
+          LLM Provider: <strong>{evalData.llm_provider}</strong>.
+          {advisory.recommended_models?.length > 0 && (
+            <span> Recommended models: <code>{advisory.recommended_models.join(', ')}</code>.</span>
+          )}
+          {advisory.applied_operations?.length > 0 ? (
+            <span> Proposed {advisory.proposed_operations?.length || 0} feature ops ({advisory.applied_operations.length} applied).</span>
+          ) : (
+            <span> No feature operations applied.</span>
+          )}
+          <br />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Note: LLM recommendations are strictly advisory. The winning model was selected solely on fold-safe cross-validation evidence on the training split with zero holdout leakage.
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Renders the REAL per-trial Optuna history persisted at train time.
  * Only trials the backend actually recorded are shown: no progress bar, no
  * invented counts, no placeholder rows. A model whose search failed shows its
@@ -762,6 +861,7 @@ export default function Experiment() {
                   on rows the model never saw. A metric is listed only when the evaluator
                   actually computed it.
                 </p>
+                <ResearchEvaluationSection results={results} exp={exp} />
                 <ModelFusionSection ensembleCandidates={results.ensemble_candidates} models={models} bestModelName={results.best_model_name} primaryMetric={results.primary_metric} />
                 <OptunaTrials models={models} />
                 {cm.length > 0 && (

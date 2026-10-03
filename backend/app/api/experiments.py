@@ -1087,6 +1087,62 @@ async def get_results(exp_id: int, db: Session = Depends(get_db)):
             json.loads(exp.model_selection_json).get("fusion", {}).get("is_ensemble_winner", False)
             if exp.model_selection_json else False
         ),
+        "research_evaluation": _build_research_evaluation(exp, db),
+    }
+
+
+def _build_research_evaluation(exp: Experiment, db: Session) -> dict:
+    """Build structured research evaluation and benchmarking metadata."""
+    ds = db.query(Dataset).filter(Dataset.id == exp.dataset_id).first() if exp.dataset_id else None
+    ds_profile = json.loads(ds.profile_json) if ds and ds.profile_json else {}
+    model_sel = json.loads(exp.model_selection_json) if exp.model_selection_json else {}
+    fusion = model_sel.get("fusion") or {}
+    selection = model_sel.get("selection") or {}
+    budget = model_sel.get("optimization_budget") or {}
+    llm_an = json.loads(exp.llm_analysis_json) if exp.llm_analysis_json else {}
+    llm_res = llm_an.get("result") or llm_an
+    fe_data = json.loads(exp.feature_engineering_json) if exp.feature_engineering_json else {}
+    results_list = json.loads(exp.results_json) if exp.results_json else []
+
+    is_ens_winner = bool(fusion.get("is_ensemble_winner", False))
+    condition = "llm_assisted" if exp.llm_provider and "fallback" not in exp.llm_provider.lower() else "fallback"
+
+    ds_name = (
+        getattr(ds, "original_filename", None)
+        or getattr(ds, "filename", None)
+        or f"dataset_{exp.dataset_id}"
+    ) if ds else f"dataset_{exp.dataset_id}"
+
+    return {
+        "dataset_name": ds_name,
+        "dataset_rows": ds_profile.get("rows", getattr(ds, "rows", None)),
+        "dataset_columns": ds_profile.get("columns", getattr(ds, "columns", None)),
+        "problem_type": exp.problem_type,
+        "primary_metric": exp.primary_metric,
+        "condition": condition,
+        "llm_provider": exp.llm_provider or "fallback",
+        "reproducibility": {
+            "seed": budget.get("seed", 42),
+            "n_folds": budget.get("n_folds_used", exp.n_folds),
+            "n_trials": budget.get("n_trials_used", exp.n_trials),
+            "holdout_used_for_selection": False,
+        },
+        "candidate_models_count": len(results_list),
+        "ensemble_candidates_count": len(fusion.get("ensemble_candidates", [])),
+        "is_ensemble_winner": is_ens_winner,
+        "winner_name": exp.best_model_name,
+        "winner_type": "ensemble" if is_ens_winner else "individual",
+        "winner_cv_score": selection.get("selected_model_cv_score"),
+        "winner_holdout_score": exp.best_score,
+        "selection_evidence_source": selection.get("evidence_source", "cross_validation_training_split"),
+        "llm_advisory": {
+            "recommended_models": [m.get("model_id") or m.get("model") for m in llm_res.get("model_recommendations", [])] if isinstance(llm_res.get("model_recommendations"), list) else [],
+            "recommended_metric": llm_res.get("recommended_metric"),
+            "proposed_operations": fe_data.get("operations_proposed", fe_data.get("proposed_operations", [])),
+            "applied_operations": fe_data.get("operations_applied", fe_data.get("operations", [])),
+            "rejected_operations": fe_data.get("rejected_operations", []),
+            "is_advisory_only": True,
+        }
     }
 
 
@@ -1427,6 +1483,7 @@ async def generate_report(exp_id: int, db: Session = Depends(get_db)):
         "metrics": {"primary_metric": exp.primary_metric},
         "selection": json.loads(exp.model_selection_json).get("selection") if exp.model_selection_json else None,
         "model_selection": json.loads(exp.model_selection_json) if exp.model_selection_json else None,
+        "research_evaluation": _build_research_evaluation(exp, db),
     }
 
     reporter = ReportGenerator()

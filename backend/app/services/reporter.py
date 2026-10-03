@@ -159,6 +159,47 @@ class ReportGenerator:
 </div>
 """
 
+        # Research Benchmarking & Evaluation Summary
+        research_eval = data.get("research_evaluation") or (data.get("model_selection") or {}).get("research_evaluation")
+        benchmark_html = ""
+        if research_eval:
+            ds_name = research_eval.get("dataset_name", "N/A")
+            ptype = research_eval.get("problem_type", "N/A")
+            pmetric = research_eval.get("primary_metric", "N/A")
+            cond = research_eval.get("condition", "fallback")
+            prov = research_eval.get("llm_provider", "fallback")
+            repro = research_eval.get("reproducibility", {})
+            seed_val = repro.get("seed", "N/A")
+            n_folds_val = repro.get("n_folds", "N/A")
+            n_trials_val = repro.get("n_trials", "N/A")
+            w_name = research_eval.get("winner_name", "N/A")
+            w_type = research_eval.get("winner_type", "individual")
+            w_cv = research_eval.get("winner_cv_score")
+            w_holdout = research_eval.get("winner_holdout_score")
+            llm_ad = research_eval.get("llm_advisory", {})
+            recs = llm_ad.get("recommended_models", [])
+            recs_str = ", ".join(recs) if recs else "None"
+
+            benchmark_html = f"""
+<div class="section">
+<h2>8. Research Benchmarking &amp; Empirical Evaluation</h2>
+<p>Empirical benchmark summary contrasting candidate models, ensemble fusion, and LLM advisory recommendations under controlled experimental conditions.</p>
+<table>
+<thead><tr><th>Dimension</th><th>Experimental Specification / Value</th></tr></thead>
+<tbody>
+<tr><td><strong>Dataset &amp; Task</strong></td><td><code>{ds_name}</code> &middot; {ptype} (metric: <code>{pmetric}</code>)</td></tr>
+<tr><td><strong>Experimental Condition</strong></td><td><code>{cond}</code> (provider: {prov})</td></tr>
+<tr><td><strong>Reproducibility Settings</strong></td><td>Seed: <code>{seed_val}</code> &middot; Folds: <code>{n_folds_val}</code> &middot; Trials: <code>{n_trials_val}</code></td></tr>
+<tr><td><strong>Selection Protocol</strong></td><td>Strictly CV evidence on training split &middot; <code>holdout_used_for_selection: False</code></td></tr>
+<tr><td><strong>Winning Architecture</strong></td><td><strong>{w_name}</strong> ({w_type.capitalize()})</td></tr>
+<tr><td><strong>Selection Evidence (CV)</strong></td><td>{f'{w_cv:.4f}' if isinstance(w_cv, (int, float)) else 'N/A'}</td></tr>
+<tr><td><strong>Holdout Evaluation</strong></td><td>{f'{w_holdout:.4f}' if isinstance(w_holdout, (int, float)) else 'N/A'}</td></tr>
+<tr><td><strong>LLM Advisory vs Reality</strong></td><td>Recommended models: <em>{recs_str}</em> &middot; Advisory only (winner chosen by CV evidence)</td></tr>
+</tbody>
+</table>
+</div>
+"""
+
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -240,15 +281,17 @@ li{{margin-bottom:6px}}
 </div>
 
 <div class="section">
-<h2>7. Explainability</h2>
+<h2>8. Explainability</h2>
 <p><strong>Method:</strong> {expl.get('method_used','N/A')}</p>
 <p>{expl.get('explanation_text','')}</p>
 <h3 style="margin-top:14px">Top Features</h3>
 <ol>{feat_html}</ol>
 </div>
 
+{benchmark_html}
+
 <div class="section">
-<h2>8. Limitations &amp; Conclusion</h2>
+<h2>10. Limitations &amp; Conclusion</h2>
 <p>This automated analysis is based on the provided dataset. Results should be validated on independent test data before any production deployment. External factors and dataset biases may influence real-world performance.</p>
 <p><strong>Conclusion:</strong> The <em>{best.get('display_name','')}</em> model was selected as the optimal predictor based on evaluation metrics. Further validation and domain expert review are recommended.</p>
 </div>
