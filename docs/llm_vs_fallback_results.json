@@ -1,0 +1,286 @@
+[
+  {
+    "dataset": "classification",
+    "repeat": 1,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "knn_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.881778,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 7.8769
+  },
+  {
+    "dataset": "classification",
+    "repeat": 1,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "logistic_regression"
+    ],
+    "recommended_metric": "roc_auc",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.814222,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 13.6121
+  },
+  {
+    "dataset": "classification",
+    "repeat": 2,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "knn_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.881778,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 7.3933
+  },
+  {
+    "dataset": "classification",
+    "repeat": 2,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "logistic_regression"
+    ],
+    "recommended_metric": "roc_auc",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.814222,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 13.2572
+  },
+  {
+    "dataset": "classification",
+    "repeat": 3,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "knn_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.881778,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 7.6438
+  },
+  {
+    "dataset": "classification",
+    "repeat": 3,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "logistic_regression"
+    ],
+    "recommended_metric": "roc_auc",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.814222,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 14.3845
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 1,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 48.6256
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 1,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 58.8379
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 2,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 51.9047
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 2,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "hist_gradient_boosting_clf",
+      "gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 59.9478
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 3,
+    "seed": 42,
+    "provider_requested": "fallback",
+    "provider_used": "Fallback (Deterministic)",
+    "model_name": "rule-based",
+    "recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 54.4336
+  },
+  {
+    "dataset": "winequality-red",
+    "repeat": 3,
+    "seed": 42,
+    "provider_requested": "gemini",
+    "provider_used": "Google Gemini",
+    "model_name": "gemini-flash-lite-latest",
+    "recommended_models": [
+      "random_forest_clf",
+      "hist_gradient_boosting_clf",
+      "gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "recommended_metric": "f1_weighted",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "winner": "HistGradientBoosting",
+    "final_holdout_metric": 0.661949,
+    "primary_metric": "f1_weighted",
+    "wall_time_seconds": 61.8038
+  }
+]
