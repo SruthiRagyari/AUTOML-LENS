@@ -1,13 +1,26 @@
-"""Training manager - orchestrates the full ML pipeline."""
+"""Training manager - orchestrates the full ML pipeline.
+
+CV methodology (leakage-safe)
+-----------------------------
+When a raw training frame + :class:`FeatureSpec` are supplied, every CV fold
+and every Optuna trial wraps its candidate model in a fold-safe pipeline that
+fits feature engineering + preprocessing on that fold's training rows only.
+When only pre-transformed matrices are supplied (legacy callers/tests), CV
+operates on the matrices as before and the public API is unchanged.
+"""
 import math
 import time
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from app.services.evaluator import (
     Evaluator, get_metric_spec,
+)
+from app.services.fold_safe import (
+    FeatureSpec, build_final_pipeline, build_fold_safe_pipeline,
 )
 from app.services.optimizer import (
     OptunaOptimizer, OptimizationResult, OPTUNA_SEED,
@@ -71,7 +84,10 @@ class TrainingManager:
                  primary_metric: str, n_folds: int = 5,
                  n_trials: int = 20, mode: str = "automl",
                  optimization_seed: int = OPTUNA_SEED,
-                 fast_demo: bool = False):
+                 fast_demo: bool = False,
+                 feature_spec: Optional[FeatureSpec] = None,
+                 X_train_raw: Optional[pd.DataFrame] = None,
+                 X_test_raw: Optional[pd.DataFrame] = None):
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
@@ -89,6 +105,62 @@ class TrainingManager:
         self.fast_demo = fast_demo
         # metric -> sklearn scoring -> direction, resolved once and reused.
         self.metric_spec = get_metric_spec(primary_metric)
+        # Optional leakage-safe inputs: when both a FeatureSpec and the RAW
+        # training frame (with the target column) are supplied, CV, Optuna and
+        # the final refit all operate on fold-safe pipelines that refit
+        # feature engineering + preprocessing per fold-training split.
+        # Legacy matrix-only callers are unaffected.
+        self.feature_spec = feature_spec
+        self.X_train_raw = X_train_raw
+        self.X_test_raw = X_test_raw
+        # Filled during train_all(): the fitted fold-safe pipeline of the
+        # selected winner (final refit on the complete training portion).
+        self.final_pipeline_: Any = None
+
+    @property
+    def fold_safe_cv(self) -> bool:
+        """True when CV/Optuna refit preprocessing inside every fold."""
+        return self.feature_spec is not None and self.X_train_raw is not None
+
+    def _candidate(self, model):
+        """Wrap a model in a fold-safe pipeline when the raw frame is known."""
+        if self.fold_safe_cv:
+            return build_fold_safe_pipeline(model, self.feature_spec)
+        return model
+
+    def _cv_X_y(self):
+        """CV inputs: raw frame in fold-safe mode, matrices otherwise."""
+        if self.fold_safe_cv:
+            return self._frame_with_target(self.X_train_raw, self.y_train), self.y_train
+        return self.X_train, self.y_train
+
+    def _fit_frame(self) -> Optional[pd.DataFrame]:
+        """Frame the fold-safe ``features`` step can fit on (target included)."""
+        if not self.fold_safe_cv:
+            return None
+        return self._frame_with_target(self.X_train_raw, self.y_train)
+
+    def _test_frame(self):
+        """Frame the fitted fold-safe pipeline can score/predict on."""
+        if self.fold_safe_cv:
+            return self._frame_with_target(self.X_test_raw, self.y_test)
+        return self.X_test
+
+    @staticmethod
+    def _frame_with_target(X_raw, y) -> pd.DataFrame:
+        """Return a DataFrame whose rows pair features with the target column.
+
+        Experiments pass the raw frames with the target already present; in that
+        case they are returned untouched. Matrix-only callers instead pass the
+        target name through the FeatureSpec, so the series is (re)attached
+        positionally to keep per-fold fitting possible.
+        """
+        if isinstance(X_raw, pd.DataFrame):
+            return X_raw
+        raise TypeError(
+            "Fold-safe training requires pandas DataFrames with the target "
+            f"column present (got {type(X_raw).__name__})."
+        )
 
     def _get_cv(self):
         if self.problem_type == "classification":
@@ -141,20 +213,34 @@ class TrainingManager:
             )
 
             try:
-                # 1. Baseline training
+                # 1. Baseline training (training portion only; holdout untouched).
+                # Fold-safe mode fits a full FE+preprocessing+model pipeline on
+                # the raw training frame; legacy mode fits the matrix directly.
+                # Legacy callers may pass numpy matrices; the fold-safe path needs
+                # the raw frame, so target columns are (re)attached by position.
+                import pandas as _pd  # local import: hot path, keeps header light
+                raw_train_df = self._fit_frame()
                 model = mdef.create_model()
+                baseline_candidate = self._candidate(model)
                 t0 = time.time()
-                model.fit(self.X_train, self.y_train)
+                if self.fold_safe_cv:
+                    baseline_candidate.fit(raw_train_df, self.y_train)
+                    base_test_X, base_test_y = self._test_frame(), self.y_test
+                else:
+                    baseline_candidate.fit(self.X_train, self.y_train)
+                    base_test_X, base_test_y = self.X_test, self.y_test
                 train_time = time.time() - t0
 
                 t0 = time.time()
-                baseline_metrics = self._evaluate(model, self.X_test, self.y_test)
+                baseline_metrics = self._evaluate(
+                    baseline_candidate, base_test_X, base_test_y)
                 pred_time = time.time() - t0
 
                 result.baseline_metrics = baseline_metrics
                 result.training_time = round(train_time, 4)
                 result.prediction_time = round(pred_time, 4)
                 best_model = model
+                best_candidate = baseline_candidate
 
                 # 2. Optuna optimization (if not baseline mode)
                 if self.mode != "baseline" and mdef.search_space is not None:
@@ -162,16 +248,20 @@ class TrainingManager:
                         progress.model_phase(mdef.name, PHASE_OPTIMIZING)
                     _legacy(mdef.display_name, "OPTIMIZING")
 
-                    # Optuna only ever sees X_train/y_train: CV folds come
+                    # Optuna only ever sees the training portion: CV folds come
                     # from the training split, so the holdout cannot influence
-                    # hyperparameter tuning.
+                    # hyperparameter tuning. Fold-safe mode passes the raw frame
+                    # + FeatureSpec so every trial refits FE+preprocessing per
+                    # fold; legacy mode passes the pre-transformed matrix.
                     try:
+                        cv_X, cv_y = self._cv_X_y()
                         optimizer = OptunaOptimizer(
-                            X_train=self.X_train, y_train=self.y_train,
+                            X_train=cv_X, y_train=cv_y,
                             model_definition=mdef, problem_type=self.problem_type,
                             metric_name=self.primary_metric,
                             n_trials=self.n_trials, n_folds=self.n_folds,
                             seed=self.optimization_seed,
+                            feature_spec=self.feature_spec if self.fold_safe_cv else None,
                         )
                         opt_result = optimizer.optimize(
                             trial_callback=(
@@ -205,20 +295,27 @@ class TrainingManager:
                     result.optimization = opt_result.to_provenance()
                     result.optimization["fast_demo"] = self.fast_demo
 
-                    # 3. Retrain with best params
+                    # 3. Retrain with best params (training portion only)
                     if opt_result.best_params:
                         if progress is not None:
                             progress.model_phase(mdef.name, PHASE_REFINING)
                         opt_model = mdef.create_model(**opt_result.best_params)
+                        opt_candidate = self._candidate(opt_model)
                         t0 = time.time()
-                        opt_model.fit(self.X_train, self.y_train)
+                        if self.fold_safe_cv:
+                            opt_candidate.fit(self._fit_frame(), self.y_train)
+                            opt_test_X = self._test_frame()
+                        else:
+                            opt_candidate.fit(self.X_train, self.y_train)
+                            opt_test_X = self.X_test
                         result.training_time += round(time.time() - t0, 4)
 
                         t0 = time.time()
-                        opt_metrics = self._evaluate(opt_model, self.X_test, self.y_test)
+                        opt_metrics = self._evaluate(opt_candidate, opt_test_X, self.y_test)
                         result.prediction_time += round(time.time() - t0, 4)
                         result.optimized_metrics = opt_metrics
                         best_model = opt_model
+                        best_candidate = opt_candidate
 
                 else:
                     # No search ran (baseline mode, or a model with no search
@@ -234,22 +331,26 @@ class TrainingManager:
                     ).to_provenance()
                     result.optimization["fast_demo"] = self.fast_demo
 
-                # 4. Cross-validation on the best model (training split only).
+                # 4. Cross-validation on the best model (training portion only).
+                # Fold-safe mode: feature engineering + preprocessing are refit
+                # inside every fold via the candidate pipeline, so no learned
+                # state is shared between fold-train and fold-validation.
                 # The scoring string comes from the explicit metric spec.
                 scoring = self.metric_spec.scoring
                 cv = self._get_cv()
                 if progress is not None:
                     progress.model_phase(mdef.name, PHASE_SCORING)
                 try:
+                    cv_X, cv_y = self._cv_X_y()
                     cv_scores = cross_val_score(
-                        best_model, self.X_train, self.y_train,
+                        best_candidate, cv_X, cv_y,
                         cv=cv, scoring=scoring, n_jobs=1
                     )
                     result.cv_scores = [round(float(s), 6) for s in cv_scores]
                 except Exception as e:
                     logger.warning(f"CV scoring failed for {mdef.name}: {e}")
 
-                result.trained_model = best_model
+                result.trained_model = best_candidate
                 result.status = "COMPLETED"
                 n_finished += 1
                 if progress is not None:

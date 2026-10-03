@@ -27,6 +27,7 @@ import optuna
 from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 
 from app.services.evaluator import get_metric_spec
+from app.services.fold_safe import FeatureSpec, build_fold_safe_pipeline
 
 logger = logging.getLogger(__name__)
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -84,6 +85,9 @@ class OptimizationResult:
     status: str = STATUS_COMPLETED
     error: Optional[str] = None
     fold_note: Optional[str] = None
+    # Whether every trial refit feature engineering + preprocessing inside each
+    # CV fold (leakage-safe) or reused a matrix pre-transformed once.
+    fold_safe_preprocessing: bool = False
 
     def to_provenance(self) -> dict[str, Any]:
         """JSON-safe provenance block persisted with the experiment."""
@@ -107,6 +111,8 @@ class OptimizationResult:
             "error": self.error,
             "fold_note": self.fold_note,
             "optimization_time": self.optimization_time,
+            # Provenance of the CV methodology used for every trial.
+            "fold_safe_preprocessing": self.fold_safe_preprocessing,
         }
 
 
@@ -120,7 +126,8 @@ class OptunaOptimizer:
 
     def __init__(self, X_train, y_train, model_definition, problem_type: str,
                  metric_name: str, n_trials: int = 20, n_folds: int = 5,
-                 seed: int = OPTUNA_SEED):
+                 seed: int = OPTUNA_SEED,
+                 feature_spec: Optional[FeatureSpec] = None):
         self.X_train = X_train
         self.y_train = y_train
         self.model_definition = model_definition
@@ -129,6 +136,11 @@ class OptunaOptimizer:
         self.n_trials = max(1, int(n_trials))
         self.n_folds = int(n_folds)
         self.seed = int(seed)
+        # When a FeatureSpec is supplied, ``X_train`` must be the RAW training
+        # frame (with the target column) and every trial wraps its candidate in
+        # a fold-safe pipeline: feature engineering + preprocessing are refit on
+        # each fold's training rows instead of once on the whole split.
+        self.feature_spec = feature_spec
         # Resolved once in __init__ so a bad metric fails fast and loudly.
         self.spec = get_metric_spec(metric_name)
 
@@ -197,8 +209,14 @@ class OptunaOptimizer:
             try:
                 params = self.model_definition.search_space(trial)
                 model = self.model_definition.create_model(**params)
+                # Leakage-safe path: fold-safe pipeline refits feature
+                # engineering + preprocessing inside every fold.
+                candidate = (
+                    build_fold_safe_pipeline(model, self.feature_spec)
+                    if self.feature_spec is not None else model
+                )
                 scores = cross_val_score(
-                    model, self.X_train, self.y_train,
+                    candidate, self.X_train, self.y_train,
                     cv=cv, scoring=scoring, n_jobs=1
                 )
                 score = float(scores.mean())
@@ -282,11 +300,13 @@ class OptunaOptimizer:
             status=status,
             error=error,
             fold_note=fold_note,
+            fold_safe_preprocessing=self.feature_spec is not None,
         )
 
 
 def skipped_optimization(metric_name: str, n_folds: int, reason: str,
-                         seed: int = OPTUNA_SEED) -> OptimizationResult:
+                         seed: int = OPTUNA_SEED,
+                         fold_safe_preprocessing: bool = False) -> OptimizationResult:
     """Provenance for a run where optimization was deliberately not executed.
 
     Used by ``mode='baseline'`` so the persisted record distinguishes
@@ -313,4 +333,5 @@ def skipped_optimization(metric_name: str, n_folds: int, reason: str,
         status=STATUS_SKIPPED,
         error=None,
         fold_note=reason,
+        fold_safe_preprocessing=fold_safe_preprocessing,
     )
