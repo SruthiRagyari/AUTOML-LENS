@@ -32,6 +32,8 @@ AutoML-Lens is a full-stack web application that implements an LLM-integrated Au
 | **Reports** | Self-contained HTML experiment reports |
 | **LLM Assistant** | AI chatbot with experiment context awareness |
 
+Empirical evaluation comparing real Google Gemini against the deterministic fallback: [docs/LLM_EVALUATION.md](docs/LLM_EVALUATION.md).
+
 ---
 
 ## Quick Start
@@ -105,6 +107,7 @@ automl-lens/
 ├── benchmarks/             # Benchmark datasets (adult, wine-quality)
 ├── demo_data/              # Sample CSV datasets (classification, regression)
 ├── docs/                   # Documentation and audit reports
+├── scripts/                # Evaluation and benchmark scripts
 ├── storage/                # Datasets, models, reports, predictions
 ├── tests/                  # pytest test suite (223 tests)
 └── README.md
