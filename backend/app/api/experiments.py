@@ -475,7 +475,7 @@ async def analyze_experiment(exp_id: int, force: bool = False,
 
 
 @router.post("/{exp_id}/train")
-async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = Depends(get_db)):
+async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[int] = None, db: Session = Depends(get_db)):
     """Run the full training pipeline."""
     exp = db.query(Experiment).filter(Experiment.id == exp_id).first()
     if not exp:
@@ -483,6 +483,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
 
     ds = db.query(Dataset).filter(Dataset.id == exp.dataset_id).first()
     df = load_dataframe(ds.file_path)
+    effective_seed = OPTUNA_SEED if seed is None else int(seed)
 
     try:
         exp.status = "training"
@@ -541,7 +542,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
         # Split FIRST: frequency maps, z-score moments, interaction selection and
         # scaling must all be learned from the training rows only.
         train_idx, test_idx = train_test_split(
-            df.index, test_size=0.2, random_state=42,
+            df.index, test_size=0.2, random_state=effective_seed,
             stratify=y if exp.problem_type == "classification" else None,
         )
         df_train, df_test = df.loc[train_idx], df.loc[test_idx]
@@ -580,7 +581,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
             "budget_reduced": bool(fast_demo) and (
                 n_folds != exp.n_folds or n_trials != exp.n_trials
             ),
-            "seed": OPTUNA_SEED,
+            "seed": effective_seed,
             # metric -> scoring -> direction for this experiment, persisted.
             "metric_spec": get_metric_spec(exp.primary_metric).to_dict(),
         }
@@ -635,7 +636,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
             n_folds=n_folds, n_trials=n_trials,
             mode=exp.mode,
             # Deterministic Optuna seed, recorded in the per-model provenance.
-            optimization_seed=OPTUNA_SEED,
+            optimization_seed=effective_seed,
             fast_demo=bool(fast_demo),
         )
 
@@ -703,7 +704,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, db: Session = D
                 "preprocessing_summary": preprocessor.get_summary(),
                 "best_params": best.best_params,
                 "metrics": best.optimized_metrics or best.baseline_metrics,
-                "random_seed": 42,
+                "random_seed": effective_seed,
                 "timestamp": str(exp.created_at),
                 "library_versions": {
                     "scikit-learn": sklearn.__version__,
