@@ -109,6 +109,56 @@ class ReportGenerator:
             elif k not in ("confusion_matrix", "classification_report", "class_distribution", "residuals_summary"):
                 met_html += f"<tr><td>{k}</td><td>{v}</td></tr>"
 
+        # Model Fusion & Ensemble Optimization
+        selection = data.get("selection") or {}
+        model_selection = data.get("model_selection") or {}
+        ensemble_candidates = [m for m in models if m.get("optimization", {}).get("is_ensemble") or "ensemble" in m.get("model_name", "")]
+        if not ensemble_candidates:
+            raw_cands = data.get("ensemble_candidates") or (model_selection.get("fusion") or {}).get("ensemble_candidates") or (data.get("fusion") or {}).get("ensemble_candidates") or []
+            ensemble_candidates = raw_cands
+        is_ensemble_winner = (
+            best.get("optimization", {}).get("is_ensemble")
+            or "ensemble" in best.get("model_name", "")
+            or bool((model_selection.get("fusion") or {}).get("is_ensemble_winner"))
+            or bool((data.get("fusion") or {}).get("is_ensemble_winner"))
+        )
+
+        fusion_html = ""
+        if ensemble_candidates:
+            ens_rows = ""
+            for em in ensemble_candidates:
+                ename = em.get("display_name", em.get("model_name", ""))
+                eopt = em.get("optimization", {})
+                estrat = eopt.get("strategy", "N/A")
+                ecv = em.get("cv_scores", [])
+                ecv_mean = f"{sum(ecv)/len(ecv):.4f}" if ecv else "N/A"
+                emet = em.get("optimized_metrics") or em.get("baseline_metrics", {})
+                evalue, ekey = self._metric_value(emet, primary_key)
+                eprimary = self._format_metric(evalue, ekey, primary_key)
+                eweights = eopt.get("weights", {})
+                w_str = ", ".join(f"<strong>{k}</strong>: {v*100:.1f}%" if isinstance(v, (int, float)) else f"{k}: {v}" for k, v in eweights.items()) if isinstance(eweights, dict) else "N/A"
+                is_win = " &#9733;" if em.get("model_name") == best.get("model_name") else ""
+                ens_rows += f"<tr><td>{ename}{is_win}</td><td><code>{estrat}</code></td><td>{ecv_mean}</td><td>{eprimary}</td><td style='font-size:12px'>{w_str}</td></tr>"
+
+            fusion_html = f"""
+<div class="section">
+<h2>6. Model Fusion &amp; Ensemble Optimization</h2>
+<p>Model fusion combines predictions from real trained candidate models using out-of-fold (OOF) cross-validation evidence on the training split.</p>
+<table>
+<thead><tr><th>Ensemble Candidate</th><th>Strategy</th><th>OOF CV Score</th><th>{score_header}</th><th>Member Weights</th></tr></thead>
+<tbody>{ens_rows}</tbody>
+</table>
+<div class="highlight" style="margin-top:14px;font-size:13px">
+<strong>Leakage Safeguards:</strong>
+<ul>
+<li>Ensemble weights were optimized strictly on out-of-fold training predictions (training split only).</li>
+<li>Candidate selection ranked individual models and ensemble candidates using CV evidence only.</li>
+<li><strong>Holdout used for selection:</strong> <code>False</code> (final holdout was evaluated once after freezing the winning architecture).</li>
+</ul>
+</div>
+</div>
+"""
+
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -172,7 +222,7 @@ li{{margin-bottom:6px}}
 </div>
 
 <div class="section">
-<h2>5. Models Trained</h2>
+<h2>5. Candidate Models Evaluated</h2>
 <table>
 <thead><tr><th>Model</th><th>CV Score</th><th>{score_header}</th><th>Time</th><th>Status</th></tr></thead>
 <tbody>{model_rows}</tbody>
@@ -180,8 +230,10 @@ li{{margin-bottom:6px}}
 <p style="font-size:12px;color:#888;margin-top:8px">&#9733; = Best Model</p>
 </div>
 
+{fusion_html}
+
 <div class="section">
-<h2>6. Best Model Details</h2>
+<h2>7. Best Model Details</h2>
 <p><strong>Model:</strong> {best.get('display_name','N/A')}</p>
 <p><strong>Parameters:</strong> {best.get('best_params',{})}</p>
 <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>{met_html}</tbody></table>

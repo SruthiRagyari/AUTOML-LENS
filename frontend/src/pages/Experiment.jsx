@@ -58,6 +58,90 @@ const STEPS = [
 ]
 
 /**
+ * Renders the Model Fusion & Ensemble Optimization section.
+ */
+function ModelFusionSection({ ensembleCandidates, models, bestModelName, primaryMetric }) {
+  const ensembleModels = (ensembleCandidates && ensembleCandidates.length > 0)
+    ? ensembleCandidates
+    : (models || []).filter(
+        m => m.optimization?.is_ensemble || m.model_name?.startsWith('ensemble')
+      )
+  if (ensembleModels.length === 0) return null
+
+  const isEnsembleWinner = bestModelName && ensembleModels.some(m => m.display_name === bestModelName || m.model_name === bestModelName)
+
+  return (
+    <div style={{ marginTop: 24, padding: 18, background: '#181818', border: '1px solid var(--border)', borderRadius: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>🧬 Model Fusion &amp; Ensemble Optimization</span>
+          {isEnsembleWinner ? (
+            <span className="tag" style={{ background: 'rgba(46,125,50,0.2)', color: '#4caf50', borderColor: '#4caf50' }}>
+              Ensemble Winner Selected 🏆
+            </span>
+          ) : (
+            <span className="tag" style={{ background: 'rgba(67,97,238,0.2)', color: '#7090ff', borderColor: '#7090ff' }}>
+              Individual Model Winner
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          🛡️ Weights optimized on OOF training predictions · Holdout untouched
+        </span>
+      </div>
+
+      <div className="table-container" style={{ marginBottom: 12 }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Ensemble Candidate</th>
+              <th>Strategy</th>
+              <th>OOF CV Score</th>
+              <th>Holdout Score</th>
+              <th>Member Weights</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ensembleModels.map(em => {
+              const weights = em.optimization?.weights || {}
+              const isBest = em.is_best || em.display_name === bestModelName
+              return (
+                <tr key={em.model_name} style={isBest ? { background: 'rgba(229,9,20,0.1)' } : {}}>
+                  <td>
+                    <strong>{em.display_name}</strong>
+                    {isBest && ' 🏆'}
+                  </td>
+                  <td><code>{em.optimization?.strategy || 'weighted'}</code></td>
+                  <td>{em.selection_score != null ? em.selection_score.toFixed(4) : em.optimization?.best_cv_score != null ? em.optimization.best_cv_score.toFixed(4) : '—'}</td>
+                  <td>{em.holdout_primary != null ? em.holdout_primary.toFixed(4) : '—'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {typeof weights === 'object' && Object.keys(weights).length > 0 ? (
+                        Object.entries(weights).map(([k, v]) => (
+                          <span key={k} className="tag" style={{ fontSize: 11, padding: '2px 6px' }}>
+                            {k}: {typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : v}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Equal / uniform</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+        Ensemble candidates combine predictions from real trained models. Weights are learned using strictly out-of-fold cross-validation
+        on the training split. Holdout metrics were computed once after selection.
+      </p>
+    </div>
+  )
+}
+
+/**
  * Renders the REAL per-trial Optuna history persisted at train time.
  * Only trials the backend actually recorded are shown: no progress bar, no
  * invented counts, no placeholder rows. A model whose search failed shows its
@@ -678,6 +762,7 @@ export default function Experiment() {
                   on rows the model never saw. A metric is listed only when the evaluator
                   actually computed it.
                 </p>
+                <ModelFusionSection ensembleCandidates={results.ensemble_candidates} models={models} bestModelName={results.best_model_name} primaryMetric={results.primary_metric} />
                 <OptunaTrials models={models} />
                 {cm.length > 0 && (
                   <div style={{ marginTop: 20 }}>

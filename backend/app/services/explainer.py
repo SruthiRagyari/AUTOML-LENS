@@ -108,8 +108,10 @@ class Explainer:
             return None
 
     @staticmethod
-    def _feature_importance(model, feature_names) -> ExplainabilityResult:
-        imp = model.feature_importances_
+    def _feature_importance(model, feature_names) -> Optional[ExplainabilityResult]:
+        imp = getattr(model, "feature_importances_", None)
+        if imp is None:
+            return None
         fi = sorted(
             [{"feature": n, "importance": round(float(v), 6)}
              for n, v in zip(feature_names, imp)],
@@ -117,7 +119,15 @@ class Explainer:
         )
         top = [x["feature"] for x in fi[:10]]
         fi = Explainer._clean_fi_list(fi); top = [x["feature"] for x in fi[:10]]
-        return ExplainabilityResult("feature_importance", fi, top, Explainer._make_text(fi[:5]))
+        method_name = "ensemble_feature_importance" if hasattr(model, "member_models") else "feature_importance"
+        text = Explainer._make_text(fi[:5])
+        if hasattr(model, "member_models"):
+            text = (
+                "Tree SHAP is not applicable to multi-model heterogeneous ensembles. "
+                "Feature importances are aggregated across member models weighted by ensemble weights. "
+                + text
+            )
+        return ExplainabilityResult(method_name, fi, top, text)
 
     @staticmethod
     def _coefficients(model, feature_names) -> ExplainabilityResult:

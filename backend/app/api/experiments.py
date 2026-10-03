@@ -664,15 +664,45 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
         finally:
             progress.set_phase(tp.PHASE_SELECTING)
 
-        # Select the winning model using CV evidence ONLY (training split).
-        # exp.primary_metric is already the sklearn scoring name, which is the
-        # space the CV scores live in, so no alias mapping is applied here.
-        # The old holdout-metric mapping is deliberately NOT used: ranking by the
-        # holdout score would let the test set decide the winner.
+        # Build ensemble candidates strictly using OOF predictions on the training split (leakage-safe).
+        # Final holdout is untouched during ensemble candidate creation, weight learning, and selection.
+        from app.services.ensemble import build_ensemble_candidates
+        ensemble_candidates = build_ensemble_candidates(
+            candidate_results=results,
+            model_definitions=model_defs,
+            X_train=X_train,
+            y_train=y_train,
+            problem_type=exp.problem_type,
+            primary_metric=exp.primary_metric,
+            n_folds=n_folds,
+            seed=effective_seed,
+        )
+        ensemble_results = [cand[0] for cand in ensemble_candidates]
+
+        # 1. Select the winning model among registry candidate models (CV evidence ONLY)
         selection_metric = exp.primary_metric
         best = trainer.select_best_model(results, selection_metric)
         selection_provenance = trainer.build_selection_provenance(
             results, selection_metric, best
+        )
+
+        # 2. Final holdout evaluation for ensemble candidates:
+        # Evaluated ONCE on untouched holdout AFTER selection has completed.
+        for ens_res, ens_model in ensemble_candidates:
+            t0 = time.time()
+            holdout_metrics = trainer._evaluate(ens_model, X_test, y_test)
+            ens_res.prediction_time = round(time.time() - t0, 4)
+            ens_res.optimized_metrics = holdout_metrics
+            ens_res.baseline_metrics = holdout_metrics
+
+        # 3. Model Fusion Selection: compare individual winner against ensemble candidates (CV evidence only)
+        all_candidates = results + ensemble_results
+        fusion_winner = trainer.select_best_model(all_candidates, selection_metric)
+        fusion_provenance = trainer.build_selection_provenance(
+            all_candidates, selection_metric, fusion_winner
+        )
+        is_ensemble_winner = (
+            fusion_winner is not None and fusion_winner.model_name in [er.model_name for er in ensemble_results]
         )
 
         progress.set_phase(PHASE_PERSISTING)
@@ -693,6 +723,9 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             model_path = str(settings.models_path / f"model_{exp_id}.joblib")
             joblib.dump(best.trained_model, model_path)
 
+            if is_ensemble_winner and fusion_winner is not None:
+                joblib.dump(fusion_winner.trained_model, str(settings.models_path / f"model_{exp_id}_ensemble.joblib"))
+
             # Save metadata
             import sklearn
             meta = {
@@ -712,6 +745,15 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
                     "numpy": np.__version__,
                 },
             }
+            if is_ensemble_winner and fusion_winner is not None:
+                meta["ensemble"] = {
+                    "is_ensemble": True,
+                    "strategy": getattr(fusion_winner.trained_model, "strategy", "weighted_average"),
+                    "members": getattr(fusion_winner.trained_model, "member_names", []),
+                    "weights": getattr(fusion_winner.trained_model, "weights_dict", {}),
+                    "selection_cv_score": (fusion_winner.optimization or {}).get("best_cv_score"),
+                    "holdout_used_for_selection": False,
+                }
             meta_path = str(settings.models_path / f"model_{exp_id}_metadata.json")
             with open(meta_path, "w") as f:
                 json.dump(meta, f, indent=2, default=str)
@@ -811,6 +853,40 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
         )
         exp.preprocessing_json = json.dumps(preprocessor.get_summary(), default=str)
         exp.feature_engineering_json = json.dumps(fe.get_summary(), default=str)
+
+        ensemble_data = [
+            {
+                "model_name": er.model_name,
+                "display_name": er.display_name,
+                "status": er.status,
+                "baseline_metrics": er.baseline_metrics,
+                "optimized_metrics": er.optimized_metrics,
+                "best_params": er.best_params,
+                "cv_scores": er.cv_scores,
+                "selection_score": (er.optimization or {}).get("best_cv_score"),
+                "holdout_primary": (
+                    _best_score_and_metric(exp, er.optimized_metrics)[0]
+                    if er.optimized_metrics else None
+                ),
+                "optimization": er.optimization,
+                "is_best": is_ensemble_winner and er.model_name == (fusion_winner.model_name if fusion_winner else ""),
+            }
+            for er in ensemble_results
+        ]
+
+        fusion_summary = {
+            "is_ensemble_winner": is_ensemble_winner,
+            "selected_system": fusion_winner.model_name if fusion_winner else (best.model_name if best else None),
+            "selected_system_display_name": fusion_winner.display_name if fusion_winner else (best.display_name if best else None),
+            "individual_winner": best.model_name if best else None,
+            "individual_cv_score": selection_provenance.get("selected_model_cv_score"),
+            "best_ensemble": fusion_winner.model_name if is_ensemble_winner else (ensemble_results[0].model_name if ensemble_results else None),
+            "best_ensemble_cv_score": (fusion_winner.optimization or {}).get("best_cv_score") if is_ensemble_winner else ((ensemble_results[0].optimization or {}).get("best_cv_score") if ensemble_results else None),
+            "ensemble_candidates": ensemble_data,
+            "provenance": fusion_provenance,
+            "holdout_used_for_selection": False,
+        }
+
         # Research trace: recommendations, refusals, trained models, winner.
         # Makes no performance claim - no A/B comparison against deterministic
         # selection was ever run.
@@ -828,6 +904,9 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             "models_trained": [r.model_name for r in results
                                if r.status == "COMPLETED"],
             "models_failed": [r.model_name for r in results if r.status == "FAILED"],
+            "ensemble_candidates": ensemble_data,
+            "fusion": fusion_summary,
+            "is_ensemble_winner": is_ensemble_winner,
             "final_model": best.model_name if best else None,
             "final_score": exp.best_score,
             "metric": best_metric_key if best else None,
@@ -894,6 +973,9 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             "suggested_operations": accepted_ops,
             "rejected_operations": rejected_ops,
             "model_selection": model_selection_trace,
+            "ensemble_candidates": ensemble_data,
+            "fusion": fusion_summary,
+            "is_ensemble_winner": is_ensemble_winner,
             "optimization_budget": optimization_budget,
             # Full, persisted record of how the winner was chosen (CV only).
             "selection": selection_provenance,
@@ -993,6 +1075,18 @@ async def get_results(exp_id: int, db: Session = Depends(get_db)):
         if exp.feature_engineering_json else "N/A",
         "model_selection": json.loads(exp.model_selection_json)
         if exp.model_selection_json else None,
+        "ensemble_candidates": (
+            json.loads(exp.model_selection_json).get("fusion", {}).get("ensemble_candidates", [])
+            if exp.model_selection_json else []
+        ),
+        "fusion": (
+            json.loads(exp.model_selection_json).get("fusion")
+            if exp.model_selection_json else None
+        ),
+        "is_ensemble_winner": (
+            json.loads(exp.model_selection_json).get("fusion", {}).get("is_ensemble_winner", False)
+            if exp.model_selection_json else False
+        ),
     }
 
 
@@ -1331,6 +1425,8 @@ async def generate_report(exp_id: int, db: Session = Depends(get_db)):
         # generator had to guess which metric it was showing.
         "primary_metric": exp.primary_metric,
         "metrics": {"primary_metric": exp.primary_metric},
+        "selection": json.loads(exp.model_selection_json).get("selection") if exp.model_selection_json else None,
+        "model_selection": json.loads(exp.model_selection_json) if exp.model_selection_json else None,
     }
 
     reporter = ReportGenerator()
