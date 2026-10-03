@@ -5,10 +5,10 @@
 AutoML-Lens is a full-stack, LLM-guided AutoML platform: upload a raw tabular dataset and it profiles the data, runs LLM-guided problem analysis with Google Gemini, OpenAI, or a deterministic fallback, selects and tunes models with leakage-safe cross-validated selection, explains the winning model with SHAP, and exports a self-contained HTML report - from a React UI backed by FastAPI.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.141-green)](https://fastapi.tiangolo.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-blue)](https://react.dev)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-orange)](https://scikit-learn.org)
-[![Optuna](https://img.shields.io/badge/Optuna-5.0-purple)](https://optuna.org)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6.1-orange)](https://scikit-learn.org)
+[![Optuna](https://img.shields.io/badge/Optuna-4.2.0-purple)](https://optuna.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
@@ -45,7 +45,7 @@ AutoML-Lens is a full-stack web application that implements an LLM-integrated Au
 ### 1. Clone & Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/automl-lens.git
+git clone https://github.com/SruthiRagyari/AUTOML-LENS.git
 cd automl-lens
 ```
 
@@ -94,7 +94,7 @@ automl-lens/
 │   │   ├── core/           # Config, database, security
 │   │   ├── llm/            # LLM providers (Gemini, OpenAI, Fallback)
 │   │   ├── models/         # Pydantic schemas
-│   │   ├── services/       # ML pipeline services
+│   │   ├── services/       # ML pipeline services (fold_safe, trainer, optimizer, etc.)
 │   │   └── utils/          # File utilities, validators
 │   └── requirements.txt
 ├── frontend/
@@ -102,9 +102,12 @@ automl-lens/
 │       ├── components/     # Layout, Charts, Common UI
 │       ├── pages/          # Landing, Dashboard, Experiment, History, etc.
 │       └── services/       # API client
-├── demo_data/              # Sample CSV datasets
+├── benchmarks/             # Benchmark runner and datasets (adult, wine-quality)
+├── demo_data/              # Sample CSV datasets (classification, regression)
+├── docs/                   # Documentation and audit reports
+├── scripts/                # Utility scripts
 ├── storage/                # Datasets, models, reports, predictions
-├── tests/                  # pytest test suite (203 tests)
+├── tests/                  # pytest test suite (223 tests)
 └── README.md
 ```
 
@@ -276,9 +279,6 @@ per-model states `queued → running → completed | failed` are mirrored into t
 `training_runs` table. The last snapshot is persisted to
 `experiments.progress_json`, so progress survives a page refresh and a restart.
 
-The frontend was intentionally left unchanged; it can poll this endpoint at any
-time.
-
 ---
 
 ## Configuration
@@ -309,7 +309,7 @@ cd automl-lens
 python -m pytest tests/ -v
 ```
 
-The full suite (202 passing, 1 skipped) covers dataset profiling, ingestion and
+The full suite (223 passing) covers dataset profiling, ingestion and
 suitability checks, feature engineering, the model registry, evaluation metrics,
 model selection, training progress, and the full end-to-end pipeline.
 

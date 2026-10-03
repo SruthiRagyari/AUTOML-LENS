@@ -2,16 +2,15 @@ import React from 'react'
 
 export default function About() {
   const techStack = [
-    { cat: 'Backend', items: ['Python 3.11', 'FastAPI 0.100+', 'SQLAlchemy', 'Pydantic v2', 'Uvicorn'] },
-    { cat: 'ML/AI', items: ['scikit-learn 1.5+', 'Optuna 3+', 'SHAP', 'NumPy', 'pandas'] },
+    { cat: 'Backend', items: ['Python 3.11', 'FastAPI 0.115.6', 'SQLAlchemy', 'Pydantic v2', 'Uvicorn'] },
+    { cat: 'ML/AI', items: ['scikit-learn 1.6.1', 'Optuna 4.2.0', 'SHAP', 'NumPy', 'pandas'] },
     { cat: 'LLM', items: ['Google Gemini', 'OpenAI API', 'Fallback (Deterministic)', 'httpx async'] },
-    { cat: 'Frontend', items: ['React 18', 'Vite 5', 'react-router-dom 6', 'react-plotly.js', 'axios'] },
+    { cat: 'Frontend', items: ['React 18', 'Vite 6', 'react-router-dom 6', 'react-plotly.js', 'axios'] },
   ]
   const limitations = [
     'Tabular data only — no image, audio, or NLP datasets in current version',
     'LLM-dependent features require valid API keys (fallback mode available)',
     'Large datasets (>50MB) may experience slow profiling',
-    'Model training is synchronous (no background job queue)',
     'No time-series or multi-label classification support yet',
   ]
   const futureWork = [
