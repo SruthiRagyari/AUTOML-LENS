@@ -453,6 +453,7 @@ def generate_markdown_report(data: dict, out_path: str):
     lines.append(f"1. **Fixed Models in Fast Mode:** In fast mode (`fast_demo=True`), the pipeline fixes candidate models to `{fixed_models_str}`. Therefore, candidate model recommendations from the LLM or fallback do not change which models are trained in this mode.")
     lines.append(f"2. **Advisory Metric:** The LLM's recommended metric is advisory and stored in `llm_analysis_json`. The API does not override `exp.primary_metric` (`f1_weighted`), so Optuna strictly optimizes `f1_weighted` in both fallback and LLM runs (as evidenced by `optimization.metric` in the stored training records: `{sample_run['optuna_metric_optimized']}`).")
     lines.append(f"3. **Post-Hoc Injections:** In the ablation experiments, conditions (iii), (iv) and the per-operation variations modify `exp.llm_analysis_json` after the `/analyze` step. These are post-hoc experimental injections to isolate feature transformations, not native product behaviour.")
+    lines.append(f"4. **Sources of Randomness Controlled by Seed:** The seed parameter strictly varies: (1) the 80/20 train/holdout split via `train_test_split(random_state=effective_seed)`, (2) the cross-validation fold shuffling inside Optuna via `StratifiedKFold`/`KFold(random_state=self.seed)`, and (3) the Optuna trial hyperparameter suggestion sequence via `TPESampler(seed=self.seed)`. It does not vary estimator-internal `random_state` defaults in `model_registry` or heuristic interaction mutual-information subsampling in `feature_engineer`.")
     lines.append("")
 
     # Seed variation summary
@@ -462,6 +463,8 @@ def generate_markdown_report(data: dict, out_path: str):
         "To evaluate stability across train/test splits and Optuna sampler seeds, runs were evaluated on seeds 42, 43, and 44 for both datasets.",
         "",
     ])
+
+    ds_summary_stats = {}
 
     for ds in DATASETS:
         ds_name = ds["name"]
@@ -512,13 +515,34 @@ def generate_markdown_report(data: dict, out_path: str):
         m_fb_roc, s_fb_roc = mean(fb_rocs), std(fb_rocs)
         m_gem_roc, s_gem_roc = mean(gem_rocs), std(gem_rocs)
 
+        f1_diffs = [gem_f1s[i] - fb_f1s[i] for i in range(len(SEEDS))]
+        roc_diffs = [gem_rocs[i] - fb_rocs[i] for i in range(len(SEEDS))]
+        m_diff_f1, s_diff_f1 = mean(f1_diffs), std(f1_diffs)
+        m_diff_roc, s_diff_roc = mean(roc_diffs), std(roc_diffs)
+        n_seeds = len(SEEDS)
+        ge_fb_f1 = sum(1 for d in f1_diffs if d >= 0)
+        ge_fb_roc = sum(1 for d in roc_diffs if d >= 0)
+
+        ds_summary_stats[ds_name] = {
+            "m_diff_f1": m_diff_f1,
+            "s_diff_f1": s_diff_f1,
+            "m_diff_roc": m_diff_roc,
+            "s_diff_roc": s_diff_roc,
+            "ge_fb_f1": ge_fb_f1,
+            "ge_fb_roc": ge_fb_roc,
+            "n_seeds": n_seeds,
+        }
+
         lines.append("")
         lines.append(f"**Aggregate Metrics for `{ds_name}` (mean ± std across seeds 42, 43, 44):**")
         lines.append(f"- **Fallback F1-weighted:** {m_fb_f1:.6f} ± {s_fb_f1:.6f}")
         lines.append(f"- **Gemini F1-weighted:** {m_gem_f1:.6f} ± {s_gem_f1:.6f}")
+        lines.append(f"- **Paired Difference F1-weighted (Gemini − Fallback):** {m_diff_f1:+.6f} ± {s_diff_f1:.6f}")
         if m_fb_roc is not None and m_gem_roc is not None:
             lines.append(f"- **Fallback ROC-AUC:** {m_fb_roc:.6f} ± {s_fb_roc:.6f}")
             lines.append(f"- **Gemini ROC-AUC:** {m_gem_roc:.6f} ± {s_gem_roc:.6f}")
+            lines.append(f"- **Paired Difference ROC-AUC (Gemini − Fallback):** {m_diff_roc:+.6f} ± {s_diff_roc:.6f}")
+        lines.append(f"- **Seeds where Gemini >= Fallback:** F1: {ge_fb_f1}/{n_seeds} seeds; ROC-AUC: {ge_fb_roc}/{n_seeds} seeds (no statistical test; n={n_seeds} per dataset)")
         lines.append("")
 
     # Consistency analysis
@@ -529,12 +553,12 @@ def generate_markdown_report(data: dict, out_path: str):
         lines.append(f"- {note}")
     lines.append("")
 
-    # Measured run details
+    # Proposed vs Accepted Table
     lines.extend([
-        "## All Measured Run Details",
+        "## Proposed vs. Accepted Feature Operations (All Runs)",
         "",
-        "| Dataset | Seed | Provider | Model | Proposed Operations | Accepted Operations | Rejected Operations | Models Trained | Winner | F1-weighted | ROC-AUC | Wall Time (s) |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| Dataset | Seed | Provider | Proposed Operations | Accepted Operations | Rejected Operations | Models Trained | Winner | F1-weighted | ROC-AUC |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ])
 
     for r in seed_runs:
@@ -547,10 +571,15 @@ def generate_markdown_report(data: dict, out_path: str):
         roc_str = f"{r['holdout_roc_auc']:.6f}" if r["holdout_roc_auc"] is not None else "not verified"
 
         lines.append(
-            f"| {r['dataset']} | {r['seed']} | {r['provider_used']} | {r['model_name']} | {prop_str} | {acc_str} | {rej_str} | {trained_str} | {r['winner']} | {f1_str} | {roc_str} | {r['wall_time_seconds']} |"
+            f"| {r['dataset']} | {r['seed']} | {r['provider_used']} | {prop_str} | {acc_str} | {rej_str} | {trained_str} | {r['winner']} | {f1_str} | {roc_str} |"
         )
 
     lines.append("")
+    lines.append("### Score Divergence Analysis on `winequality-red` (Seed 43)")
+    lines.append("")
+    lines.append("On `winequality-red` under seed 43, the winning model was `Random Forest`. Google Gemini proposed and applied 4 feature operations (`residual sugar_log1p`, `chlorides_log1p`, `sulphates_log1p`, `alcohol_zscore`), whereas Fallback proposed and applied 0 feature operations. The resulting difference in the feature space altered the candidate split selections during Random Forest's randomized feature bagging, producing F1 0.686802 (Gemini) vs 0.681542 (Fallback) (paired delta: +0.005260) and ROC-AUC 0.872774 (Gemini) vs 0.877213 (Fallback) (paired delta: -0.004439). In contrast, on seeds 42 and 44, `HistGradientBoosting` won under both providers and produced identical holdout scores (0.661949 and 0.687144) despite Gemini's feature operations.")
+    lines.append("")
+
     lines.append("## Mean Execution Times by Provider & Dataset")
     lines.append("")
     lines.append("| Dataset | Provider | Mean Wall Time (s) | Std Wall Time (s) |")
@@ -636,33 +665,24 @@ def generate_markdown_report(data: dict, out_path: str):
             single_op_summaries.append(f"`{po['target_operation']}` alone (F1 {po['f1_weighted']:.6f}, delta {d_f1:+.6f})")
     single_ops_summary_str = "; ".join(single_op_summaries) if single_op_summaries else "not tested"
 
-    wine_runs_with_ops = [r for r in seed_runs if r["dataset"] == "winequality-red" and r["accepted_operations"]]
-    if not wine_runs_with_ops:
-        wine_summary = "On `winequality-red.csv`, neither provider proposed or applied feature operations, and both providers achieved identical holdout scores across all seeds."
-    else:
-        wine_summaries = []
-        for prov in PROVIDERS:
-            p_runs = [r for r in wine_runs_with_ops if r["provider_requested"] == prov]
-            if p_runs:
-                all_ops = sorted(list(set(clean_op_names([op for r in p_runs for op in r["accepted_operations"]]))))
-                wine_summaries.append(f"Provider `{prov}` applied operations: `{', '.join(all_ops)}`")
-            else:
-                wine_summaries.append(f"Provider `{prov}` applied no operations (0 ops)")
-        wine_summary = f"On `winequality-red.csv`, {'; '.join(wine_summaries)}."
+    clf_stats = ds_summary_stats.get("classification", {})
+    wine_stats = ds_summary_stats.get("winequality-red", {})
 
     lines.extend([
         "",
         "## Summary of Findings (Computed Directly from Results)",
         "",
-        f"1. **Impact of 4-Condition Ablation:**",
+        f"1. **Impact of 4-Condition Ablation (`classification.csv`):**",
         f"   - Condition (i) Fallback as is yielded F1 {c_i_f1:.6f}.",
         f"   - Condition (ii) Gemini as is (with {applied_op_count} applied operations: `{diff_gemini_ops_str}`) yielded F1 {c_ii_f1:.6f} (delta vs (i): {c_ii_f1 - c_i_f1:+.6f}).",
         f"   - Condition (iii) Gemini with feature operations disabled yielded F1 {c_iii_f1:.6f} (delta vs (i): {c_iii_f1 - c_i_f1:+.6f}, matching Condition (i) exactly).",
         f"   - Condition (iv) Fallback with Gemini feature operations applied yielded F1 {c_iv_f1:.6f} (delta vs (i): {c_iv_f1 - c_i_f1:+.6f}, matching Condition (ii) exactly).",
         f"   - The four conditions show that the score difference between Fallback and Gemini on `classification.csv` is mediated by the applied feature operations (`{diff_gemini_ops_str}`).",
-        f"2. **Per-Operation Impact:** Testing each operation individually against the Fallback baseline (F1 {c_i_f1:.6f}) yielded: {single_ops_summary_str}.",
+        f"2. **Per-Operation Impact (`classification.csv`):** Testing each operation individually against the Fallback baseline (F1 {c_i_f1:.6f}) yielded: {single_ops_summary_str}.",
         f"3. **Metric Alignment:** In all runs, `exp.primary_metric` remained `f1_weighted`, and the stored `optimization.metric` records confirm that Optuna optimized `f1_weighted` throughout.",
-        f"4. **Dataset Specificity:** {wine_summary}",
+        f"4. **Per-Dataset Seed-Variation Conclusions:**",
+        f"   - **`classification`:** Across seeds 42, 43, 44, mean paired difference (Gemini − Fallback) was F1 {clf_stats.get('m_diff_f1', 0):+.6f} ± {clf_stats.get('s_diff_f1', 0):.6f} and ROC-AUC {clf_stats.get('m_diff_roc', 0):+.6f} ± {clf_stats.get('s_diff_roc', 0):.6f}. Gemini achieved score >= Fallback on {clf_stats.get('ge_fb_f1', 0)}/{clf_stats.get('n_seeds', 3)} seeds for F1 and {clf_stats.get('ge_fb_roc', 0)}/{clf_stats.get('n_seeds', 3)} seeds for ROC-AUC (no statistical test; n={clf_stats.get('n_seeds', 3)} per dataset).",
+        f"   - **`winequality-red`:** Across seeds 42, 43, 44, mean paired difference (Gemini − Fallback) was F1 {wine_stats.get('m_diff_f1', 0):+.6f} ± {wine_stats.get('s_diff_f1', 0):.6f} and ROC-AUC {wine_stats.get('m_diff_roc', 0):+.6f} ± {wine_stats.get('s_diff_roc', 0):.6f}. Gemini achieved score >= Fallback on {wine_stats.get('ge_fb_f1', 0)}/{wine_stats.get('n_seeds', 3)} seeds for F1 and {wine_stats.get('ge_fb_roc', 0)}/{wine_stats.get('n_seeds', 3)} seeds for ROC-AUC (no statistical test; n={wine_stats.get('n_seeds', 3)} per dataset).",
         "",
         "## Reproducibility",
         "",

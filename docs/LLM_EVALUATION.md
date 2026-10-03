@@ -9,6 +9,7 @@
 1. **Fixed Models in Fast Mode:** In fast mode (`fast_demo=True`), the pipeline fixes candidate models to `logistic_regression, random_forest_clf, hist_gradient_boosting_clf`. Therefore, candidate model recommendations from the LLM or fallback do not change which models are trained in this mode.
 2. **Advisory Metric:** The LLM's recommended metric is advisory and stored in `llm_analysis_json`. The API does not override `exp.primary_metric` (`f1_weighted`), so Optuna strictly optimizes `f1_weighted` in both fallback and LLM runs (as evidenced by `optimization.metric` in the stored training records: `f1_weighted`).
 3. **Post-Hoc Injections:** In the ablation experiments, conditions (iii), (iv) and the per-operation variations modify `exp.llm_analysis_json` after the `/analyze` step. These are post-hoc experimental injections to isolate feature transformations, not native product behaviour.
+4. **Sources of Randomness Controlled by Seed:** The seed parameter strictly varies: (1) the 80/20 train/holdout split via `train_test_split(random_state=effective_seed)`, (2) the cross-validation fold shuffling inside Optuna via `StratifiedKFold`/`KFold(random_state=self.seed)`, and (3) the Optuna trial hyperparameter suggestion sequence via `TPESampler(seed=self.seed)`. It does not vary estimator-internal `random_state` defaults in `model_registry` or heuristic interaction mutual-information subsampling in `feature_engineer`.
 
 ## Seed Variation Experiment (Seeds 42, 43, 44)
 
@@ -25,8 +26,11 @@ To evaluate stability across train/test splits and Optuna sampler seeds, runs we
 **Aggregate Metrics for `classification` (mean ± std across seeds 42, 43, 44):**
 - **Fallback F1-weighted:** 0.893674 ± 0.051236
 - **Gemini F1-weighted:** 0.876262 ± 0.059474
+- **Paired Difference F1-weighted (Gemini − Fallback):** -0.017412 ± 0.049952
 - **Fallback ROC-AUC:** 0.930170 ± 0.045069
 - **Gemini ROC-AUC:** 0.919367 ± 0.038567
+- **Paired Difference ROC-AUC (Gemini − Fallback):** -0.010803 ± 0.023644
+- **Seeds where Gemini >= Fallback:** F1: 1/3 seeds; ROC-AUC: 1/3 seeds (no statistical test; n=3 per dataset)
 
 ### Dataset: `winequality-red` (Total: 1599 rows | Train: 1279 rows | Holdout: 320 rows)
 
@@ -39,8 +43,11 @@ To evaluate stability across train/test splits and Optuna sampler seeds, runs we
 **Aggregate Metrics for `winequality-red` (mean ± std across seeds 42, 43, 44):**
 - **Fallback F1-weighted:** 0.676878 ± 0.013229
 - **Gemini F1-weighted:** 0.678632 ± 0.014449
+- **Paired Difference F1-weighted (Gemini − Fallback):** +0.001753 ± 0.003037
 - **Fallback ROC-AUC:** 0.848414 ± 0.031686
 - **Gemini ROC-AUC:** 0.846934 ± 0.029711
+- **Paired Difference ROC-AUC (Gemini − Fallback):** -0.001480 ± 0.002563
+- **Seeds where Gemini >= Fallback:** F1: 3/3 seeds; ROC-AUC: 2/3 seeds (no statistical test; n=3 per dataset)
 
 ### Operation Consistency Across Seeds & Batches
 
@@ -53,22 +60,26 @@ To evaluate stability across train/test splits and Optuna sampler seeds, runs we
 - On `winequality-red` with provider `gemini`, proposed operations varied across seeds: [('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p'), ('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p'), ('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p', 'volatile acidity_zscore')].
 - On `winequality-red` with provider `gemini`, accepted operations varied across seeds: [('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p'), ('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p'), ('alcohol_zscore', 'chlorides_log1p', 'residual sugar_log1p', 'sulphates_log1p', 'volatile acidity_zscore')].
 
-## All Measured Run Details
+## Proposed vs. Accepted Feature Operations (All Runs)
 
-| Dataset | Seed | Provider | Model | Proposed Operations | Accepted Operations | Rejected Operations | Models Trained | Winner | F1-weighted | ROC-AUC | Wall Time (s) |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| classification | 42 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.881778 | 0.912037 | 23.9574 |
-| classification | 42 | Google Gemini | gemini-flash-lite-latest | Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore | Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.814222 | 0.884259 | 27.4896 |
-| classification | 43 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.949811 | 0.981481 | 8.8691 |
-| classification | 43 | Google Gemini | gemini-flash-lite-latest | Balance_log1p, Gender_freq, Geography_freq | Balance_log1p, Gender_freq, Geography_freq | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.932785 | 0.960648 | 13.9965 |
-| classification | 44 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.849432 | 0.896991 | 10.8185 |
-| classification | 44 | Google Gemini | gemini-flash-lite-latest | Balance_log1p, Income_zscore, CreditScore_zscore, Age_zscore, Gender_freq, Geography_freq | Balance_log1p, Income_zscore, CreditScore_zscore, Age_zscore, Gender_freq, Geography_freq | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.881778 | 0.913194 | 17.1625 |
-| winequality-red | 42 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.661949 | 0.814471 | 34.5296 |
-| winequality-red | 42 | Google Gemini | gemini-flash-lite-latest | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.661949 | 0.814471 | 46.7911 |
-| winequality-red | 43 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.681542 | 0.877213 | 23.6706 |
-| winequality-red | 43 | Google Gemini | gemini-flash-lite-latest | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.686802 | 0.872774 | 33.0467 |
-| winequality-red | 44 | Fallback (Deterministic) | rule-based | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.687144 | 0.853558 | 55.7188 |
-| winequality-red | 44 | Google Gemini | gemini-flash-lite-latest | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore, volatile acidity_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore, volatile acidity_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.687144 | 0.853558 | 75.8543 |
+| Dataset | Seed | Provider | Proposed Operations | Accepted Operations | Rejected Operations | Models Trained | Winner | F1-weighted | ROC-AUC |
+|---|---|---|---|---|---|---|---|---|---|
+| classification | 42 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.881778 | 0.912037 |
+| classification | 42 | Google Gemini | Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore | Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.814222 | 0.884259 |
+| classification | 43 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.949811 | 0.981481 |
+| classification | 43 | Google Gemini | Balance_log1p, Gender_freq, Geography_freq | Balance_log1p, Gender_freq, Geography_freq | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.932785 | 0.960648 |
+| classification | 44 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.849432 | 0.896991 |
+| classification | 44 | Google Gemini | Balance_log1p, Income_zscore, CreditScore_zscore, Age_zscore, Gender_freq, Geography_freq | Balance_log1p, Income_zscore, CreditScore_zscore, Age_zscore, Gender_freq, Geography_freq | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.881778 | 0.913194 |
+| winequality-red | 42 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.661949 | 0.814471 |
+| winequality-red | 42 | Google Gemini | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.661949 | 0.814471 |
+| winequality-red | 43 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.681542 | 0.877213 |
+| winequality-red | 43 | Google Gemini | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | Random Forest | 0.686802 | 0.872774 |
+| winequality-red | 44 | Fallback (Deterministic) | None (0 ops) | None (0 ops) | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.687144 | 0.853558 |
+| winequality-red | 44 | Google Gemini | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore, volatile acidity_zscore | residual sugar_log1p, chlorides_log1p, sulphates_log1p, alcohol_zscore, volatile acidity_zscore | None (0 rejected) | logistic_regression, random_forest_clf, hist_gradient_boosting_clf | HistGradientBoosting | 0.687144 | 0.853558 |
+
+### Score Divergence Analysis on `winequality-red` (Seed 43)
+
+On `winequality-red` under seed 43, the winning model was `Random Forest`. Google Gemini proposed and applied 4 feature operations (`residual sugar_log1p`, `chlorides_log1p`, `sulphates_log1p`, `alcohol_zscore`), whereas Fallback proposed and applied 0 feature operations. The resulting difference in the feature space altered the candidate split selections during Random Forest's randomized feature bagging, producing F1 0.686802 (Gemini) vs 0.681542 (Fallback) (paired delta: +0.005260) and ROC-AUC 0.872774 (Gemini) vs 0.877213 (Fallback) (paired delta: -0.004439). In contrast, on seeds 42 and 44, `HistGradientBoosting` won under both providers and produced identical holdout scores (0.661949 and 0.687144) despite Gemini's feature operations.
 
 ## Mean Execution Times by Provider & Dataset
 
@@ -109,15 +120,17 @@ To test which specific feature operations cause changes in performance, each Gem
 
 ## Summary of Findings (Computed Directly from Results)
 
-1. **Impact of 4-Condition Ablation:**
+1. **Impact of 4-Condition Ablation (`classification.csv`):**
    - Condition (i) Fallback as is yielded F1 0.881778.
    - Condition (ii) Gemini as is (with 5 applied operations: `Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore`) yielded F1 0.814222 (delta vs (i): -0.067556).
    - Condition (iii) Gemini with feature operations disabled yielded F1 0.881778 (delta vs (i): +0.000000, matching Condition (i) exactly).
    - Condition (iv) Fallback with Gemini feature operations applied yielded F1 0.814222 (delta vs (i): -0.067556, matching Condition (ii) exactly).
    - The four conditions show that the score difference between Fallback and Gemini on `classification.csv` is mediated by the applied feature operations (`Balance_log1p, Gender_freq, Geography_freq, Age_zscore, Income_zscore`).
-2. **Per-Operation Impact:** Testing each operation individually against the Fallback baseline (F1 0.881778) yielded: `Balance_log1p` alone (F1 0.814222, delta -0.067556); `Gender_freq` alone (F1 0.814222, delta -0.067556); `Geography_freq` alone (F1 0.814222, delta -0.067556); `Age_zscore` alone (F1 0.814222, delta -0.067556); `Income_zscore` alone (F1 0.814222, delta -0.067556).
+2. **Per-Operation Impact (`classification.csv`):** Testing each operation individually against the Fallback baseline (F1 0.881778) yielded: `Balance_log1p` alone (F1 0.814222, delta -0.067556); `Gender_freq` alone (F1 0.814222, delta -0.067556); `Geography_freq` alone (F1 0.814222, delta -0.067556); `Age_zscore` alone (F1 0.814222, delta -0.067556); `Income_zscore` alone (F1 0.814222, delta -0.067556).
 3. **Metric Alignment:** In all runs, `exp.primary_metric` remained `f1_weighted`, and the stored `optimization.metric` records confirm that Optuna optimized `f1_weighted` throughout.
-4. **Dataset Specificity:** On `winequality-red.csv`, Provider `fallback` applied no operations (0 ops); Provider `gemini` applied operations: `alcohol_zscore, chlorides_log1p, residual sugar_log1p, sulphates_log1p, volatile acidity_zscore`.
+4. **Per-Dataset Seed-Variation Conclusions:**
+   - **`classification`:** Across seeds 42, 43, 44, mean paired difference (Gemini − Fallback) was F1 -0.017412 ± 0.049952 and ROC-AUC -0.010803 ± 0.023644. Gemini achieved score >= Fallback on 1/3 seeds for F1 and 1/3 seeds for ROC-AUC (no statistical test; n=3 per dataset).
+   - **`winequality-red`:** Across seeds 42, 43, 44, mean paired difference (Gemini − Fallback) was F1 +0.001753 ± 0.003037 and ROC-AUC -0.001480 ± 0.002563. Gemini achieved score >= Fallback on 3/3 seeds for F1 and 2/3 seeds for ROC-AUC (no statistical test; n=3 per dataset).
 
 ## Reproducibility
 

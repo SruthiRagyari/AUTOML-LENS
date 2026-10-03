@@ -109,7 +109,7 @@ automl-lens/
 ├── docs/                   # Documentation and audit reports
 ├── scripts/                # Evaluation and benchmark scripts
 ├── storage/                # Datasets, models, reports, predictions
-├── tests/                  # pytest test suite (223 tests)
+├── tests/                  # pytest test suite
 └── README.md
 ```
 
@@ -306,16 +306,16 @@ OPENAI_MODEL=gpt-4o-mini
 
 ## Running Tests
 
+Run the test suite with:
+
 ```bash
-cd automl-lens
-python -m pytest tests/ -v
+python -m pytest tests -q
 ```
 
 The full suite covers dataset profiling, ingestion and suitability checks,
 feature engineering, the model registry, evaluation metrics, model selection,
-training progress, and the full end-to-end pipeline (223 passing in this
-environment). Real-LLM tests run only when a provider key is configured and
-are skipped otherwise.
+training progress, and the full end-to-end pipeline (225 passing as of 2026-10-03).
+Real-LLM tests run only when a provider key is configured and are skipped otherwise.
 
 ---
 
