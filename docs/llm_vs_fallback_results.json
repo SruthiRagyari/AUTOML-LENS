@@ -1,9 +1,15 @@
 {
-  "evaluation_runs": [
+  "isolated_database_url": "sqlite:///C:/Users/sruth/AppData/Local/Temp/automl_lens_eval_ltb1i68m/eval_automl.db",
+  "isolated_storage_path": "C:\\Users\\sruth\\AppData\\Local\\Temp\\automl_lens_eval_ltb1i68m\\storage",
+  "seed_runs": [
     {
       "dataset": "classification",
-      "exp_id": 27,
-      "exp_name": "eval_classification_fallback_rep1",
+      "exp_id": 1,
+      "exp_name": "seed_classification_fallback_s42",
+      "seed": 42,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
       "provider_requested": "fallback",
       "provider_used": "Fallback (Deterministic)",
       "model_name": "rule-based",
@@ -16,24 +22,27 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
       "accepted_operations": [],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.881778,
       "holdout_f1_weighted": 0.881778,
       "holdout_roc_auc": 0.912037,
-      "wall_time_seconds": 11.0897,
-      "repeat": 1,
-      "seed": 42
+      "wall_time_seconds": 23.9574
     },
     {
       "dataset": "classification",
-      "exp_id": 28,
-      "exp_name": "eval_classification_gemini_rep1",
+      "exp_id": 2,
+      "exp_name": "seed_classification_gemini_s42",
+      "seed": 42,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
       "provider_requested": "gemini",
       "provider_used": "Google Gemini",
       "model_name": "gemini-flash-lite-latest",
@@ -45,12 +54,12 @@
       "recommended_metric": "roc_auc",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [
+      "proposed_operations": [
         {
           "column": "Balance",
           "operation": "log1p",
           "params": {},
-          "reason": "Reduce positive skewness in balance.",
+          "reason": "Reduces high positive skewness in account balance.",
           "category": "numeric",
           "features": [
             "Balance_log1p"
@@ -60,108 +69,7 @@
           "column": "Gender",
           "operation": "frequency_encoding",
           "params": {},
-          "reason": "Convert categorical gender to numeric frequency.",
-          "category": "categorical",
-          "features": [
-            "Gender_freq"
-          ]
-        },
-        {
-          "column": "Geography",
-          "operation": "frequency_encoding",
-          "params": {},
-          "reason": "Convert categorical geography to numeric frequency.",
-          "category": "categorical",
-          "features": [
-            "Geography_freq"
-          ]
-        },
-        {
-          "column": "Income",
-          "operation": "absolute",
-          "params": {},
-          "reason": "Fix negative values in income.",
-          "category": "numeric",
-          "features": [
-            "Income_abs"
-          ]
-        }
-      ],
-      "models_trained": [
-        "logistic_regression",
-        "random_forest_clf",
-        "hist_gradient_boosting_clf"
-      ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.814222,
-      "holdout_f1_weighted": 0.814222,
-      "holdout_roc_auc": 0.884259,
-      "wall_time_seconds": 16.8924,
-      "repeat": 1,
-      "seed": 42
-    },
-    {
-      "dataset": "classification",
-      "exp_id": 29,
-      "exp_name": "eval_classification_fallback_rep2",
-      "provider_requested": "fallback",
-      "provider_used": "Fallback (Deterministic)",
-      "model_name": "rule-based",
-      "recommended_models": [
-        "logistic_regression",
-        "random_forest_clf",
-        "gradient_boosting_clf",
-        "knn_clf"
-      ],
-      "recommended_metric": "f1_weighted",
-      "primary_metric": "f1_weighted",
-      "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [],
-      "models_trained": [
-        "logistic_regression",
-        "random_forest_clf",
-        "hist_gradient_boosting_clf"
-      ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.881778,
-      "holdout_f1_weighted": 0.881778,
-      "holdout_roc_auc": 0.912037,
-      "wall_time_seconds": 9.2563,
-      "repeat": 2,
-      "seed": 42
-    },
-    {
-      "dataset": "classification",
-      "exp_id": 30,
-      "exp_name": "eval_classification_gemini_rep2",
-      "provider_requested": "gemini",
-      "provider_used": "Google Gemini",
-      "model_name": "gemini-flash-lite-latest",
-      "recommended_models": [
-        "random_forest_clf",
-        "gradient_boosting_clf",
-        "logistic_regression",
-        "svm_clf"
-      ],
-      "recommended_metric": "roc_auc",
-      "primary_metric": "f1_weighted",
-      "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [
-        {
-          "column": "Balance",
-          "operation": "log1p",
-          "params": {},
-          "reason": "Reduces high positive skewness (skew = 1.715) in Balance.",
-          "category": "numeric",
-          "features": [
-            "Balance_log1p"
-          ]
-        },
-        {
-          "column": "Gender",
-          "operation": "frequency_encoding",
-          "params": {},
-          "reason": null,
+          "reason": "Encodes categorical gender variable into numerical frequencies.",
           "category": "categorical",
           "features": [
             "Gender_freq"
@@ -181,100 +89,42 @@
           "column": "Age",
           "operation": "zscore",
           "params": {},
-          "reason": "Standardizes Age feature for models sensitive to feature scales.",
+          "reason": "Standardizes age feature for models sensitive to scale.",
           "category": "numeric",
           "features": [
             "Age_zscore"
           ]
         },
         {
-          "column": "CreditScore",
+          "column": "Income",
           "operation": "zscore",
           "params": {},
-          "reason": null,
+          "reason": "Standardizes income feature for models sensitive to scale.",
           "category": "numeric",
           "features": [
-            "CreditScore_zscore"
+            "Income_zscore"
           ]
         }
       ],
-      "models_trained": [
-        "logistic_regression",
-        "random_forest_clf",
-        "hist_gradient_boosting_clf"
-      ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.814222,
-      "holdout_f1_weighted": 0.814222,
-      "holdout_roc_auc": 0.884259,
-      "wall_time_seconds": 16.9816,
-      "repeat": 2,
-      "seed": 42
-    },
-    {
-      "dataset": "classification",
-      "exp_id": 31,
-      "exp_name": "eval_classification_fallback_rep3",
-      "provider_requested": "fallback",
-      "provider_used": "Fallback (Deterministic)",
-      "model_name": "rule-based",
-      "recommended_models": [
-        "logistic_regression",
-        "random_forest_clf",
-        "gradient_boosting_clf",
-        "knn_clf"
-      ],
-      "recommended_metric": "f1_weighted",
-      "primary_metric": "f1_weighted",
-      "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [],
-      "models_trained": [
-        "logistic_regression",
-        "random_forest_clf",
-        "hist_gradient_boosting_clf"
-      ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.881778,
-      "holdout_f1_weighted": 0.881778,
-      "holdout_roc_auc": 0.912037,
-      "wall_time_seconds": 8.8725,
-      "repeat": 3,
-      "seed": 42
-    },
-    {
-      "dataset": "classification",
-      "exp_id": 32,
-      "exp_name": "eval_classification_gemini_rep3",
-      "provider_requested": "gemini",
-      "provider_used": "Google Gemini",
-      "model_name": "gemini-flash-lite-latest",
-      "recommended_models": [
-        "random_forest_clf",
-        "logistic_regression",
-        "gradient_boosting_clf"
-      ],
-      "recommended_metric": "roc_auc",
-      "primary_metric": "f1_weighted",
-      "optuna_metric_optimized": "f1_weighted",
       "accepted_operations": [
         {
           "column": "Balance",
           "operation": "log1p",
           "params": {},
-          "reason": null,
+          "reason": "Reduces high positive skewness in account balance.",
           "category": "numeric",
           "features": [
             "Balance_log1p"
           ]
         },
         {
-          "column": "Income",
-          "operation": "absolute",
+          "column": "Gender",
+          "operation": "frequency_encoding",
           "params": {},
-          "reason": "Corrects negative values caused by data corruption.",
-          "category": "numeric",
+          "reason": "Encodes categorical gender variable into numerical frequencies.",
+          "category": "categorical",
           "features": [
-            "Income_abs"
+            "Gender_freq"
           ]
         },
         {
@@ -288,33 +138,359 @@
           ]
         },
         {
-          "column": "Gender",
-          "operation": "frequency_encoding",
+          "column": "Age",
+          "operation": "zscore",
           "params": {},
-          "reason": "Encodes categorical gender values into frequencies.",
-          "category": "categorical",
+          "reason": "Standardizes age feature for models sensitive to scale.",
+          "category": "numeric",
           "features": [
-            "Gender_freq"
+            "Age_zscore"
+          ]
+        },
+        {
+          "column": "Income",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardizes income feature for models sensitive to scale.",
+          "category": "numeric",
+          "features": [
+            "Income_zscore"
           ]
         }
       ],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.814222,
       "holdout_f1_weighted": 0.814222,
       "holdout_roc_auc": 0.884259,
-      "wall_time_seconds": 16.872,
-      "repeat": 3,
-      "seed": 42
+      "wall_time_seconds": 27.4896
+    },
+    {
+      "dataset": "classification",
+      "exp_id": 3,
+      "exp_name": "seed_classification_fallback_s43",
+      "seed": 43,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
+      "provider_requested": "fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_name": "rule-based",
+      "recommended_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "knn_clf"
+      ],
+      "recommended_metric": "f1_weighted",
+      "primary_metric": "f1_weighted",
+      "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
+      "accepted_operations": [],
+      "rejected_operations": [],
+      "models_trained": [
+        "logistic_regression",
+        "random_forest_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.949811,
+      "holdout_roc_auc": 0.981481,
+      "wall_time_seconds": 8.8691
+    },
+    {
+      "dataset": "classification",
+      "exp_id": 4,
+      "exp_name": "seed_classification_gemini_s43",
+      "seed": 43,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
+      "provider_requested": "gemini",
+      "provider_used": "Google Gemini",
+      "model_name": "gemini-flash-lite-latest",
+      "recommended_models": [
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "logistic_regression"
+      ],
+      "recommended_metric": "roc_auc",
+      "primary_metric": "f1_weighted",
+      "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [
+        {
+          "column": "Balance",
+          "operation": "log1p",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "Balance_log1p"
+          ]
+        },
+        {
+          "column": "Gender",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical gender variable into numeric frequency.",
+          "category": "categorical",
+          "features": [
+            "Gender_freq"
+          ]
+        },
+        {
+          "column": "Geography",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical geography variable into numeric frequency.",
+          "category": "categorical",
+          "features": [
+            "Geography_freq"
+          ]
+        }
+      ],
+      "accepted_operations": [
+        {
+          "column": "Balance",
+          "operation": "log1p",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "Balance_log1p"
+          ]
+        },
+        {
+          "column": "Gender",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical gender variable into numeric frequency.",
+          "category": "categorical",
+          "features": [
+            "Gender_freq"
+          ]
+        },
+        {
+          "column": "Geography",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical geography variable into numeric frequency.",
+          "category": "categorical",
+          "features": [
+            "Geography_freq"
+          ]
+        }
+      ],
+      "rejected_operations": [],
+      "models_trained": [
+        "logistic_regression",
+        "random_forest_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.932785,
+      "holdout_roc_auc": 0.960648,
+      "wall_time_seconds": 13.9965
+    },
+    {
+      "dataset": "classification",
+      "exp_id": 5,
+      "exp_name": "seed_classification_fallback_s44",
+      "seed": 44,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
+      "provider_requested": "fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_name": "rule-based",
+      "recommended_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "knn_clf"
+      ],
+      "recommended_metric": "f1_weighted",
+      "primary_metric": "f1_weighted",
+      "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
+      "accepted_operations": [],
+      "rejected_operations": [],
+      "models_trained": [
+        "logistic_regression",
+        "random_forest_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.849432,
+      "holdout_roc_auc": 0.896991,
+      "wall_time_seconds": 10.8185
+    },
+    {
+      "dataset": "classification",
+      "exp_id": 6,
+      "exp_name": "seed_classification_gemini_s44",
+      "seed": 44,
+      "total_rows": 300,
+      "train_rows": 240,
+      "holdout_rows": 60,
+      "provider_requested": "gemini",
+      "provider_used": "Google Gemini",
+      "model_name": "gemini-flash-lite-latest",
+      "recommended_models": [
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "logistic_regression"
+      ],
+      "recommended_metric": "roc_auc",
+      "primary_metric": "f1_weighted",
+      "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [
+        {
+          "column": "Balance",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduces high right skewness (1.715) in the Balance column.",
+          "category": "numeric",
+          "features": [
+            "Balance_log1p"
+          ]
+        },
+        {
+          "column": "Income",
+          "operation": "zscore",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "Income_zscore"
+          ]
+        },
+        {
+          "column": "CreditScore",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardizes CreditScore values.",
+          "category": "numeric",
+          "features": [
+            "CreditScore_zscore"
+          ]
+        },
+        {
+          "column": "Age",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardizes Age values.",
+          "category": "numeric",
+          "features": [
+            "Age_zscore"
+          ]
+        },
+        {
+          "column": "Gender",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical Gender variable.",
+          "category": "categorical",
+          "features": [
+            "Gender_freq"
+          ]
+        },
+        {
+          "column": "Geography",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical Geography variable.",
+          "category": "categorical",
+          "features": [
+            "Geography_freq"
+          ]
+        }
+      ],
+      "accepted_operations": [
+        {
+          "column": "Balance",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduces high right skewness (1.715) in the Balance column.",
+          "category": "numeric",
+          "features": [
+            "Balance_log1p"
+          ]
+        },
+        {
+          "column": "Income",
+          "operation": "zscore",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "Income_zscore"
+          ]
+        },
+        {
+          "column": "CreditScore",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardizes CreditScore values.",
+          "category": "numeric",
+          "features": [
+            "CreditScore_zscore"
+          ]
+        },
+        {
+          "column": "Age",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardizes Age values.",
+          "category": "numeric",
+          "features": [
+            "Age_zscore"
+          ]
+        },
+        {
+          "column": "Gender",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical Gender variable.",
+          "category": "categorical",
+          "features": [
+            "Gender_freq"
+          ]
+        },
+        {
+          "column": "Geography",
+          "operation": "frequency_encoding",
+          "params": {},
+          "reason": "Encodes categorical Geography variable.",
+          "category": "categorical",
+          "features": [
+            "Geography_freq"
+          ]
+        }
+      ],
+      "rejected_operations": [],
+      "models_trained": [
+        "logistic_regression",
+        "random_forest_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.881778,
+      "holdout_roc_auc": 0.913194,
+      "wall_time_seconds": 17.1625
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 33,
-      "exp_name": "eval_winequality-red_fallback_rep1",
+      "exp_id": 7,
+      "exp_name": "seed_winequality-red_fallback_s42",
+      "seed": 42,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "fallback",
       "provider_used": "Fallback (Deterministic)",
       "model_name": "rule-based",
@@ -327,24 +503,27 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
       "accepted_operations": [],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
       "holdout_f1_weighted": 0.661949,
       "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 36.5919,
-      "repeat": 1,
-      "seed": 42
+      "wall_time_seconds": 34.5296
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 34,
-      "exp_name": "eval_winequality-red_gemini_rep1",
+      "exp_id": 8,
+      "exp_name": "seed_winequality-red_gemini_s42",
+      "seed": 42,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "gemini",
       "provider_used": "Google Gemini",
       "model_name": "gemini-flash-lite-latest",
@@ -357,12 +536,12 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [
+      "proposed_operations": [
         {
           "column": "residual sugar",
           "operation": "log1p",
           "params": {},
-          "reason": "Reduce high positive skew.",
+          "reason": "Reduce right skewness in residual sugar values.",
           "category": "numeric",
           "features": [
             "residual sugar_log1p"
@@ -372,7 +551,7 @@
           "column": "chlorides",
           "operation": "log1p",
           "params": {},
-          "reason": "Stabilize variance and reduce right-skew.",
+          "reason": "Reduce right skewness in chlorides values.",
           "category": "numeric",
           "features": [
             "chlorides_log1p"
@@ -382,7 +561,7 @@
           "column": "sulphates",
           "operation": "log1p",
           "params": {},
-          "reason": "Normalize distribution tail.",
+          "reason": "Reduce right skewness in sulphates values.",
           "category": "numeric",
           "features": [
             "sulphates_log1p"
@@ -399,23 +578,67 @@
           ]
         }
       ],
+      "accepted_operations": [
+        {
+          "column": "residual sugar",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduce right skewness in residual sugar values.",
+          "category": "numeric",
+          "features": [
+            "residual sugar_log1p"
+          ]
+        },
+        {
+          "column": "chlorides",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduce right skewness in chlorides values.",
+          "category": "numeric",
+          "features": [
+            "chlorides_log1p"
+          ]
+        },
+        {
+          "column": "sulphates",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduce right skewness in sulphates values.",
+          "category": "numeric",
+          "features": [
+            "sulphates_log1p"
+          ]
+        },
+        {
+          "column": "alcohol",
+          "operation": "zscore",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "alcohol_zscore"
+          ]
+        }
+      ],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
       "holdout_f1_weighted": 0.661949,
       "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 48.2625,
-      "repeat": 1,
-      "seed": 42
+      "wall_time_seconds": 46.7911
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 35,
-      "exp_name": "eval_winequality-red_fallback_rep2",
+      "exp_id": 9,
+      "exp_name": "seed_winequality-red_fallback_s43",
+      "seed": 43,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "fallback",
       "provider_used": "Fallback (Deterministic)",
       "model_name": "rule-based",
@@ -428,24 +651,27 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
       "accepted_operations": [],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
-      "holdout_f1_weighted": 0.661949,
-      "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 38.6994,
-      "repeat": 2,
-      "seed": 42
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.681542,
+      "holdout_roc_auc": 0.877213,
+      "wall_time_seconds": 23.6706
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 36,
-      "exp_name": "eval_winequality-red_gemini_rep2",
+      "exp_id": 10,
+      "exp_name": "seed_winequality-red_gemini_s43",
+      "seed": 43,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "gemini",
       "provider_used": "Google Gemini",
       "model_name": "gemini-flash-lite-latest",
@@ -458,32 +684,12 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [
-        {
-          "column": "alcohol",
-          "operation": "zscore",
-          "params": {},
-          "reason": null,
-          "category": "numeric",
-          "features": [
-            "alcohol_zscore"
-          ]
-        },
-        {
-          "column": "volatile acidity",
-          "operation": "log1p",
-          "params": {},
-          "reason": "Reduces skewness in volatile acidity values.",
-          "category": "numeric",
-          "features": [
-            "volatile acidity_log1p"
-          ]
-        },
+      "proposed_operations": [
         {
           "column": "residual sugar",
           "operation": "log1p",
           "params": {},
-          "reason": "Residual sugar exhibits right skewness (max 15.5 vs median 2.2).",
+          "reason": "Reduces high right skewness.",
           "category": "numeric",
           "features": [
             "residual sugar_log1p"
@@ -493,7 +699,7 @@
           "column": "chlorides",
           "operation": "log1p",
           "params": {},
-          "reason": "Chlorides show right skewness with high outliers.",
+          "reason": "Reduces high right skewness.",
           "category": "numeric",
           "features": [
             "chlorides_log1p"
@@ -503,30 +709,84 @@
           "column": "sulphates",
           "operation": "log1p",
           "params": {},
-          "reason": "Sulphates show moderate right skewness.",
+          "reason": "Reduces right skewness.",
           "category": "numeric",
           "features": [
             "sulphates_log1p"
           ]
+        },
+        {
+          "column": "alcohol",
+          "operation": "zscore",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "alcohol_zscore"
+          ]
         }
       ],
+      "accepted_operations": [
+        {
+          "column": "residual sugar",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduces high right skewness.",
+          "category": "numeric",
+          "features": [
+            "residual sugar_log1p"
+          ]
+        },
+        {
+          "column": "chlorides",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduces high right skewness.",
+          "category": "numeric",
+          "features": [
+            "chlorides_log1p"
+          ]
+        },
+        {
+          "column": "sulphates",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Reduces right skewness.",
+          "category": "numeric",
+          "features": [
+            "sulphates_log1p"
+          ]
+        },
+        {
+          "column": "alcohol",
+          "operation": "zscore",
+          "params": {},
+          "reason": null,
+          "category": "numeric",
+          "features": [
+            "alcohol_zscore"
+          ]
+        }
+      ],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
-      "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
-      "holdout_f1_weighted": 0.661949,
-      "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 52.8925,
-      "repeat": 2,
-      "seed": 42
+      "winner": "Random Forest",
+      "holdout_f1_weighted": 0.686802,
+      "holdout_roc_auc": 0.872774,
+      "wall_time_seconds": 33.0467
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 37,
-      "exp_name": "eval_winequality-red_fallback_rep3",
+      "exp_id": 11,
+      "exp_name": "seed_winequality-red_fallback_s44",
+      "seed": 44,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "fallback",
       "provider_used": "Fallback (Deterministic)",
       "model_name": "rule-based",
@@ -539,24 +799,27 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
+      "proposed_operations": [],
       "accepted_operations": [],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
-      "holdout_f1_weighted": 0.661949,
-      "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 43.4454,
-      "repeat": 3,
-      "seed": 42
+      "holdout_f1_weighted": 0.687144,
+      "holdout_roc_auc": 0.853558,
+      "wall_time_seconds": 55.7188
     },
     {
       "dataset": "winequality-red",
-      "exp_id": 38,
-      "exp_name": "eval_winequality-red_gemini_rep3",
+      "exp_id": 12,
+      "exp_name": "seed_winequality-red_gemini_s44",
+      "seed": 44,
+      "total_rows": 1599,
+      "train_rows": 1279,
+      "holdout_rows": 320,
       "provider_requested": "gemini",
       "provider_used": "Google Gemini",
       "model_name": "gemini-flash-lite-latest",
@@ -569,12 +832,12 @@
       "recommended_metric": "f1_weighted",
       "primary_metric": "f1_weighted",
       "optuna_metric_optimized": "f1_weighted",
-      "accepted_operations": [
+      "proposed_operations": [
         {
           "column": "residual sugar",
           "operation": "log1p",
           "params": {},
-          "reason": "Address high skewness.",
+          "reason": "Normalize highly skewed distribution.",
           "category": "numeric",
           "features": [
             "residual sugar_log1p"
@@ -584,7 +847,7 @@
           "column": "chlorides",
           "operation": "log1p",
           "params": {},
-          "reason": "Address high skewness.",
+          "reason": "Normalize highly skewed distribution.",
           "category": "numeric",
           "features": [
             "chlorides_log1p"
@@ -594,7 +857,7 @@
           "column": "sulphates",
           "operation": "log1p",
           "params": {},
-          "reason": "Address high skewness.",
+          "reason": "Normalize highly skewed distribution.",
           "category": "numeric",
           "features": [
             "sulphates_log1p"
@@ -609,20 +872,80 @@
           "features": [
             "alcohol_zscore"
           ]
+        },
+        {
+          "column": "volatile acidity",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardize feature scale.",
+          "category": "numeric",
+          "features": [
+            "volatile acidity_zscore"
+          ]
         }
       ],
+      "accepted_operations": [
+        {
+          "column": "residual sugar",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Normalize highly skewed distribution.",
+          "category": "numeric",
+          "features": [
+            "residual sugar_log1p"
+          ]
+        },
+        {
+          "column": "chlorides",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Normalize highly skewed distribution.",
+          "category": "numeric",
+          "features": [
+            "chlorides_log1p"
+          ]
+        },
+        {
+          "column": "sulphates",
+          "operation": "log1p",
+          "params": {},
+          "reason": "Normalize highly skewed distribution.",
+          "category": "numeric",
+          "features": [
+            "sulphates_log1p"
+          ]
+        },
+        {
+          "column": "alcohol",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardize feature scale.",
+          "category": "numeric",
+          "features": [
+            "alcohol_zscore"
+          ]
+        },
+        {
+          "column": "volatile acidity",
+          "operation": "zscore",
+          "params": {},
+          "reason": "Standardize feature scale.",
+          "category": "numeric",
+          "features": [
+            "volatile acidity_zscore"
+          ]
+        }
+      ],
+      "rejected_operations": [],
       "models_trained": [
         "logistic_regression",
         "random_forest_clf",
         "hist_gradient_boosting_clf"
       ],
       "winner": "HistGradientBoosting",
-      "final_holdout_metric": 0.661949,
-      "holdout_f1_weighted": 0.661949,
-      "holdout_roc_auc": 0.814471,
-      "wall_time_seconds": 52.4872,
-      "repeat": 3,
-      "seed": 42
+      "holdout_f1_weighted": 0.687144,
+      "holdout_roc_auc": 0.853558,
+      "wall_time_seconds": 75.8543
     }
   ],
   "ablation_runs": [
@@ -649,14 +972,15 @@
         "Balance_log1p",
         "Gender_freq",
         "Geography_freq",
-        "Income_abs"
+        "Age_zscore",
+        "Income_zscore"
       ],
       "winner": "HistGradientBoosting",
       "f1_weighted": 0.814222,
       "roc_auc": 0.884259
     },
     {
-      "condition": "(iii) Gemini with FE disabled",
+      "condition": "(iii) Gemini with FE disabled (post-hoc injection)",
       "provider_used": "Google Gemini",
       "model_name": "gemini-flash-lite-latest",
       "recommended_metric": "roc_auc",
@@ -668,7 +992,7 @@
       "roc_auc": 0.912037
     },
     {
-      "condition": "(iv) Fallback with Gemini FE applied",
+      "condition": "(iv) Fallback with Gemini FE applied (post-hoc injection)",
       "provider_used": "Fallback (Deterministic)",
       "model_name": "rule-based",
       "recommended_metric": "f1_weighted",
@@ -678,11 +1002,149 @@
         "Balance_log1p",
         "Gender_freq",
         "Geography_freq",
-        "Income_abs"
+        "Age_zscore",
+        "Income_zscore"
       ],
       "winner": "HistGradientBoosting",
       "f1_weighted": 0.814222,
       "roc_auc": 0.884259
+    }
+  ],
+  "per_op_ablation_runs": [
+    {
+      "type": "single_operation",
+      "label": "Fallback + [Balance_log1p] alone",
+      "target_operation": "Balance_log1p",
+      "operations_applied": [
+        "Balance_log1p"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 9.3875
+    },
+    {
+      "type": "single_operation",
+      "label": "Fallback + [Gender_freq] alone",
+      "target_operation": "Gender_freq",
+      "operations_applied": [
+        "Gender_freq"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 9.5304
+    },
+    {
+      "type": "single_operation",
+      "label": "Fallback + [Geography_freq] alone",
+      "target_operation": "Geography_freq",
+      "operations_applied": [
+        "Geography_freq"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 8.9068
+    },
+    {
+      "type": "single_operation",
+      "label": "Fallback + [Age_zscore] alone",
+      "target_operation": "Age_zscore",
+      "operations_applied": [
+        "Age_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 10.0967
+    },
+    {
+      "type": "single_operation",
+      "label": "Fallback + [Income_zscore] alone",
+      "target_operation": "Income_zscore",
+      "operations_applied": [
+        "Income_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 9.245
+    },
+    {
+      "type": "leave_one_out",
+      "label": "Fallback + All except [Balance_log1p]",
+      "excluded_operation": "Balance_log1p",
+      "operations_applied": [
+        "Gender_freq",
+        "Geography_freq",
+        "Age_zscore",
+        "Income_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 8.8247
+    },
+    {
+      "type": "leave_one_out",
+      "label": "Fallback + All except [Gender_freq]",
+      "excluded_operation": "Gender_freq",
+      "operations_applied": [
+        "Balance_log1p",
+        "Geography_freq",
+        "Age_zscore",
+        "Income_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 19.0949
+    },
+    {
+      "type": "leave_one_out",
+      "label": "Fallback + All except [Geography_freq]",
+      "excluded_operation": "Geography_freq",
+      "operations_applied": [
+        "Balance_log1p",
+        "Gender_freq",
+        "Age_zscore",
+        "Income_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 20.1135
+    },
+    {
+      "type": "leave_one_out",
+      "label": "Fallback + All except [Age_zscore]",
+      "excluded_operation": "Age_zscore",
+      "operations_applied": [
+        "Balance_log1p",
+        "Gender_freq",
+        "Geography_freq",
+        "Income_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 21.8797
+    },
+    {
+      "type": "leave_one_out",
+      "label": "Fallback + All except [Income_zscore]",
+      "excluded_operation": "Income_zscore",
+      "operations_applied": [
+        "Balance_log1p",
+        "Gender_freq",
+        "Geography_freq",
+        "Age_zscore"
+      ],
+      "winner": "HistGradientBoosting",
+      "f1_weighted": 0.814222,
+      "roc_auc": 0.884259,
+      "wall_time_seconds": 20.3476
     }
   ]
 }
