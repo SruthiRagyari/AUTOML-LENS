@@ -14,7 +14,7 @@ export default function About() {
     'No time-series or multi-label classification support yet',
   ]
   const futureWork = [
-    'Async/background training with WebSocket progress updates',
+    'WebSocket push updates for training progress (a polling progress endpoint already exists)',
     'Deep learning models (TensorFlow/PyTorch integration)',
     'Time-series forecasting support',
     'Multi-objective optimization (accuracy + inference speed)',

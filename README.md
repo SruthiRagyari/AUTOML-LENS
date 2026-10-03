@@ -102,10 +102,9 @@ automl-lens/
 │       ├── components/     # Layout, Charts, Common UI
 │       ├── pages/          # Landing, Dashboard, Experiment, History, etc.
 │       └── services/       # API client
-├── benchmarks/             # Benchmark runner and datasets (adult, wine-quality)
+├── benchmarks/             # Benchmark datasets (adult, wine-quality)
 ├── demo_data/              # Sample CSV datasets (classification, regression)
 ├── docs/                   # Documentation and audit reports
-├── scripts/                # Utility scripts
 ├── storage/                # Datasets, models, reports, predictions
 ├── tests/                  # pytest test suite (223 tests)
 └── README.md
@@ -309,9 +308,11 @@ cd automl-lens
 python -m pytest tests/ -v
 ```
 
-The full suite (223 passing) covers dataset profiling, ingestion and
-suitability checks, feature engineering, the model registry, evaluation metrics,
-model selection, training progress, and the full end-to-end pipeline.
+The full suite covers dataset profiling, ingestion and suitability checks,
+feature engineering, the model registry, evaluation metrics, model selection,
+training progress, and the full end-to-end pipeline (223 passing in this
+environment). Real-LLM tests run only when a provider key is configured and
+are skipped otherwise.
 
 ---
 
