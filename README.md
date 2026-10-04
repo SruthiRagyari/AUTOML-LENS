@@ -1,370 +1,185 @@
 # AutoML-Lens
 
-> **LLM-guided AutoML platform**
+> **An LLM-guided structured AutoML framework with registry-constrained pipeline planning, fold-safe training, hyperparameter optimization, ensemble selection, explainability, and reproducible evaluation.**
 
-AutoML-Lens is a full-stack, LLM-guided AutoML platform: upload a raw tabular dataset and it profiles the data, runs LLM-guided problem analysis with Google Gemini, OpenAI, or a deterministic fallback, selects and tunes models with leakage-safe cross-validated selection, explains the winning model with SHAP, and exports a self-contained HTML report - from a React UI backed by FastAPI.
-
-[![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-blue)](https://react.dev)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6.1-orange)](https://scikit-learn.org)
-[![Optuna](https://img.shields.io/badge/Optuna-4.2.0-purple)](https://optuna.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-
----
-
-## Overview
-
-AutoML-Lens is a full-stack web application that implements an LLM-integrated AutoML pipeline. It takes a raw tabular dataset and produces a trained, evaluated, and explainable machine learning model — fully automated with optional AI guidance from Google Gemini or OpenAI.
-
-### Key Capabilities
-
-| Feature | Details |
-|---------|---------|
-| **Dataset Profiling** | Per-column statistics, type inference, missing value analysis, duplicate detection |
-| **LLM Analysis** | Gemini/OpenAI-powered dataset understanding with deterministic fallback |
-| **Preprocessing** | sklearn ColumnTransformer: imputation, scaling, one-hot encoding, TF-IDF |
-| **Model Selection** | 8 classifiers + 9 regressors in configurable registry |
-| **Optimization** | Optuna Bayesian hyperparameter search with cross-validation |
-| **Evaluation** | Real sklearn metrics: accuracy, F1, ROC-AUC, RMSE, R², etc. |
-| **Explainability** | SHAP values, feature importances, coefficients |
-| **Predictions** | Single + batch prediction with confidence scores |
-| **Reports** | Self-contained HTML experiment reports |
-| **LLM Assistant** | AI chatbot with experiment context awareness |
-
-Empirical evaluation comparing real Google Gemini against the deterministic fallback: [docs/LLM_EVALUATION.md](docs/LLM_EVALUATION.md).
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev)
+[![scikit--learn](https://img.shields.io/badge/scikit--learn-1.6.1-orange.svg)](https://scikit-learn.org)
+[![Optuna](https://img.shields.io/badge/Optuna-4.2.0-purple.svg)](https://optuna.org)
+[![Pytest](https://img.shields.io/badge/Tests-285%20Passed-brightgreen.svg)](tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## Quick Start
+## 1. Problem Statement
 
-### Prerequisites
+Standard Automated Machine Learning (AutoML) tools face fundamental structural bottlenecks:
+1. **Combinatorial Inefficiency**: Exhaustive search over high-dimensional algorithm and hyperparameter spaces is computationally prohibitive on constrained hardware.
+2. **Rigid Heuristics**: Deterministic rule sets rely on static row/column thresholds that fail to adapt to nuanced data semantics, feature interactions, or domain properties.
+3. **Safety & Hallucination Risks in LLMs**: While Large Language Models exhibit strong contextual reasoning, directly prompting an LLM to generate executable Python code introduces critical failure modes: syntax errors, silent data leakage, invalid library calls, and arbitrary code execution vulnerabilities.
 
-- Python 3.11+
-- Node.js 18+
-- (Optional) Google Gemini API key or OpenAI API key
+---
 
-### 1. Clone & Setup
+## 2. Research Motivation: LLMs as a Structured Decision Layer
 
-```bash
-git clone https://github.com/SruthiRagyari/AUTOML-LENS.git
-cd automl-lens
+AutoML-Lens addresses this dilemma by separating **intelligent planning** from **deterministic execution**:
+- The LLM (Google Gemini, OpenAI, or a local deterministic fallback) acts strictly as a **structured planner**, outputting a declarative JSON pipeline specification (candidate model recommendations, mathematical feature operations, hyperparameter search priorities, and ensemble strategies).
+- The pipeline plan is passed to a deterministic **`PipelinePlanValidator`** that constrains all requests to validated system registries (`ModelRegistry`, `OPERATION_REGISTRY`). Any unsupported model, hazardous transformation, or target-leakage operation is rejected or safely repaired.
+- The validated plan is then executed by a **fold-safe AutoML engine**, ensuring that feature scalers, imputers, and transformers are fit strictly inside cross-validation folds.
+
+---
+
+## 3. End-to-End System Architecture
+
+```mermaid
+flowchart TD
+    User(["👤 User / Client"]) --> Upload["📁 Raw Dataset Upload (.csv, .xlsx)"]
+    Upload --> Profiler["📊 Dataset Profiler (types, cardinality, missingness)"]
+    Profiler --> Split{"🔀 Deterministic Split"}
+    Split --> TrainData["🟢 Training Split (80%)"]
+    Split --> HoldoutData["🔴 100% Isolated Holdout (20%)"]
+
+    TrainData --> Planner["🤖 LLM / Fallback Pipeline Planner"]
+    Planner --> Validator{"🛡️ PipelinePlanValidator (Registry Constraints)"}
+    Validator --> FoldSafe["⚙️ Fold-Safe Preprocessing & Feature Engineering"]
+    FoldSafe --> HPO["🎯 Optuna Bayesian HPO & Model Training"]
+    HPO --> Ensemble["🤝 Model Fusion & Stacking Optimizer"]
+    Ensemble --> CVSelection{"🏆 CV-Only Winner Selection"}
+    CVSelection --> BestModel["✨ Selected Best Pipeline / Ensemble"]
+    
+    BestModel --> HoldoutEval["🎯 Final Holdout Evaluation (Evaluated Once)"]
+    HoldoutData --> HoldoutEval
+
+    BestModel --> SHAP["🔍 SHAP Feature Explainability"]
+    BestModel --> Inference["🔮 Interactive & Batch Prediction Engine"]
+    HoldoutEval --> Reports["📑 Interactive HTML & Markdown Reports"]
 ```
 
-### 2. Backend Setup
+> **Strict Holdout Discipline**: The 20% holdout test partition is split immediately upon ingestion and remains completely untouched during feature engineering, cross-validation, hyperparameter tuning, and ensemble optimization. It is evaluated strictly once after final model selection.
 
+---
+
+## 4. Key Capabilities
+
+- **Real Ingestion & Automatic Profiling**: Supports CSV and Excel spreadsheets with automatic delimiter detection, type inference (numerical, categorical, datetime, text), missingness auditing, and dataset suitability checks.
+- **LLM Pipeline Planning**: Generates structured, schema-validated pipeline plans with provider support for Google Gemini, OpenAI, and a self-contained deterministic fallback (requiring zero API keys or external calls).
+- **Registry-Constrained Safety**: Zero arbitrary code execution. Every model is verified against `ModelRegistry` (17 scikit-learn estimators across classification and regression) and feature operations against `OPERATION_REGISTRY`.
+- **Fold-Safe Preprocessing**: Imputation, scaling, one-hot encoding, and feature transforms are fit strictly on training folds to completely prevent target leakage and data snooping.
+- **Optuna Hyperparameter Optimization**: Bayesian optimization with Tree-structured Parzen Estimator (TPE) sampler over bounded parameter spaces.
+- **Model Fusion & Stacking**: Greedy ensemble weight optimization and ridge-stacked meta-learners computed exclusively over out-of-fold (OOF) cross-validation predictions.
+- **Model Explainability**: Model-agnostic TreeSHAP and KernelSHAP explanation summaries, beeswarm plots, and feature importance rankings.
+- **Real-Time & Batch Prediction**: REST endpoints and interactive UI forms for single-sample inference and batch CSV scoring.
+- **Provenance & Reproducibility**: End-to-end provenance tracking including dataset SHA-256 hash, Git commit revision, experiment seed, timestamp, and runtime configurations.
+
+---
+
+## 5. Research Evaluation & Empirical Findings
+
+AutoML-Lens was subjected to a rigorous multi-seed empirical benchmark comparing three experimental conditions across an identical seed sequence (`[42, 123, 456]`):
+1. **Condition A (`deterministic`)**: Deterministic heuristic AutoML baseline.
+2. **Condition B (`llm_model_only` ablation)**: LLM candidate model selection only; default preprocessing and zero feature operations.
+3. **Condition C (`llm_guided`)**: Full LLM pipeline planning (candidate models, feature operations, HPO focus, ensemble configuration).
+
+### Measured Multi-Seed Results Matrix
+
+| Dataset | Task | Primary Metric | Deterministic Baseline | LLM Model-Only (Ablation) | Full LLM-Guided Plan | Direction-Adjusted $\Delta$ |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
+| **UCI Adult Census** | Classification | `f1_weighted` $\uparrow$ | $0.8148 \pm 0.0187$ | $0.8220 \pm 0.0101$ | $0.8220 \pm 0.0101$ | **$+0.0072$** (LLM advantage) |
+| **UCI Wine Quality Red** | Regression | `rmse` $\downarrow$ | $0.5544 \pm 0.0307$ | $0.5556 \pm 0.0298$ | $0.5556 \pm 0.0298$ | **$-0.0012$** (Deterministic advantage) |
+
+### Key Scientific Takeaways
+1. **Classification Improvement on Adult Census**: LLM-guided planning achieved a mean holdout F1 improvement of $+0.0072$. On seed 456, the LLM proposed `svm_clf`, which achieved holdout F1 of $0.8176$, winning over tree models.
+2. **Deterministic Baseline Advantage on Wine Quality**: The deterministic baseline achieved slightly lower holdout RMSE ($-0.0012$) because its heuristic candidate set included `knn_reg`, which received weight ($w=0.30$) in the winning ensemble on seed 456.
+3. **Ablation Findings**: Conditions B and C achieved identical aggregate holdout scores ($0.8220$ on Adult, $0.5556$ on Wine), demonstrating that under this experimental budget, performance deltas were governed primarily by **model candidate space selection** rather than automated feature engineering.
+4. **Empirical Honesty**: The experimental data demonstrates that LLM-guided AutoML is **not** universally superior to deterministic AutoML. Rather, LLMs act as an adaptive heuristic that can identify competitive non-standard candidates while occasionally omitting useful heuristics.
+
+For full research details, see [`docs/FINAL_RESULTS.md`](docs/FINAL_RESULTS.md) and [`docs/BENCHMARK_REPORT.md`](docs/BENCHMARK_REPORT.md).
+
+---
+
+## 6. Limitations & Scope Boundaries
+
+- **Benchmark Scope**: Evaluated on 2 representative benchmark datasets across $N=3$ reproducible seeds; findings represent descriptive empirical evidence rather than asymptotic universality.
+- **Model Registry Boundaries**: Constrained strictly to algorithms supported in `ModelRegistry` (scikit-learn linear models, tree ensembles, SVMs, KNN, Naive Bayes).
+- **Safety Boundaries**: The system executes zero arbitrary Python code. All transformations are predefined declarative functions.
+- **Explicit Exclusions**: This framework does **not** implement reinforcement learning (RL), automated neural architecture search (NAS), multimodal AutoML, or autonomous code generation.
+
+---
+
+## 7. Quick Start Guide
+
+### Prerequisites
+- **Python**: 3.11+
+- **Node.js**: 18+
+- *(Optional)* Google Gemini or OpenAI API key (the system runs out of the box with the deterministic fallback without keys).
+
+### Installation & Execution
+
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/SruthiRagyari/AUTOML-LENS.git
+cd AUTOML-LENS
+```
+
+#### 2. Backend Setup
 ```bash
 cd backend
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+# source .venv/bin/activate
+
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env to add your API key (optional — fallback mode works without it)
+
+# Run FastAPI backend:
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Frontend Setup
-
+#### 3. Frontend Setup
 ```bash
-cd frontend
+cd ../frontend
 npm install
 npm run dev
 ```
 
-### 4. Open App
-
-Visit **http://localhost:5173** in your browser.
-
----
-
-## Demo
-
-1. Go to **Dashboard** → **New Experiment**
-2. Upload `demo_data/classification.csv` (customer churn) or `demo_data/regression.csv` (house prices)
-3. Target is auto-suggested (`Churn` or `Price`)
-4. Select **Fast Demo** mode (3 models, 5 Optuna trials, 3-fold CV)
-5. Click **Create Experiment** → **Profile** → **AI Analysis** → **Start Training**
-6. View model comparison, SHAP feature importance, make predictions, download report
+The application is available at:
+- **Frontend UI**: [http://localhost:5173](http://localhost:5173)
+- **FastAPI Backend Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Health Endpoint**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 
 ---
 
-## Project Structure
+## 8. Verification & Test Suite
 
-```
-automl-lens/
-├── backend/
-│   ├── app/
-│   │   ├── api/            # FastAPI routes (datasets, experiments, chat)
-│   │   ├── core/           # Config, database, security
-│   │   ├── llm/            # LLM providers (Gemini, OpenAI, Fallback)
-│   │   ├── models/         # Pydantic schemas
-│   │   ├── services/       # ML pipeline services (fold_safe, trainer, optimizer, etc.)
-│   │   └── utils/          # File utilities, validators
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── components/     # Layout, Charts, Common UI
-│       ├── pages/          # Landing, Dashboard, Experiment, History, etc.
-│       └── services/       # API client
-├── benchmarks/             # Benchmark datasets (adult, wine-quality)
-├── demo_data/              # Sample CSV datasets (classification, regression)
-├── docs/                   # Documentation and audit reports
-├── scripts/                # Evaluation and benchmark scripts
-├── storage/                # Datasets, models, reports, predictions
-├── tests/                  # pytest test suite
-└── README.md
-```
-
----
-
-## Hyperparameter Optimization (Optuna)
-
-Optuna runs on the models that survive LLM-recommendation validation, using
-each model's own search space. Key guarantees:
-
-**Explicit metric contract.** `metric → sklearn scoring → Optuna direction` is
-resolved by `evaluator.get_metric_spec()` and persisted. sklearn negates loss
-scorers, so the *study* maximizes the negated value while the *reported* metric
-keeps its natural meaning (`rmse` → study `maximize`, reported `minimize`).
-
-**No holdout leakage.** The train/test split, feature engineering and
-preprocessing all happen *before* Optuna is called. `OptunaOptimizer` only ever
-receives `X_train`/`y_train`, so CV folds are drawn exclusively from training
-rows. The winner is refit on the training split with the real best parameters
-and the holdout is scored exactly once.
-
-**Deterministic.** The TPE sampler is seeded (`OPTUNA_SEED = 42`), so re-running
-an experiment replays the same search.
-
-**Honest provenance.** Every trained model persists an `optimization` block:
-
-| Field | Meaning |
-|---|---|
-| `metric`, `scoring`, `direction`, `raw_direction` | the metric contract |
-| `n_trials_requested` / `n_trials_completed` / `n_trials_failed` | real trial counts |
-| `n_folds_requested` / `n_folds_used` / `cv_strategy` | folds actually used |
-| `seed` | sampler seed for reproducibility |
-| `best_cv_score`, `best_params` | best CV result (`None` if all trials failed) |
-| `status` | `COMPLETED` / `PARTIAL` / `FAILED` / `SKIPPED` |
-| `error` | the real exception message, verbatim |
-
-Failures are never masked: a trial that raises is recorded with its real error
-and pruned; if *every* trial fails, `best_cv_score` stays `None` (never `0.0`)
-and the model keeps its baseline. A search that raises is caught per model, so
-one broken model never aborts the run. Fold counts are clamped to what the data
-supports (with a recorded `fold_note`) instead of crashing.
-
-`fast_demo` deliberately shrinks the budget to 5 trials × 3 folds; the API
-reports this as `optimization_budget.budget_reduced = true` rather than
-presenting a short run as a full one.
-
----
-
-## Model Selection & Evaluation Protocol
-
-The winner is chosen from **training/CV evidence only**. The holdout never
-decides which model wins — otherwise the test score leaks into selection and
-the reported result is optimistically biased.
-
-```
-upload → profile → LLM analysis → feature engineering → preprocessing
-      → [train/test split FIRST]
-      → Optuna CV tuning (train rows only)
-      → SELECT WINNER by CV score
-      → refit winner on the training split with best params
-      → evaluate ONCE on the untouched holdout
-      → report final holdout metrics
-```
-
-**Selection evidence**, in priority order per model:
-1. `optimization.best_cv_score` — Optuna CV mean for the tuned model
-2. `cv_scores` mean — CV of the final refit model
-3. no CV evidence → the model is **not selectable** (never given a fake score)
-
-**Persisted `selection` block** (on `/train`, `/results`, and
-`experiment.model_selection_json`):
-
-| Field | Meaning |
-|---|---|
-| `selection_metric`, `selection_scoring`, `selection_direction` | the ranking contract |
-| `selection_raw_direction` | direction of the reported metric (`minimize` for RMSE) |
-| `evidence_source` | `cross_validation_on_training_split` |
-| `selected_model`, `selected_model_display_name` | the winner |
-| `selected_model_cv_score`, `selected_model_cv_folds` | the CV score that decided it |
-| `final_holdout_metrics` | holdout metrics, computed once **after** selection |
-| `holdout_used_for_selection` | always `false` |
-| `candidates_considered[]` | every model with its status and CV score |
-
-`best_score` / `best_metric` remain the **final holdout** evaluation of the
-already-selected winner — an unbiased estimate, not a selection artifact.
-`selection_cv_score` is reported alongside so the two are never conflated.
-
-### Deterministic tie-breaking
-
-Equal CV means are common (small datasets often produce identical scores), and
-resolving them by candidate order would make the winner an accident of the
-registry rather than a decision. Ties are therefore broken by an explicit,
-persisted cascade:
-
-| # | Criterion | Rationale |
-|---|---|---|
-| 1 | **Best CV score according to metric direction** | primary criterion, unchanged |
-| 2 | Lowest CV fold **standard deviation** | same mean, but a tighter spread across folds is the less fold-dependent result |
-| 3 | **Most CV folds** evaluated | more evidence behind the same mean |
-| 4 | Lexicographically smallest `model_name` | fully deterministic, independent of input order |
-
-The ranking always operates on the **sklearn scorer value**, which is
-uniformly "higher is better" because `neg_*` losses are already pre-negated.
-So for a raw loss such as `root_mean_squared_error`, *lower is better* — and
-the stored score `neg_root_mean_squared_error = -0.61` correctly outranks
-`-0.66`. Selecting "the highest score" is therefore correct for every metric,
-but the persisted wording says **best score according to metric direction** so
-it cannot be misread as favouring large losses.
-
-Scores are treated as **tied** only when they agree to within
-`rel_tol=1e-9` / `abs_tol=1e-12` — the numerical resolution of the CV
-arithmetic. This is *not* a statistical-significance claim: no confidence
-interval or significance test is computed. A difference above the tolerance is
-simply ranked first; a difference inside it is declared indistinguishable rather
-than resolved by pretending to more precision than the scores support.
-
-Every criterion uses training-split evidence only. **Holdout metrics are never
-consulted, not even to break a tie.** A model with fewer than two CV folds has
-no spread and is *not* given a fabricated `0.0`.
-
-The outcome is persisted under `selection.tie_break`:
-
-```json
-{
-  "rule": "1) highest CV score; 2) ...",
-  "tolerance": {"rel_tol": 1e-9, "abs_tol": 1e-12},
-  "tie_detected": true,
-  "tied_models": ["hist_gradient_boosting_clf", "random_forest_clf"],
-  "tied_cv_scores": {"hist_gradient_boosting_clf": 0.8675, ...},
-  "resolved_by": "cv_fold_std",
-  "winner": "hist_gradient_boosting_clf",
-  "tie_broken_by_holdout": false
-}
-```
-
-`candidates_considered[]` also carries each model's real `cv_fold_std` and
-`cv_fold_count`.
-
----
-
-## Training Runtime & Real Progress
-
-Training is genuinely CPU-bound: a single SVM fit on ~39k rows can take longer
-than every other model combined. The pipeline therefore runs **off the asyncio
-event loop** (`asyncio.to_thread`), so the API keeps serving requests while a
-long job is in flight.
-
-`GET /api/experiments/{id}/progress` reports **observed state only**:
-
-| Field | Meaning |
-|---|---|
-| `status` | `queued` / `running` / `completed` / `failed` |
-| `phase` | `preparing`, `training`, `optimizing`, `refining`, `scoring`, `selecting`, `persisting` |
-| `current_model`, `current_model_display_name`, `current_model_index` | the model actually running |
-| `current_trial` | the Optuna trial actually being evaluated |
-| `models_total` / `models_completed` / `models_failed` / `models_remaining` | exact counts |
-| `models[]` | per-model `status`, `phase`, `error`, trial counts, `elapsed_seconds` |
-| `elapsed_seconds` | measured, not estimated |
-
-What is deliberately **absent**:
-
-* **no percentage complete** — the work is not linearly divisible, so any
-  percentage would be invented;
-* **no ETA / seconds remaining** — that would require an unvalidated cost model;
-* **no synthetic stages** — a phase is reported only once it genuinely begins.
-
-Failures are preserved verbatim (`error_message` per model and on the run), and
-per-model states `queued → running → completed | failed` are mirrored into the
-`training_runs` table. The last snapshot is persisted to
-`experiments.progress_json`, so progress survives a page refresh and a restart.
-
----
-
-## Configuration
-
-Copy `backend/.env.example` to `backend/.env`:
-
-```env
-# LLM Provider: 'gemini' | 'openai' | 'fallback'
-LLM_PROVIDER=fallback
-
-# Google Gemini (optional)
-GEMINI_API_KEY=your_gemini_key_here
-GEMINI_MODEL=gemini-flash-lite-latest
-
-# OpenAI (optional)
-OPENAI_API_KEY=your_openai_key_here
-OPENAI_MODEL=gpt-4o-mini
-```
-
-> ⚠️ **Never commit `.env` files.** They are in `.gitignore`.
-
----
-
-## Running Tests
-
-Run the test suite with:
+The system includes a test suite covering holdout isolation, provenance, schema validation, metric direction contracts, Optuna HPO, ensembles, and API routes:
 
 ```bash
+# Run backend test suite (285 tests):
 python -m pytest tests -q
-```
 
-The full suite covers dataset profiling, ingestion and suitability checks,
-feature engineering, the model registry, evaluation metrics, model selection,
-training progress, and the full end-to-end pipeline (225 passing as of 2026-10-03).
-Real-LLM tests run only when a provider key is configured and are skipped otherwise.
-
----
-
-## Architecture
-
-```
-User Browser
-    │
-    ▼
-React 18 (Vite) ──── /api proxy ────▶ FastAPI (Uvicorn)
-                                            │
-                                     ┌──────┴──────┐
-                                     │             │
-                                  LLMManager   ML Pipeline
-                                     │             │
-                          ┌──────────┤             ├─────────────┐
-                          │          │             │             │
-                       Gemini    OpenAI       Fallback    sklearn/Optuna
-                          │          │             │             │
-                          └──────────┴─────────────┴─────────────┘
-                                            │
-                                       SQLite DB
+# Run frontend production build:
+cd frontend
+npm run build
 ```
 
 ---
 
-## ML Pipeline
+## 9. Project Documentation Index
 
-1. **Dataset Upload** — CSV/XLSX up to 100MB
-2. **Profiling** — Column statistics, type inference, quality warnings
-3. **LLM Analysis** — Dataset context → problem type + model recommendations
-4. **Preprocessing** — sklearn ColumnTransformer pipeline (imputation, scaling, encoding)
-5. **Feature Engineering** — Datetime extraction, interaction features, frequency encoding
-6. **Model Training** — 8 classifiers or 9 regressors with baseline training
-7. **Optuna Optimization** — Bayesian HPO with StratifiedKFold/KFold CV
-8. **Evaluation** — Real sklearn metrics computed from actual predictions
-9. **Explainability** — SHAP TreeExplainer → feature_importances_ → permutation
-10. **Prediction & Report** — Single/batch prediction, HTML report, model download
+- [System Architecture & Flow Diagram](docs/ARCHITECTURE_DIAGRAM.md)
+- [Comprehensive Project Technical Documentation](docs/PROJECT_DOCUMENTATION.md)
+- [Academic Research Paper Draft](docs/RESEARCH_PAPER_DRAFT.md)
+- [Final Multi-Seed Empirical Results](docs/FINAL_RESULTS.md)
+- [Viva Examination Question Bank (50+ Questions)](docs/VIVA_QUESTIONS.md)
+- [Presentation Slide Outline (14 Slides)](docs/PRESENTATION_OUTLINE.md)
+- [Live Demonstration Script (7-10 Minutes)](docs/DEMO_SCRIPT.md)
+- [Standalone HTML Research Report](docs/BENCHMARK_REPORT.html)
 
 ---
 
-## References
+## 10. License
 
-- Feurer et al. (2015). *Auto-sklearn: Efficient and Robust Automated Machine Learning*. NeurIPS.
-- He et al. (2021). *AutoML: A Survey of the State-of-the-Art*. IEEE TKDE.
-- Brown et al. (2020). *Language Models are Few-Shot Learners*. NeurIPS.
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) file.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

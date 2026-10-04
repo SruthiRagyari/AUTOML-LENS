@@ -1,6 +1,6 @@
 # AutoML-Lens — Repo Audit Report
 
-**Date:** 2026-09-30 · **Commit:** `e4025e9` (main, 5 modified files uncommitted) · **Auditor:** Cline
+**Date:** 2026-09-30 · **Commit:** `e4025e9` (main, 5 modified files uncommitted) · **Auditor:** Independent Technical Audit
 **Goal:** find what blocks *real user-uploaded data* from working end-to-end, and separate "real computation" from anything simulated.
 
 ## A. Method & evidence base
