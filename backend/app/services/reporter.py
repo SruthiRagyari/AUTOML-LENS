@@ -172,6 +172,8 @@ class ReportGenerator:
             seed_val = repro.get("seed", "N/A")
             n_folds_val = repro.get("n_folds", "N/A")
             n_trials_val = repro.get("n_trials", "N/A")
+            git_rev_val = repro.get("git_commit") or "N/A"
+            hash_val = repro.get("dataset_hash") or "N/A"
             w_name = research_eval.get("winner_name", "N/A")
             w_type = research_eval.get("winner_type", "individual")
             w_cv = research_eval.get("winner_cv_score")
@@ -189,7 +191,8 @@ class ReportGenerator:
 <tbody>
 <tr><td><strong>Dataset &amp; Task</strong></td><td><code>{ds_name}</code> &middot; {ptype} (metric: <code>{pmetric}</code>)</td></tr>
 <tr><td><strong>Experimental Condition</strong></td><td><code>{cond}</code> (provider: {prov})</td></tr>
-<tr><td><strong>Reproducibility Settings</strong></td><td>Seed: <code>{seed_val}</code> &middot; Folds: <code>{n_folds_val}</code> &middot; Trials: <code>{n_trials_val}</code></td></tr>
+<tr><td><strong>Reproducibility Settings</strong></td><td>Seed: <code>{seed_val}</code> &middot; Folds: <code>{n_folds_val}</code> &middot; Trials: <code>{n_trials_val}</code> &middot; Git: <code>{git_rev_val}</code></td></tr>
+<tr><td><strong>Dataset Checksum</strong></td><td>SHA-256: <code>{hash_val}</code></td></tr>
 <tr><td><strong>Selection Protocol</strong></td><td>Strictly CV evidence on training split &middot; <code>holdout_used_for_selection: False</code></td></tr>
 <tr><td><strong>Winning Architecture</strong></td><td><strong>{w_name}</strong> ({w_type.capitalize()})</td></tr>
 <tr><td><strong>Selection Evidence (CV)</strong></td><td>{f'{w_cv:.4f}' if isinstance(w_cv, (int, float)) else 'N/A'}</td></tr>

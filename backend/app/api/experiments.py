@@ -548,7 +548,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
         df_train, df_test = df.loc[train_idx], df.loc[test_idx]
 
         # Feature engineering (fit on the training split only)
-        fe = FeatureEngineer()
+        fe = FeatureEngineer(seed=effective_seed)
         fe.rejected_operations = rejected_ops
         fe.fit(
             df_train, profile["column_profiles"], exp.target_column,
@@ -1113,8 +1113,13 @@ def _build_research_evaluation(exp: Experiment, db: Session) -> dict:
         or f"dataset_{exp.dataset_id}"
     ) if ds else f"dataset_{exp.dataset_id}"
 
+    from app.services.benchmarker import get_git_revision, get_file_sha256
+    ds_hash = get_file_sha256(ds.file_path) if ds and hasattr(ds, "file_path") and ds.file_path else None
+    git_rev = get_git_revision()
+
     return {
         "dataset_name": ds_name,
+        "dataset_hash": ds_hash,
         "dataset_rows": ds_profile.get("rows", getattr(ds, "rows", None)),
         "dataset_columns": ds_profile.get("columns", getattr(ds, "columns", None)),
         "problem_type": exp.problem_type,
@@ -1126,6 +1131,14 @@ def _build_research_evaluation(exp: Experiment, db: Session) -> dict:
             "n_folds": budget.get("n_folds_used", exp.n_folds),
             "n_trials": budget.get("n_trials_used", exp.n_trials),
             "holdout_used_for_selection": False,
+            "holdout_isolation": "100% Unseen (Evaluated post-selection only)",
+            "selection_evidence": "CV on training split only",
+            "dataset_hash": ds_hash,
+            "git_commit": git_rev,
+            "selection_metric": exp.primary_metric,
+            "selection_scoring": selection.get("selection_scoring"),
+            "selection_direction": selection.get("selection_direction", "maximize"),
+            "raw_direction": selection.get("selection_raw_direction"),
         },
         "candidate_models_count": len(results_list),
         "ensemble_candidates_count": len(fusion.get("ensemble_candidates", [])),
@@ -1135,6 +1148,24 @@ def _build_research_evaluation(exp: Experiment, db: Session) -> dict:
         "winner_cv_score": selection.get("selected_model_cv_score"),
         "winner_holdout_score": exp.best_score,
         "selection_evidence_source": selection.get("evidence_source", "cross_validation_training_split"),
+        "provenance": {
+            "dataset_name": ds_name,
+            "dataset_hash": ds_hash,
+            "problem_type": exp.problem_type,
+            "target_column": exp.target_column,
+            "seed": budget.get("seed", 42),
+            "n_folds": budget.get("n_folds_used", exp.n_folds),
+            "n_trials": budget.get("n_trials_used", exp.n_trials),
+            "candidate_models": [r.get("model_name") for r in results_list],
+            "selected_model": exp.best_model_name,
+            "selection_metric": exp.primary_metric,
+            "selection_cv_score": selection.get("selected_model_cv_score"),
+            "final_holdout_score": exp.best_score,
+            "ensemble_winner": is_ens_winner,
+            "llm_provider": exp.llm_provider or "fallback",
+            "git_commit": git_rev,
+            "timestamp": str(exp.updated_at or exp.created_at),
+        },
         "llm_advisory": {
             "recommended_models": [m.get("model_id") or m.get("model") for m in llm_res.get("model_recommendations", [])] if isinstance(llm_res.get("model_recommendations"), list) else [],
             "recommended_metric": llm_res.get("recommended_metric"),

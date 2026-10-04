@@ -47,6 +47,7 @@ class FeatureSpec:
     problem_type: str
     operations: Optional[Sequence[dict]] = None
     max_interactions: int = MAX_INTERACTIONS
+    seed: int = 42
 
 
 def _as_frame(X: Any) -> pd.DataFrame:
@@ -73,17 +74,18 @@ class FoldSafeFeaturePreprocessor(BaseEstimator, TransformerMixin):
 
     def __init__(self, column_profiles=None, target_column=None,
                  problem_type="classification", operations=None,
-                 max_interactions: int = MAX_INTERACTIONS):
+                 max_interactions: int = MAX_INTERACTIONS, seed: int = 42):
         # sklearn convention: store constructor params unchanged.
         self.column_profiles = column_profiles
         self.target_column = target_column
         self.problem_type = problem_type
         self.operations = operations
         self.max_interactions = max_interactions
+        self.seed = int(seed)
 
     def fit(self, X, y=None):
         frame = _as_frame(X)
-        self.feature_engineer_ = FeatureEngineer()
+        self.feature_engineer_ = FeatureEngineer(seed=self.seed)
         self.feature_engineer_.fit(
             frame, self.column_profiles, self.target_column,
             max_interactions=self.max_interactions, operations=self.operations,
@@ -125,6 +127,7 @@ def build_fold_safe_pipeline(estimator: Any, spec: FeatureSpec) -> Pipeline:
     fold's training rows, so validation rows never influence any learned state.
     """
     operations = list(spec.operations) if spec.operations else None
+    seed = getattr(spec, "seed", 42)
     return Pipeline([
         ("features", FoldSafeFeaturePreprocessor(
             column_profiles=spec.column_profiles,
@@ -132,6 +135,7 @@ def build_fold_safe_pipeline(estimator: Any, spec: FeatureSpec) -> Pipeline:
             problem_type=spec.problem_type,
             operations=operations,
             max_interactions=spec.max_interactions,
+            seed=seed,
         )),
         ("model", estimator),
     ])

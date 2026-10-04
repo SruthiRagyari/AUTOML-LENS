@@ -207,7 +207,10 @@ class OptunaOptimizer:
             _fire(trial_callback, trial.number)
             ok = False
             try:
-                params = self.model_definition.search_space(trial)
+                params = dict(self.model_definition.search_space(trial))
+                default_params = getattr(self.model_definition, "default_params", {}) or {}
+                if "random_state" in default_params and "random_state" not in params:
+                    params["random_state"] = self.seed
                 model = self.model_definition.create_model(**params)
                 # Leakage-safe path: fold-safe pipeline refits feature
                 # engineering + preprocessing inside every fold.

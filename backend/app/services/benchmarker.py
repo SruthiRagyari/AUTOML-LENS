@@ -16,10 +16,12 @@ Core Protocols:
 - Clear separation between LLM advisory suggestions and actual empirical ML performance.
 """
 from dataclasses import dataclass, field, asdict
+import hashlib
 import json
 import logging
 import os
 from pathlib import Path
+import subprocess
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -43,6 +45,36 @@ from app.services.ensemble import (
 from app.services.evaluator import get_metric_spec, is_higher_better
 
 logger = logging.getLogger(__name__)
+
+
+def get_git_revision() -> Optional[str]:
+    """Retrieve the current Git commit hash if in a Git repository."""
+    try:
+        rev = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            timeout=2,
+        ).decode("utf-8").strip()
+        return rev if rev else None
+    except Exception:
+        return None
+
+
+def get_file_sha256(filepath: str, max_bytes: int = 10 * 1024 * 1024) -> Optional[str]:
+    """Compute truncated SHA-256 hash of a dataset file for provenance."""
+    try:
+        p = Path(filepath)
+        if not p.is_file():
+            return None
+        hasher = hashlib.sha256()
+        with open(p, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+                if f.tell() >= max_bytes:
+                    break
+        return hasher.hexdigest()[:16]
+    except Exception:
+        return None
 
 
 @dataclass
@@ -135,6 +167,14 @@ class BenchmarkRecord:
     total_time: float
     timestamp: str
 
+    # Provenance and metric contract
+    dataset_hash: Optional[str] = None
+    git_commit: Optional[str] = None
+    cv_scoring: Optional[str] = None
+    cv_direction: Optional[str] = None
+    holdout_metric: Optional[str] = None
+    holdout_direction: Optional[str] = None
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
@@ -196,7 +236,7 @@ class BenchmarkRunner:
 
         # 5. Feature Engineering (fit exclusively on train split)
         t_fe_start = time.time()
-        fe = FeatureEngineer()
+        fe = FeatureEngineer(seed=config.seed)
         proposed_ops = config.custom_operations or []
         accepted_ops, rejected_ops = validate_operations(
             proposed_ops, profile["column_profiles"], config.target_column
@@ -336,14 +376,18 @@ class BenchmarkRunner:
         overall_holdout = ov_met.get(config.primary_metric, ov_met.get("rmse"))
 
         # Empirical improvement of ensemble over best single
+        spec = get_metric_spec(config.primary_metric)
         ens_delta_cv = None
         ens_delta_holdout = None
         if best_ens_cv is not None and best_single_cv is not None:
-            higher_better = is_higher_better(config.primary_metric)
-            ens_delta_cv = round(float(best_ens_cv - best_single_cv if higher_better else best_single_cv - best_ens_cv), 6)
+            # Sklearn scorers are defined such that higher is better (losses are negated)
+            ens_delta_cv = round(float(best_ens_cv - best_single_cv), 6)
         if best_ens_holdout is not None and best_single_holdout is not None:
-            higher_better = is_higher_better(config.primary_metric)
-            ens_delta_holdout = round(float(best_ens_holdout - best_single_holdout if higher_better else best_single_holdout - best_ens_holdout), 6)
+            # Evaluator returns un-negated metrics (e.g. positive RMSE where lower is better)
+            if spec.raw_direction == "minimize":
+                ens_delta_holdout = round(float(best_single_holdout - best_ens_holdout), 6)
+            else:
+                ens_delta_holdout = round(float(best_ens_holdout - best_single_holdout), 6)
 
         total_time = round(time.time() - t_start, 4)
 
@@ -390,4 +434,10 @@ class BenchmarkRunner:
             training_time=training_time,
             total_time=total_time,
             timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
+            dataset_hash=get_file_sha256(config.dataset_path),
+            git_commit=get_git_revision(),
+            cv_scoring=spec.scoring,
+            cv_direction=spec.direction,
+            holdout_metric=spec.metric,
+            holdout_direction=spec.raw_direction,
         )

@@ -26,7 +26,8 @@ DATETIME_PARTS = ("year", "month", "day", "dayofweek")
 class FeatureEngineer:
     """Conservative feature engineering for tabular data (fit on train only)."""
 
-    def __init__(self):
+    def __init__(self, seed: int = 42):
+        self.seed = int(seed)
         self.datetime_columns: list[str] = []
         self.interaction_pairs: list[tuple[str, str]] = []
         self.frequency_maps: dict[str, dict[Any, float]] = {}
@@ -168,12 +169,12 @@ class FeatureEngineer:
                 from sklearn.feature_selection import mutual_info_classif
                 y = pd.factorize(target)[0]
                 if len(X) > _MI_SAMPLE_LIMIT:
-                    rng = np.random.RandomState(42)
+                    rng = np.random.RandomState(self.seed)
                     idx = rng.choice(len(X), _MI_SAMPLE_LIMIT, replace=False)
                     Xs, ys = X.iloc[idx], y[idx]
                 else:
                     Xs, ys = X, y
-                mi = mutual_info_classif(Xs, ys, random_state=42)
+                mi = mutual_info_classif(Xs, ys, random_state=self.seed)
                 scores = {c: float(v) for c, v in zip(X.columns, mi) if np.isfinite(v)}
             else:
                 for col in X.columns:

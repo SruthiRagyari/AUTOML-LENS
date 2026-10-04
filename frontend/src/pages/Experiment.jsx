@@ -236,6 +236,24 @@ function ResearchEvaluationSection({ results, exp }) {
           </span>
         </div>
       </div>
+
+      <div style={{ marginTop: 12, padding: 12, background: '#181818', border: '1px solid #262626', borderRadius: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+        <div style={{ fontWeight: 600, color: '#e0e0e0', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>🔬 Experiment Provenance &amp; Scientific Reproducibility:</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8 }}>
+          <div><strong>Seed:</strong> <code>{repro.seed ?? '42'}</code> (propagated to CV, HPO, models)</div>
+          <div><strong>Holdout Isolation:</strong> <span style={{ color: '#81c784' }}>{repro.holdout_isolation || '100% Unseen (Post-selection only)'}</span></div>
+          <div><strong>Selection Evidence:</strong> <span>{repro.selection_evidence || 'CV on training split only'}</span></div>
+          <div><strong>Selection Metric:</strong> <code>{repro.selection_metric || evalData.primary_metric}</code> ({repro.selection_direction || 'maximize'})</div>
+          {repro.git_commit && (
+            <div><strong>Git Revision:</strong> <code>{repro.git_commit}</code></div>
+          )}
+          {repro.dataset_hash && (
+            <div><strong>Dataset Hash (SHA-256):</strong> <code>{repro.dataset_hash}</code></div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

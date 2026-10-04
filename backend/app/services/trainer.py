@@ -163,9 +163,10 @@ class TrainingManager:
         )
 
     def _get_cv(self):
+        cv_seed = self.optimization_seed if self.optimization_seed is not None else 42
         if self.problem_type == "classification":
-            return StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=42)
-        return KFold(n_splits=self.n_folds, shuffle=True, random_state=42)
+            return StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=cv_seed)
+        return KFold(n_splits=self.n_folds, shuffle=True, random_state=cv_seed)
 
     def _evaluate(self, model, X, y):
         y_pred = model.predict(X)
@@ -220,7 +221,12 @@ class TrainingManager:
                 # the raw frame, so target columns are (re)attached by position.
                 import pandas as _pd  # local import: hot path, keeps header light
                 raw_train_df = self._fit_frame()
-                model = mdef.create_model()
+                default_params = getattr(mdef, "default_params", {}) or {}
+                model = (
+                    mdef.create_model(random_state=self.optimization_seed)
+                    if "random_state" in default_params
+                    else mdef.create_model()
+                )
                 baseline_candidate = self._candidate(model)
                 t0 = time.time()
                 if self.fold_safe_cv:
@@ -299,7 +305,11 @@ class TrainingManager:
                     if opt_result.best_params:
                         if progress is not None:
                             progress.model_phase(mdef.name, PHASE_REFINING)
-                        opt_model = mdef.create_model(**opt_result.best_params)
+                        default_params = getattr(mdef, "default_params", {}) or {}
+                        opt_params = dict(opt_result.best_params)
+                        if "random_state" in default_params and "random_state" not in opt_params:
+                            opt_params["random_state"] = self.optimization_seed
+                        opt_model = mdef.create_model(**opt_params)
                         opt_candidate = self._candidate(opt_model)
                         t0 = time.time()
                         if self.fold_safe_cv:

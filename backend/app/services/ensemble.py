@@ -320,7 +320,11 @@ def generate_oof_predictions(
 
             try:
                 # Instantiate clean clone with identical hyperparameters
-                fold_model = mdef.create_model(**params)
+                fold_params = dict(params)
+                default_params = getattr(mdef, "default_params", {}) or {}
+                if "random_state" in default_params and "random_state" not in fold_params:
+                    fold_params["random_state"] = seed
+                fold_model = mdef.create_model(**fold_params)
                 fold_model.fit(X_f_tr, y_f_tr)
 
                 if problem_type == "classification":
