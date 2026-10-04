@@ -1,0 +1,31 @@
+[Unit]
+Description=AutoML-Lens FastAPI backend (LLM-guided AutoML platform)
+Documentation=https://github.com/SruthiRagyari/AUTOML-LENS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=automl-lens
+Group=automl-lens
+WorkingDirectory=/opt/automl-lens/backend
+EnvironmentFile=/etc/automl-lens.env
+Environment=PYTHONUNBUFFERED=1
+
+# Single worker on purpose: training runs in-process background threads and keeps
+# live state in memory, so extra workers would duplicate training jobs rather than
+# add capacity. Scale vertically (CPU/RAM) instead.
+ExecStart=/opt/automl-lens/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --timeout-keep-alive 75
+
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -17,6 +17,13 @@
 *.cfg  text eol=lf
 *.names text eol=lf
 
+# Deployment artifacts executed on Linux - always LF, never CRLF.
+# A stray \r on a heredoc delimiter makes the provisioning script fail with
+# "unexpected end of file", so pin these explicitly.
+*.sh      text eol=lf
+*.service text eol=lf
+deploy/nginx/*.conf text eol=lf
+
 # Windows scripts keep CRLF so they stay runnable by cmd.exe
 *.bat  text eol=crlf
 *.cmd  text eol=crlf
