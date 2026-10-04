@@ -17,10 +17,6 @@ export default function Layout() {
             <span className="footer-logo">AUTOML-LENS</span>
             <p>LLM-Guided Structured AutoML Platform with Explainable AI & Reproducible Benchmarks.</p>
           </div>
-          <div className="footer-right">
-            <span>Final-Year Research Project</span>
-            <span style={{ color: 'var(--success)' }}>285 Tests Passing | Freeze Verified</span>
-          </div>
         </div>
       </footer>
     </div>

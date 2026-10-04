@@ -56,7 +56,7 @@ const PIPELINE_STEPS = [
   { num: '07', title: 'Model Fusion', desc: 'Leakage-free voting & stacking ensembles' },
   { num: '08', title: 'Explainability', desc: 'SHAP summary plots & feature drivers' },
   { num: '09', title: 'Model Serving', desc: 'Single record and batch CSV predictions' },
-  { num: '10', title: 'Research Report', desc: 'Standalone HTML scientific report export' },
+  { num: '10', title: 'Benchmark Report', desc: 'Standalone HTML benchmark report export' },
 ]
 
 export default function Landing() {
@@ -76,7 +76,6 @@ export default function Landing() {
         <div className="nav-left">
           <Link to="/" className="netflix-brand">
             <span className="netflix-brand-logo">AUTOML-LENS</span>
-            <span className="netflix-brand-tag">RESEARCH</span>
           </Link>
           <nav className="nav-links">
             <Link to="/dashboard" className="nav-link-item">Experiments</Link>
@@ -100,7 +99,7 @@ export default function Landing() {
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '60px 32px 40px' }}>
         <div className="netflix-hero-banner" style={{ padding: '64px 48px', position: 'relative' }}>
           <div className="hero-pill-badge">
-            <FiZap /> State-of-the-Art Research AutoML
+            <FiZap /> LLM-Guided Automated Machine Learning
           </div>
           <h1 className="hero-title" style={{ fontSize: '48px', fontWeight: '900', letterSpacing: '-0.5px' }}>
             AI-POWERED AUTOML PLATFORM
@@ -132,16 +131,13 @@ export default function Landing() {
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--netflix-red)' }}>Zero</strong> Holdout Leakage
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              <strong style={{ color: '#fff' }}>285</strong> Backend Tests Verified
-            </div>
           </div>
         </div>
 
         {/* Feature Highlights Grid */}
         <div style={{ marginBottom: '64px' }}>
           <div className="netflix-row-header">
-            <h2 className="netflix-row-title">Core Research Capabilities</h2>
+            <h2 className="netflix-row-title">Core Capabilities</h2>
           </div>
           <div className="netflix-grid">
             {PILLARS.map((p, idx) => (

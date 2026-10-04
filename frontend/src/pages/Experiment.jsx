@@ -144,9 +144,9 @@ function ModelFusionSection({ ensembleCandidates, models, bestModelName, primary
 }
 
 /**
- * Renders the Research-Grade Benchmarking & Evaluation Section.
+ * Renders the Benchmarking & Evaluation Section.
  */
-function ResearchEvaluationSection({ results, exp }) {
+function BenchmarkEvaluationSection({ results, exp }) {
   const evalData = results?.research_evaluation
   if (!evalData) return null
 
@@ -159,7 +159,7 @@ function ResearchEvaluationSection({ results, exp }) {
     <div style={{ marginTop: 24, padding: 18, background: '#141414', border: '1px solid var(--border)', borderRadius: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontWeight: 600, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>📊 Research Benchmarking &amp; Evaluation</span>
+          <span>📊 Benchmarking &amp; Evaluation</span>
           <span className="tag" style={{ background: isLlm ? 'rgba(156,39,176,0.2)' : 'rgba(33,150,243,0.2)', color: isLlm ? '#ce93d8' : '#64b5f6', borderColor: isLlm ? '#ce93d8' : '#64b5f6' }}>
             Condition: {isLlm ? 'LLM-Assisted' : 'Deterministic Fallback'}
           </span>
@@ -312,7 +312,7 @@ function MultiSeedBenchmarkSection() {
             className="btn btn-secondary btn-sm"
             style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
-            <span>Open Research Report (HTML)</span> ↗
+            <span>Open Benchmark Report (HTML)</span> ↗
           </a>
           <button
             type="button"
@@ -1231,7 +1231,7 @@ export default function Experiment() {
                   on rows the model never saw. A metric is listed only when the evaluator
                   actually computed it.
                 </p>
-                <ResearchEvaluationSection results={results} exp={exp} />
+                <BenchmarkEvaluationSection results={results} exp={exp} />
                 <PipelinePlanSection
                   planProvenance={results.pipeline_plan_provenance}
                   fallbackPlan={results.research_evaluation?.pipeline_plan}

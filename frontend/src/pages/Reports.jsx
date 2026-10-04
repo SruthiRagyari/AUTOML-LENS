@@ -45,20 +45,20 @@ export default function Reports() {
   return (
     <div className="page-container">
       <div className="netflix-hero-banner" style={{ padding: '40px 36px', marginBottom: '32px' }}>
-        <div className="hero-pill-badge">Scientific Reports & Artifacts</div>
-        <h1 className="hero-title" style={{ fontSize: '36px' }}>Research Reports & Benchmarks</h1>
+        <div className="hero-pill-badge">Reports & Artifacts</div>
+        <h1 className="hero-title" style={{ fontSize: '36px' }}>Reports & Benchmarks</h1>
         <p className="hero-desc" style={{ fontSize: '16px', maxWidth: '650px' }}>
-          Explore the official standalone multi-seed research evaluation report comparing deterministic
+          Explore the standalone multi-seed benchmark report comparing deterministic
           AutoML with LLM-guided structured pipeline planning.
         </p>
       </div>
 
-      {/* Featured Research Report Card */}
+      {/* Featured Benchmark Report Card */}
       <div className="netflix-card netflix-card-featured" style={{ marginBottom: '36px', padding: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
           <div>
             <div className="badge-netflix badge-completed" style={{ marginBottom: '12px' }}>
-              Freeze Verified Research Artifact
+              Benchmark Report
             </div>
             <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', marginBottom: '8px' }}>
               Standalone Multi-Seed Benchmark Evaluation Report

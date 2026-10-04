@@ -40,7 +40,6 @@ export default function Navbar() {
       <div className="nav-left">
         <Link to="/" className="netflix-brand">
           <span className="netflix-brand-logo">AUTOML-LENS</span>
-          <span className="netflix-brand-tag">RESEARCH</span>
         </Link>
 
         <nav className="nav-links">
