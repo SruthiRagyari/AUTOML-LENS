@@ -90,6 +90,33 @@ class LLMManager:
         payload["result"]["is_fallback"] = payload["is_fallback"]
         return payload
 
+    async def plan_pipeline(self, dataset_context: dict) -> dict[str, Any]:
+        """Generate a structured AutoML pipeline plan with automatic fallback.
+
+        Always produces a valid AutoMLPipelinePlan. On provider failure or timeout,
+        falls back cleanly to deterministic pipeline planning with audit provenance.
+        """
+        provider = self.active_provider
+        fallback_reason: Optional[str] = None
+        try:
+            plan = await self.active_provider.plan_pipeline(dataset_context)
+        except Exception as e:
+            logger.warning(f"Provider failed pipeline planning: {e}. Using deterministic fallback.")
+            provider = self._fallback
+            fallback_reason = str(e)
+            plan = await self._fallback.plan_pipeline(dataset_context)
+            plan.validation_status = "fallback"
+            plan.source = "deterministic_fallback"
+            plan.fallback_reason = str(e)
+
+        payload = self._payload(provider, fallback_reason)
+        payload["plan"] = plan.model_dump()
+        payload["plan"]["provider_used"] = payload["provider_used"]
+        payload["plan"]["is_fallback"] = payload["is_fallback"]
+        if fallback_reason:
+            payload["plan"]["fallback_reason"] = fallback_reason
+        return payload
+
     async def explain_results(self, results_context: dict) -> str:
         """Explanation text only (backwards-compatible helper)."""
         detail = await self.explain_results_detail(results_context)

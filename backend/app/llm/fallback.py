@@ -13,6 +13,11 @@ class FallbackLLMProvider(LLMProvider):
     def is_available(self) -> bool:
         return True
 
+    async def plan_pipeline(self, dataset_context: dict):
+        """Generate a deterministic rule-based AutoML pipeline plan."""
+        from app.services.pipeline_planner import generate_deterministic_plan
+        return generate_deterministic_plan(dataset_context)
+
     async def analyze_dataset(self, dataset_context: dict) -> DatasetAnalysisResult:
         """Analyze dataset using rule-based heuristics."""
         shape = dataset_context.get("shape", [0, 0])

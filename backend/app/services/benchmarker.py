@@ -94,6 +94,7 @@ class BenchmarkConfig:
     test_size: float = 0.2
     max_rows: Optional[int] = None
     custom_operations: Optional[List[Dict[str, Any]]] = None
+    pipeline_plan: Optional[Any] = None
 
 
 @dataclass
@@ -174,6 +175,7 @@ class BenchmarkRecord:
     cv_direction: Optional[str] = None
     holdout_metric: Optional[str] = None
     holdout_direction: Optional[str] = None
+    pipeline_plan: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -234,7 +236,23 @@ class BenchmarkRunner:
         y_train = y.loc[train_idx].copy()
         y_test = y.loc[test_idx].copy()
 
-        # 5. Feature Engineering (fit exclusively on train split)
+        # 5. Pipeline Plan unpacking if supplied
+        plan_dict = None
+        if config.pipeline_plan is not None:
+            if hasattr(config.pipeline_plan, "model_dump"):
+                plan_dict = config.pipeline_plan.model_dump()
+            elif isinstance(config.pipeline_plan, dict):
+                plan_dict = config.pipeline_plan
+
+            if plan_dict:
+                if not config.custom_operations and plan_dict.get("feature_operations"):
+                    config.custom_operations = plan_dict.get("feature_operations")
+                if not config.models_to_train and plan_dict.get("candidate_models"):
+                    config.models_to_train = plan_dict.get("candidate_models")
+                if "ensemble_strategy" in plan_dict and isinstance(plan_dict["ensemble_strategy"], dict):
+                    config.enable_ensemble = plan_dict["ensemble_strategy"].get("enabled", config.enable_ensemble)
+
+        # 6. Feature Engineering (fit exclusively on train split)
         t_fe_start = time.time()
         fe = FeatureEngineer(seed=config.seed)
         proposed_ops = config.custom_operations or []
@@ -440,4 +458,5 @@ class BenchmarkRunner:
             cv_direction=spec.direction,
             holdout_metric=spec.metric,
             holdout_direction=spec.raw_direction,
+            pipeline_plan=plan_dict,
         )

@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.services.feature_operations import validate_operations
 from app.services.model_registry import ModelRegistry, validate_model_recommendations
+from app.services.pipeline_planner import AutoMLPipelinePlan
 
 # Supported model names, derived from the live registry so the validation
 # whitelist can never drift from what the pipeline can actually train.
@@ -230,6 +231,11 @@ class LLMProvider(ABC):
     @abstractmethod
     def is_available(self) -> bool:
         """Check if this provider is currently available."""
+        ...
+
+    @abstractmethod
+    async def plan_pipeline(self, dataset_context: dict) -> AutoMLPipelinePlan:
+        """Generate a structured, validated AutoML pipeline plan."""
         ...
 
     def validate_analysis(self, raw_response: dict,

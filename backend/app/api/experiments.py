@@ -462,9 +462,17 @@ async def analyze_experiment(exp_id: int, force: bool = False,
         "description_text": description_text,
     }
 
-    # Run LLM analysis
+    # Run LLM analysis and structured pipeline planning
     llm = _get_llm_manager()
     analysis = await llm.analyze_dataset(dataset_context)
+    try:
+        plan_payload = await llm.plan_pipeline(dataset_context)
+        analysis["pipeline_plan"] = plan_payload.get("plan")
+    except Exception as exc:
+        logger.warning(f"Pipeline planning failed during analyze: {exc}")
+        from app.services.pipeline_planner import generate_deterministic_plan
+        det_plan = generate_deterministic_plan(dataset_context)
+        analysis["pipeline_plan"] = det_plan.model_dump()
 
     exp.llm_analysis_json = json.dumps(analysis, default=str)
     exp.llm_provider = analysis.get("provider_used", "unknown")
@@ -512,18 +520,43 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             )
         db.commit()
 
-        # Feature operations proposed by the LLM analysis, re-validated against the
+        # Structured AutoML Pipeline Plan resolution
+        from app.services.pipeline_planner import (
+            AutoMLPipelinePlan, PipelinePlanValidator, generate_deterministic_plan
+        )
+        plan_dataset_context = {
+            "shape": list(df.shape),
+            "columns": list(df.columns),
+            "dtypes": {col: str(df[col].dtype) for col in df.columns},
+            "missing_percentages": {col: round(df[col].isnull().mean() * 100, 2) for col in df.columns},
+            "unique_counts": {col: int(df[col].nunique()) for col in df.columns},
+            "target_column": exp.target_column,
+            "problem_type": exp.problem_type,
+            "column_profiles": profile["column_profiles"],
+        }
+
+        # Feature operations and plan proposed by the LLM analysis, re-validated against the
         # fresh profile so only registry-approved, leakage-safe entries execute.
-        # Defence in depth: even a hand-edited llm_analysis_json cannot inject one.
         llm_result: dict = {}
+        raw_plan = None
         if exp.llm_analysis_json:
             try:
                 stored = json.loads(exp.llm_analysis_json)
                 llm_result = stored.get("result", {}) if isinstance(stored, dict) else {}
+                raw_plan = stored.get("pipeline_plan") if isinstance(stored, dict) else None
             except Exception as exc:
                 logger.warning(f"Stored LLM analysis unreadable, ignoring: {exc}")
-        proposed_ops = llm_result.get("suggested_operations") or []
-        rejected_ops = list(llm_result.get("rejected_operations") or [])
+
+        if raw_plan:
+            pipeline_plan = PipelinePlanValidator.validate_and_sanitize(
+                raw_plan, plan_dataset_context,
+                provider_used=exp.llm_provider or "unknown",
+            )
+        else:
+            pipeline_plan = generate_deterministic_plan(plan_dataset_context)
+
+        proposed_ops = pipeline_plan.feature_operations or (llm_result.get("suggested_operations") or [])
+        rejected_ops = list(pipeline_plan.rejected_operations or []) + list(llm_result.get("rejected_operations") or [])
         accepted_ops, late_rejections = validate_operations(
             proposed_ops, profile["column_profiles"], exp.target_column
         )
@@ -586,29 +619,33 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             "metric_spec": get_metric_spec(exp.primary_metric).to_dict(),
         }
 
-        # Model selection: registry-validated LLM recommendations first, then
-        # the legacy candidate_models list, then fast-demo/registry defaults.
-        # Candidates are re-validated here so even a hand-edited stored
-        # analysis can only schedule registry models matching the problem
-        # type; every refusal is recorded with a reason in the trace.
+        # Model selection: validated pipeline_plan first, then LLM recommendations, then defaults.
         model_names = None
         selection_source = "registry_default"
         proposed_recs = list(llm_result.get("model_recommendations") or [])
-        rejected_recs = list(llm_result.get("rejected_model_recommendations") or [])
+        rejected_recs = list(pipeline_plan.rejected_models or []) + list(llm_result.get("rejected_model_recommendations") or [])
         accepted_recs, late_rejections = validate_model_recommendations(
             proposed_recs, exp.problem_type
         )
         rejected_recs.extend(late_rejections)
 
-        if accepted_recs:
+        if fast_demo:
+            model_names = registry.get_fast_demo_models(exp.problem_type)
+            selection_source = "fast_demo"
+        elif accepted_recs:
             model_names = [rec["model_id"] for rec in accepted_recs]
             selection_source = llm_result.get("model_selection_source") or (
                 "deterministic_defaults" if llm_result.get("is_fallback")
                 else "provider"
             )
-
-        if model_names is None and llm_result.get("candidate_models"):
-            # Legacy string-only path - validated against the same registry.
+        elif pipeline_plan.candidate_models:
+            model_names = pipeline_plan.candidate_models
+            selection_source = "provider" if pipeline_plan.source == "llm" else "deterministic_defaults"
+            accepted_recs = [
+                {"model_id": m, "reason": "Selected by validated pipeline plan"}
+                for m in pipeline_plan.candidate_models
+            ]
+        elif llm_result.get("candidate_models"):
             wrapped, cand_rejected = validate_model_recommendations(
                 [{"model_id": m} for m in llm_result["candidate_models"]],
                 exp.problem_type,
@@ -617,10 +654,6 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             if wrapped:
                 model_names = [rec["model_id"] for rec in wrapped]
                 selection_source = "candidate_models"
-
-        if fast_demo:
-            model_names = registry.get_fast_demo_models(exp.problem_type)
-            selection_source = "fast_demo"
 
         model_defs = registry.get_models(exp.problem_type, model_names)
         if not model_defs:
@@ -666,17 +699,24 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
 
         # Build ensemble candidates strictly using OOF predictions on the training split (leakage-safe).
         # Final holdout is untouched during ensemble candidate creation, weight learning, and selection.
-        from app.services.ensemble import build_ensemble_candidates
-        ensemble_candidates = build_ensemble_candidates(
-            candidate_results=results,
-            model_definitions=model_defs,
-            X_train=X_train,
-            y_train=y_train,
-            problem_type=exp.problem_type,
-            primary_metric=exp.primary_metric,
-            n_folds=n_folds,
-            seed=effective_seed,
+        enable_ensemble = (
+            pipeline_plan.ensemble_strategy.enabled
+            if pipeline_plan and hasattr(pipeline_plan, "ensemble_strategy")
+            else True
         )
+        ensemble_candidates = []
+        if enable_ensemble:
+            from app.services.ensemble import build_ensemble_candidates
+            ensemble_candidates = build_ensemble_candidates(
+                candidate_results=results,
+                model_definitions=model_defs,
+                X_train=X_train,
+                y_train=y_train,
+                problem_type=exp.problem_type,
+                primary_metric=exp.primary_metric,
+                n_folds=n_folds,
+                seed=effective_seed,
+            )
         ensemble_results = [cand[0] for cand in ensemble_candidates]
 
         # 1. Select the winning model among registry candidate models (CV evidence ONLY)
@@ -887,6 +927,43 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             "holdout_used_for_selection": False,
         }
 
+        executed_pipeline_summary = {
+            "target_column": exp.target_column,
+            "problem_type": exp.problem_type,
+            "primary_metric": exp.primary_metric,
+            "candidate_models_trained": [r.model_name for r in results if r.status == "COMPLETED"],
+            "feature_operations_applied": accepted_ops,
+            "feature_operations_rejected": rejected_ops,
+            "n_folds": n_folds,
+            "n_trials": n_trials,
+            "ensemble_enabled": enable_ensemble,
+            "ensemble_strategies": (
+                pipeline_plan.ensemble_strategy.strategies if pipeline_plan and hasattr(pipeline_plan, "ensemble_strategy") else []
+            ),
+            "seed": effective_seed,
+            "fast_demo": bool(fast_demo),
+        }
+        pipeline_plan_provenance = {
+            "source": pipeline_plan.source if pipeline_plan else "deterministic_fallback",
+            "provider_used": (pipeline_plan.provider_used if pipeline_plan and pipeline_plan.provider_used else exp.llm_provider) or "fallback",
+            "model_used": pipeline_plan.model_used if pipeline_plan else "unknown",
+            "validation_status": pipeline_plan.validation_status if pipeline_plan else "valid",
+            "validation_errors": pipeline_plan.validation_errors if pipeline_plan else [],
+            "validation_warnings": pipeline_plan.validation_warnings if pipeline_plan else [],
+            "fallback_reason": pipeline_plan.fallback_reason if pipeline_plan else None,
+            "raw_recommendation": raw_plan,
+            "validated_plan": pipeline_plan.model_dump() if pipeline_plan else None,
+            "executed_pipeline": executed_pipeline_summary,
+            "constraints_enforced": [
+                "Zero arbitrary code execution",
+                "ModelRegistry validation",
+                "OPERATION_REGISTRY validation",
+                "Metric direction contract verification",
+                "Holdout isolation guarantee",
+                "Fold-safe training-split preprocessing",
+            ],
+        }
+
         # Research trace: recommendations, refusals, trained models, winner.
         # Makes no performance claim - no A/B comparison against deterministic
         # selection was ever run.
@@ -912,6 +989,7 @@ async def train_experiment(exp_id: int, fast_demo: bool = False, seed: Optional[
             "metric": best_metric_key if best else None,
             # How the winner was chosen: CV on training data, holdout untouched.
             "selection": selection_provenance,
+            "pipeline_plan_provenance": pipeline_plan_provenance,
             "comparison_note": (
                 "No A/B comparison against deterministic-only selection was "
                 "performed; no performance-improvement claim is made."
@@ -1087,6 +1165,10 @@ async def get_results(exp_id: int, db: Session = Depends(get_db)):
             json.loads(exp.model_selection_json).get("fusion", {}).get("is_ensemble_winner", False)
             if exp.model_selection_json else False
         ),
+        "pipeline_plan_provenance": (
+            json.loads(exp.model_selection_json).get("pipeline_plan_provenance")
+            if exp.model_selection_json else None
+        ),
         "research_evaluation": _build_research_evaluation(exp, db),
     }
 
@@ -1173,8 +1255,73 @@ def _build_research_evaluation(exp: Experiment, db: Session) -> dict:
             "applied_operations": fe_data.get("operations_applied", fe_data.get("operations", [])),
             "rejected_operations": fe_data.get("rejected_operations", []),
             "is_advisory_only": True,
-        }
+        },
+        "pipeline_plan_provenance": model_sel.get("pipeline_plan_provenance"),
+        "pipeline_plan": (model_sel.get("pipeline_plan_provenance") or {}).get("validated_plan"),
+        "pipeline_source": (model_sel.get("pipeline_plan_provenance") or {}).get("source", "deterministic_fallback"),
     }
+
+
+@router.get("/{exp_id}/pipeline-plan")
+async def get_pipeline_plan(exp_id: int, db: Session = Depends(get_db)):
+    """Get the structured AutoML pipeline plan and execution provenance for an experiment."""
+    exp = db.query(Experiment).filter(Experiment.id == exp_id).first()
+    if not exp:
+        raise HTTPException(404, "Experiment not found")
+
+    # 1. If already trained, return execution provenance
+    if exp.model_selection_json:
+        try:
+            ms = json.loads(exp.model_selection_json)
+            if ms.get("pipeline_plan_provenance"):
+                return ms["pipeline_plan_provenance"]
+        except Exception:
+            pass
+
+    # 2. If analyzed, return analyzed plan
+    if exp.llm_analysis_json:
+        try:
+            stored = json.loads(exp.llm_analysis_json)
+            if isinstance(stored, dict) and "pipeline_plan" in stored:
+                plan = stored["pipeline_plan"]
+                return {
+                    "source": plan.get("source", "llm"),
+                    "provider_used": exp.llm_provider or "unknown",
+                    "model_used": plan.get("model_used", ""),
+                    "validation_status": plan.get("validation_status", "valid"),
+                    "validation_errors": plan.get("validation_errors", []),
+                    "validation_warnings": plan.get("validation_warnings", []),
+                    "validated_plan": plan,
+                    "raw_recommendation": plan,
+                    "executed_pipeline": None,
+                }
+        except Exception:
+            pass
+
+    # 3. Generate deterministic plan on the fly
+    ds = db.query(Dataset).filter(Dataset.id == exp.dataset_id).first()
+    if ds:
+        profile = _resolve_dataset_profile(ds, db)
+        from app.services.pipeline_planner import generate_deterministic_plan
+        ctx = {
+            "columns": [cp["name"] for cp in profile.get("column_profiles", [])],
+            "column_profiles": profile.get("column_profiles", []),
+            "target_column": exp.target_column,
+            "problem_type": exp.problem_type,
+            "shape": [profile.get("rows", 0), profile.get("columns", 0)],
+        }
+        plan = generate_deterministic_plan(ctx)
+        return {
+            "source": "deterministic_fallback",
+            "provider_used": "Fallback (Deterministic)",
+            "validation_status": "valid",
+            "validation_errors": [],
+            "validation_warnings": ["Generated on-demand using rule-based planner."],
+            "validated_plan": plan.model_dump(),
+            "raw_recommendation": None,
+            "executed_pipeline": None,
+        }
+    raise HTTPException(404, "Dataset not found")
 
 
 def _enrich_models(models: list[dict], exp: Experiment) -> list[dict]:

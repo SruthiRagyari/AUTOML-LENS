@@ -259,6 +259,175 @@ function ResearchEvaluationSection({ results, exp }) {
 }
 
 /**
+ * Renders the LLM-Guided AutoML Pipeline Plan and Execution Provenance.
+ */
+function PipelinePlanSection({ planProvenance, fallbackPlan, exp }) {
+  const prov = planProvenance || {}
+  const plan = prov.validated_plan || fallbackPlan || {}
+  const executed = prov.executed_pipeline || {}
+  const raw = prov.raw_recommendation || {}
+
+  if (!plan && !prov.source) return null
+
+  const isLlm = (prov.source === 'llm' || plan.source === 'llm') && !prov.is_fallback
+  const status = prov.validation_status || plan.validation_status || 'valid'
+  const statusColor = status === 'valid' ? '#81c784' : status === 'repaired' ? '#ffb74d' : '#64b5f6'
+
+  const prep = plan.preprocessing_strategy || {}
+  const hpo = plan.hyperparameter_strategy || {}
+  const ens = plan.ensemble_strategy || {}
+
+  return (
+    <div style={{ marginTop: 20, padding: 18, background: '#141414', border: '1px solid var(--border)', borderRadius: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontWeight: 600, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>📋 LLM AutoML Pipeline Plan</span>
+          <span className="tag" style={{ background: isLlm ? 'rgba(156,39,176,0.2)' : 'rgba(33,150,243,0.2)', color: isLlm ? '#ce93d8' : '#64b5f6', borderColor: isLlm ? '#ce93d8' : '#64b5f6' }}>
+            Source: {isLlm ? 'LLM' : 'Deterministic'}
+          </span>
+          <span className="tag" style={{ background: `${statusColor}22`, color: statusColor, borderColor: statusColor, textTransform: 'capitalize' }}>
+            Status: {status}
+          </span>
+          {prov.provider_used && (
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              ({prov.provider_used})
+            </span>
+          )}
+        </div>
+        {hpo.n_folds && (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            HPO: {hpo.n_folds} Folds · {hpo.n_trials} Trials · Mode: <code>{hpo.mode || 'automl'}</code>
+          </div>
+        )}
+      </div>
+
+      {/* Plan summary attributes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Problem &amp; Target</div>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>
+            <span style={{ textTransform: 'capitalize' }}>{plan.problem_type || exp?.problem_type}</span> · <code>{plan.target_column || exp?.target_column}</code>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            Metric: <code>{plan.primary_metric || exp?.primary_metric}</code>
+          </div>
+        </div>
+
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Preprocessing Strategy</div>
+          <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>
+            Numeric: {prep.numeric_imputation || 'median'} · Scale: {prep.scaling || 'standard'}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            Categorical: {prep.categorical_imputation || 'mode'} (max {prep.max_categories || 20})
+          </div>
+        </div>
+
+        <div style={{ background: '#1c1c1c', padding: 12, borderRadius: 6, border: '1px solid #2a2a2a' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>Ensemble Strategy</div>
+          <div style={{ fontSize: 13, color: ens.enabled !== false ? '#81c784' : '#ffb74d', fontWeight: 500 }}>
+            {ens.enabled !== false ? 'Enabled' : 'Disabled'}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+            {ens.strategies?.length > 0 ? ens.strategies.join(', ') : 'Default fusion'}
+          </div>
+        </div>
+      </div>
+
+      {/* Tri-stage comparison: LLM Recommendation vs Validated Plan vs Actually Executed */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 16 }}>
+        {/* Stage 1: LLM Advisory */}
+        <div style={{ background: '#181818', border: '1px solid #2a2a2a', borderRadius: 6, padding: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#ce93d8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>1️⃣ LLM Recommendation</span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <div><strong>Candidate Models:</strong></div>
+            <div style={{ marginTop: 2, marginBottom: 6 }}>
+              {(raw.candidate_models || plan.candidate_models || []).length > 0 ? (
+                (raw.candidate_models || plan.candidate_models).map(m => (
+                  <code key={typeof m === 'string' ? m : m.model_id} style={{ marginRight: 4, display: 'inline-block' }}>{typeof m === 'string' ? m : m.model_id}</code>
+                ))
+              ) : 'None specified'}
+            </div>
+            <div><strong>Feature Operations:</strong></div>
+            <div style={{ marginTop: 2 }}>
+              {(raw.feature_operations || plan.feature_operations || []).length > 0 ? (
+                `${(raw.feature_operations || plan.feature_operations).length} operation(s) proposed`
+              ) : '0 proposed'}
+            </div>
+            {plan.rationale && (
+              <div style={{ marginTop: 6, fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                "{plan.rationale}"
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stage 2: Validated Plan */}
+        <div style={{ background: '#181818', border: '1px solid #2a2a2a', borderRadius: 6, padding: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#64b5f6', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>2️⃣ Validated Plan</span>
+            <span style={{ fontSize: 11, color: statusColor }}>({status})</span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <div><strong>Registry Approved Models:</strong></div>
+            <div style={{ marginTop: 2, marginBottom: 6 }}>
+              {(plan.candidate_models || []).map(m => (
+                <code key={m} style={{ marginRight: 4, display: 'inline-block' }}>{m}</code>
+              ))}
+            </div>
+            <div><strong>Approved Operations:</strong></div>
+            <div style={{ marginTop: 2 }}>
+              {(plan.feature_operations || []).length > 0 ? (
+                plan.feature_operations.map((op, i) => (
+                  <div key={i}>• <code>{op.operation}</code> on <code>{op.column}</code></div>
+                ))
+              ) : '0 approved operations'}
+            </div>
+            {(prov.rejected_models?.length > 0 || prov.rejected_operations?.length > 0) && (
+              <div style={{ marginTop: 6, color: '#e57373' }}>
+                Refused: {prov.rejected_models?.length || 0} models, {prov.rejected_operations?.length || 0} ops
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stage 3: Actually Executed Pipeline */}
+        <div style={{ background: '#181818', border: '1px solid #2a2a2a', borderRadius: 6, padding: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#81c784', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>3️⃣ Actually Executed</span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            {executed.candidate_models_trained ? (
+              <>
+                <div><strong>Models Trained ({executed.candidate_models_trained.length}):</strong></div>
+                <div style={{ marginTop: 2, marginBottom: 6 }}>
+                  {executed.candidate_models_trained.map(m => (
+                    <code key={m} style={{ marginRight: 4, display: 'inline-block' }}>{m}</code>
+                  ))}
+                </div>
+                <div><strong>Operations Applied:</strong> {executed.feature_operations_applied?.length || 0}</div>
+                <div><strong>Ensemble Evaluated:</strong> {executed.ensemble_enabled ? 'Yes (OOF CV)' : 'No'}</div>
+                <div><strong>Execution Seed:</strong> <code>{executed.seed ?? '42'}</code></div>
+              </>
+            ) : (
+              <div style={{ color: 'var(--text-muted)' }}>
+                Pipeline execution starts when you run training.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', borderTop: '1px solid #222', paddingTop: 8 }}>
+        🔒 <strong>Safety Guarantee:</strong> Controlled registry execution only. The LLM produces structured decisions, never executable code. All models are validated against <code>ModelRegistry</code> and operations against <code>OPERATION_REGISTRY</code> with strict target leakage prevention.
+      </div>
+    </div>
+  )
+}
+
+/**
  * Renders the REAL per-trial Optuna history persisted at train time.
  * Only trials the backend actually recorded are shown: no progress bar, no
  * invented counts, no placeholder rows. A model whose search failed shows its
@@ -706,6 +875,19 @@ export default function Experiment() {
                     <ul style={{ marginTop: 8, paddingLeft: 20 }}>{llmAnalysis.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
                   </div>
                 )}
+                {llmAnalysis.pipeline_plan && (
+                  <PipelinePlanSection
+                    planProvenance={{
+                      validated_plan: llmAnalysis.pipeline_plan,
+                      source: llmAnalysis.pipeline_plan.source || (llmAnalysis.is_fallback ? 'deterministic_fallback' : 'llm'),
+                      provider_used: llmAnalysis.provider_used,
+                      validation_status: llmAnalysis.pipeline_plan.validation_status || 'valid',
+                      raw_recommendation: llmAnalysis.pipeline_plan,
+                    }}
+                    fallbackPlan={llmAnalysis.pipeline_plan}
+                    exp={exp}
+                  />
+                )}
                 <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
                   <button className="btn btn-primary" onClick={() => runTraining(false)} disabled={actionLoading}>
                     ▶ Start Full Training ({exp?.n_folds} folds, {exp?.n_trials} trials)
@@ -880,6 +1062,11 @@ export default function Experiment() {
                   actually computed it.
                 </p>
                 <ResearchEvaluationSection results={results} exp={exp} />
+                <PipelinePlanSection
+                  planProvenance={results.pipeline_plan_provenance}
+                  fallbackPlan={results.research_evaluation?.pipeline_plan}
+                  exp={exp}
+                />
                 <ModelFusionSection ensembleCandidates={results.ensemble_candidates} models={models} bestModelName={results.best_model_name} primaryMetric={results.primary_metric} />
                 <OptunaTrials models={models} />
                 {cm.length > 0 && (
