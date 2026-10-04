@@ -171,10 +171,25 @@ export default function Dashboard() {
     }
   }
 
+  const MAX_DATASET_SIZE_BYTES = 1024 * 1024 * 1024 // 1 GB
+
   // Upload handling
-  const onDrop = useCallback(async (acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles, fileRejections) => {
+    if (fileRejections && fileRejections.length > 0) {
+      const rej = fileRejections[0]
+      if (rej.errors?.some((e) => e.code === 'file-too-large')) {
+        setError('Dataset exceeds the maximum allowed size of 1 GB.')
+      } else {
+        setError(rej.errors?.[0]?.message || 'File rejected')
+      }
+      return
+    }
     if (!acceptedFiles || acceptedFiles.length === 0) return
     const file = acceptedFiles[0]
+    if (file.size > MAX_DATASET_SIZE_BYTES) {
+      setError('Dataset exceeds the maximum allowed size of 1 GB.')
+      return
+    }
     setUploading(true)
     setError(null)
 
@@ -258,6 +273,7 @@ export default function Dashboard() {
       'text/csv': ['.csv'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
+    maxSize: MAX_DATASET_SIZE_BYTES,
     maxFiles: 1,
     disabled: uploading,
   })
@@ -521,7 +537,7 @@ export default function Dashboard() {
                           Drag & drop your CSV or Excel file here
                         </p>
                         <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                          Supports CSV, XLSX up to 100MB
+                          Supports CSV, XLSX up to 1 GB
                         </p>
                       </div>
                     )}

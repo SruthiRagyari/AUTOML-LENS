@@ -48,16 +48,41 @@ async def upload_dataset(file: UploadFile = File(...), db: Session = Depends(get
     if not validate_file_extension(file.filename):
         raise HTTPException(400, "Only .csv and .xlsx files are supported")
 
-    # Read file content
-    content = await file.read()
-    if len(content) > 100 * 1024 * 1024:
-        raise HTTPException(400, "File too large (max 100MB)")
+    # Determine maximum allowed size and error message
+    limit_label = (
+        f"{settings.MAX_DATASET_SIZE_MB // 1024} GB"
+        if settings.MAX_DATASET_SIZE_MB >= 1024
+        else f"{settings.MAX_DATASET_SIZE_MB} MB"
+    )
+    size_error_msg = f"Dataset exceeds the maximum allowed size of {limit_label}."
 
-    # Save file
+    # Pre-check size if known from headers / file descriptor
+    if file.size and file.size > settings.max_dataset_size_bytes:
+        raise HTTPException(400, size_error_msg)
+
+    # Save file to disk while validating size in chunks
     safe_name = generate_safe_filename(file.filename)
     file_path = settings.datasets_path / safe_name
-    with open(file_path, "wb") as f:
-        f.write(content)
+    chunk_size = 1024 * 1024  # 1 MB
+    total_size = 0
+
+    try:
+        with open(file_path, "wb") as f:
+            while chunk := await file.read(chunk_size):
+                total_size += len(chunk)
+                if total_size > settings.max_dataset_size_bytes:
+                    raise HTTPException(400, size_error_msg)
+                f.write(chunk)
+    except HTTPException:
+        file_path.unlink(missing_ok=True)
+        raise
+    except Exception as e:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(400, f"Failed to upload file: {str(e)}")
+
+    if total_size == 0:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(400, "The uploaded file is empty (0 bytes).")
 
     # Parse dataset
     try:
@@ -79,7 +104,7 @@ async def upload_dataset(file: UploadFile = File(...), db: Session = Depends(get
         filename=safe_name,
         original_filename=file.filename,
         file_path=str(file_path),
-        file_size=len(content),
+        file_size=total_size,
         rows=len(df),
         columns=len(df.columns),
     )
@@ -93,7 +118,7 @@ async def upload_dataset(file: UploadFile = File(...), db: Session = Depends(get
         "original_filename": file.filename,
         "rows": len(df),
         "columns": len(df.columns),
-        "file_size": len(content),
+        "file_size": total_size,
         "uploaded_at": str(dataset.uploaded_at),
         "column_names": list(df.columns),
     }

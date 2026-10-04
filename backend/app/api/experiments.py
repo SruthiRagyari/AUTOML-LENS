@@ -1675,14 +1675,33 @@ async def batch_predict(exp_id: int, file: UploadFile = File(...), db: Session =
         except Exception as _e:
             raise HTTPException(400, f"Model restore failed: {str(_e)}")
 
-    # Save the uploaded file under a unique name: a fixed
-    # ``batch_input_{exp_id}.csv`` let concurrent users overwrite each other.
-    content = await file.read()
+    limit_label = (
+        f"{settings.MAX_DATASET_SIZE_MB // 1024} GB"
+        if settings.MAX_DATASET_SIZE_MB >= 1024
+        else f"{settings.MAX_DATASET_SIZE_MB} MB"
+    )
+    if file.size and file.size > settings.max_dataset_size_bytes:
+        raise HTTPException(400, f"Batch file exceeds the maximum allowed size of {limit_label}.")
+
+    # Save the uploaded file under a unique name
     temp_path = settings.predictions_path / (
         f"batch_input_{exp_id}_{uuid.uuid4().hex[:12]}.csv"
     )
-    with open(temp_path, "wb") as f:
-        f.write(content)
+    chunk_size = 1024 * 1024
+    total_size = 0
+    try:
+        with open(temp_path, "wb") as f:
+            while chunk := await file.read(chunk_size):
+                total_size += len(chunk)
+                if total_size > settings.max_dataset_size_bytes:
+                    raise HTTPException(400, f"Batch file exceeds the maximum allowed size of {limit_label}.")
+                f.write(chunk)
+    except HTTPException:
+        temp_path.unlink(missing_ok=True)
+        raise
+    except Exception as e:
+        temp_path.unlink(missing_ok=True)
+        raise HTTPException(400, f"Failed to upload batch file: {str(e)}")
 
     # Same contract as single prediction: a batch file must carry the columns the
     # model consumes; missing ones are reported instead of being imputed away.

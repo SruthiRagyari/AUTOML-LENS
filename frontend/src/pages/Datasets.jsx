@@ -42,9 +42,24 @@ export default function Datasets() {
     }
   }
 
-  const onDrop = async (acceptedFiles) => {
+  const MAX_DATASET_SIZE_BYTES = 1024 * 1024 * 1024 // 1 GB
+
+  const onDrop = async (acceptedFiles, fileRejections) => {
+    if (fileRejections && fileRejections.length > 0) {
+      const rej = fileRejections[0]
+      if (rej.errors?.some((e) => e.code === 'file-too-large')) {
+        setUploadError('Dataset exceeds the maximum allowed size of 1 GB.')
+      } else {
+        setUploadError(rej.errors?.[0]?.message || 'File rejected')
+      }
+      return
+    }
     if (!acceptedFiles || acceptedFiles.length === 0) return
     const file = acceptedFiles[0]
+    if (file.size > MAX_DATASET_SIZE_BYTES) {
+      setUploadError('Dataset exceeds the maximum allowed size of 1 GB.')
+      return
+    }
     setUploading(true)
     setUploadError(null)
 
@@ -64,6 +79,7 @@ export default function Datasets() {
       'text/csv': ['.csv'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
+    maxSize: MAX_DATASET_SIZE_BYTES,
     maxFiles: 1,
     disabled: uploading,
   })
@@ -140,7 +156,7 @@ export default function Datasets() {
                 {isDragActive ? 'Drop your CSV/XLSX file here...' : 'Drag & drop your CSV or XLSX file here'}
               </p>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                Supports UTF-8 CSV, Excel spreadsheets up to 100MB
+                Supports UTF-8 CSV, Excel spreadsheets up to 1 GB
               </p>
             </div>
           )}

@@ -5,8 +5,10 @@ import uuid
 from pathlib import Path
 
 
+from app.core.config import settings
+
 ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
+MAX_FILE_SIZE = settings.max_dataset_size_bytes
 
 
 def sanitize_filename(filename: str) -> str:

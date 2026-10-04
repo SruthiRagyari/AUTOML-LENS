@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Storage
     STORAGE_PATH: str = "./storage"
 
+    # Upload limits
+    MAX_DATASET_SIZE_MB: int = 1024
+
     # LLM
     LLM_PROVIDER: str = "fallback"
     GEMINI_API_KEY: str = ""
@@ -48,6 +51,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def max_dataset_size_bytes(self) -> int:
+        return self.MAX_DATASET_SIZE_MB * 1024 * 1024
 
     @property
     def resolved_database_url(self) -> str:
