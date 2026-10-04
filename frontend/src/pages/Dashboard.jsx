@@ -29,6 +29,16 @@ function pctText(n) {
   return n == null ? '—' : `${Number(n).toFixed(1)}%`
 }
 
+// The profile endpoint reports the columns as `column_profiles`
+// ([{ name, ... }]); `column_names` only exists on the *upload* response.
+// Reading the wrong key left the Target Column <select> with no options, so
+// the dropdown must always be derived from the profiles.
+function columnNamesFromProfile(profile) {
+  return (profile?.column_profiles || [])
+    .map((cp) => cp?.name)
+    .filter(Boolean)
+}
+
 function SuitabilityReport({ suit }) {
   if (!suit) return null
   const t = suit.target || {}
@@ -199,11 +209,28 @@ export default function Dashboard() {
       setUploadedDataset(ds)
 
       const profRes = await api.profileDataset(ds.id)
-      setProfileData(profRes.data)
-      setColumns(profRes.data.column_names || [])
+      const profile = profRes.data || {}
+      setProfileData(profile)
 
-      const initialTarget = profRes.data.suggested_target || ''
-      const initialType = profRes.data.suggested_problem_type || 'auto'
+      // Derive the option list from the real profile, with a fallback to the
+      // dedicated /columns endpoint if the profile ever lacks them.
+      let cols = columnNamesFromProfile(profile)
+      if (cols.length === 0) {
+        try {
+          const colRes = await api.getColumns(ds.id)
+          cols = colRes.data?.columns || []
+        } catch (colErr) {
+          console.error('Column list fallback failed:', colErr)
+        }
+      }
+      setColumns(cols)
+
+      // Only pre-select the suggestion when it is a real option, so the
+      // <select> value always matches a rendered <option> (otherwise the
+      // browser blocks submission with "Select an item in the list").
+      const suggested = profile.suggested_target
+      const initialTarget = cols.includes(suggested) ? suggested : ''
+      const initialType = profile.suggested_problem_type || 'auto'
 
       setForm((prev) => ({
         ...prev,

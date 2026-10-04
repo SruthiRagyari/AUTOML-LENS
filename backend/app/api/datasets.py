@@ -185,6 +185,23 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
     return {"message": f"Dataset {dataset_id} deleted successfully", "id": dataset_id}
 
 
+def _with_column_names(profile: dict) -> dict:
+    """Expose the ordered column names alongside the per-column profiles.
+
+    The upload response returns ``column_names``; the profile response
+    historically returned only ``column_profiles``, so a client reading
+    ``column_names`` after profiling received nothing and rendered an empty
+    target dropdown. Both response shapes now agree.
+    """
+    if not profile.get("column_names"):
+        profile["column_names"] = [
+            cp.get("name")
+            for cp in profile.get("column_profiles", [])
+            if cp.get("name")
+        ]
+    return profile
+
+
 @router.get("/{dataset_id}/profile")
 async def profile_dataset(dataset_id: int, db: Session = Depends(get_db)):
     """Generate or retrieve dataset profile."""
@@ -194,7 +211,7 @@ async def profile_dataset(dataset_id: int, db: Session = Depends(get_db)):
 
     # Return cached profile if available
     if ds.profile_json:
-        return json.loads(ds.profile_json)
+        return _with_column_names(json.loads(ds.profile_json))
 
     # Generate profile
     try:
@@ -210,6 +227,7 @@ async def profile_dataset(dataset_id: int, db: Session = Depends(get_db)):
     profile["dataset_id"] = dataset_id
     profile["suggested_target"] = target
     profile["suggested_problem_type"] = ptype
+    _with_column_names(profile)
 
     # Cache profile
     ds.profile_json = json.dumps(profile, default=str)
