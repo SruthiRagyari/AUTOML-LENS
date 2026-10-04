@@ -355,6 +355,61 @@ async def list_experiments(db: Session = Depends(get_db)):
     }
 
 
+def _resolve_bench_file(rel_path: str) -> Optional[Path]:
+    for base in [Path.cwd(), Path(__file__).resolve().parents[3], Path(__file__).resolve().parents[2]]:
+        candidate = base / rel_path
+        if candidate.exists():
+            return candidate
+    return None
+
+
+@router.get("/benchmarks/summary")
+async def get_benchmarks_summary():
+    """Retrieve the aggregated multi-seed benchmark results and research evaluation."""
+    summary_path = _resolve_bench_file("benchmarks/results/benchmark_summary.json")
+    if summary_path and summary_path.exists():
+        try:
+            with open(summary_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error reading benchmark summary: {e}")
+    results_path = _resolve_bench_file("benchmarks/results/benchmark_results.json")
+    if results_path and results_path.exists():
+        try:
+            from app.services.benchmarker import aggregate_benchmark_records
+            with open(results_path, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+            return aggregate_benchmark_records(raw_data)
+        except Exception as e:
+            logger.warning(f"Error aggregating raw benchmark results: {e}")
+    return {
+        "status": "not_available",
+        "message": "No benchmark results found. Run benchmarks to generate empirical multi-seed data.",
+        "datasets": {},
+    }
+
+
+@router.get("/benchmarks/report")
+async def get_benchmarks_report():
+    """Download or view the standalone HTML research benchmark report."""
+    from fastapi.responses import HTMLResponse
+    report_path = _resolve_bench_file("docs/BENCHMARK_REPORT.html")
+    if report_path and report_path.exists():
+        try:
+            with open(report_path, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read(), status_code=200)
+        except Exception as e:
+            logger.warning(f"Error reading benchmark report: {e}")
+    
+    summary = await get_benchmarks_summary()
+    if summary.get("datasets"):
+        reporter = ReportGenerator()
+        html = reporter.generate_benchmark_html_report(summary)
+        return HTMLResponse(content=html, status_code=200)
+
+    raise HTTPException(status_code=404, detail="Benchmark report not found. Please run benchmarks first.")
+
+
 @router.get("/{exp_id}")
 async def get_experiment(exp_id: int, db: Session = Depends(get_db)):
     """Get experiment details."""

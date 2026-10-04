@@ -1,0 +1,374 @@
+{
+  "title": "AutoML-Lens Multi-Seed Research Benchmark Summary",
+  "generated_at": "2026-10-04 13:25:57",
+  "git_commit": "b8d45be",
+  "protocol": {
+    "seeds": [
+      42,
+      123,
+      456
+    ],
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_policy": "Strict fold-safe cross-validation on train split only; holdout set reserved exclusively for final evaluation.",
+    "statistical_statement": "Descriptive multi-seed comparison only (N=3 seeds per condition). No inferential p-values claimed."
+  },
+  "datasets": {
+    "adult_census_income": {
+      "problem_type": "classification",
+      "primary_metric": "f1_weighted",
+      "metric_direction": "maximize",
+      "rows_total": 1000,
+      "rows_train": 800,
+      "rows_holdout": 200,
+      "dataset_hash": "5b00264637dbfec3",
+      "conditions": {
+        "deterministic": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            0.8423,
+            0.8363,
+            0.8342
+          ],
+          "cv_mean": 0.8376,
+          "cv_std": 0.0035,
+          "holdout_scores": [
+            0.7937,
+            0.8379,
+            0.8127
+          ],
+          "holdout_mean": 0.8148,
+          "holdout_std": 0.0181,
+          "holdout_min": 0.7937,
+          "holdout_max": 0.8379,
+          "runtimes": [
+            11.91,
+            18.52,
+            14.49
+          ],
+          "runtime_mean": 14.97,
+          "selected_pipelines": [
+            "ensemble_soft_voting",
+            "ensemble_stacking",
+            "ensemble_soft_voting"
+          ],
+          "secondary_metrics_means": {
+            "accuracy": 0.8217,
+            "balanced_accuracy": 0.7257,
+            "roc_auc": 0.8916,
+            "f1_weighted": 0.8148
+          }
+        },
+        "llm_model_only": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            0.843,
+            0.8347,
+            0.8408
+          ],
+          "cv_mean": 0.8395,
+          "cv_std": 0.0035,
+          "holdout_scores": [
+            0.798,
+            0.8379,
+            0.83
+          ],
+          "holdout_mean": 0.822,
+          "holdout_std": 0.0173,
+          "holdout_min": 0.798,
+          "holdout_max": 0.8379,
+          "runtimes": [
+            13.69,
+            18.69,
+            14.7
+          ],
+          "runtime_mean": 15.69,
+          "selected_pipelines": [
+            "ensemble_soft_voting",
+            "ensemble_stacking",
+            "svm_clf"
+          ],
+          "secondary_metrics_means": {
+            "accuracy": 0.8267,
+            "balanced_accuracy": 0.7428,
+            "roc_auc": 0.8856,
+            "f1_weighted": 0.822
+          }
+        },
+        "llm_guided": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            0.843,
+            0.8347,
+            0.8408
+          ],
+          "cv_mean": 0.8395,
+          "cv_std": 0.0035,
+          "holdout_scores": [
+            0.798,
+            0.8379,
+            0.83
+          ],
+          "holdout_mean": 0.822,
+          "holdout_std": 0.0173,
+          "holdout_min": 0.798,
+          "holdout_max": 0.8379,
+          "runtimes": [
+            15.79,
+            19.11,
+            15.79
+          ],
+          "runtime_mean": 16.9,
+          "selected_pipelines": [
+            "ensemble_soft_voting",
+            "ensemble_stacking",
+            "svm_clf"
+          ],
+          "secondary_metrics_means": {
+            "accuracy": 0.8267,
+            "balanced_accuracy": 0.7428,
+            "roc_auc": 0.8856,
+            "f1_weighted": 0.822
+          }
+        }
+      },
+      "comparisons": {
+        "llm_guided_vs_deterministic": {
+          "deterministic_condition": "deterministic",
+          "llm_condition": "llm_guided",
+          "metric": "f1_weighted",
+          "direction": "maximize",
+          "deterministic_holdout_mean": 0.8148,
+          "llm_holdout_mean": 0.822,
+          "raw_difference": 0.0072,
+          "direction_adjusted_delta": 0.0072,
+          "cv_delta": 0.0019,
+          "interpretation": "LLM showed +0.0072 improvement"
+        },
+        "ablation_model_only_vs_deterministic": {
+          "metric": "f1_weighted",
+          "direction": "maximize",
+          "deterministic_holdout_mean": 0.8148,
+          "ablation_holdout_mean": 0.822,
+          "direction_adjusted_delta": 0.0072
+        }
+      },
+      "pipeline_behavior": {
+        "total_llm_runs": 6,
+        "fallback_runs": 0,
+        "fallback_rate": 0.0,
+        "models_proposed_unique": [
+          "gradient_boosting_clf",
+          "hist_gradient_boosting_clf",
+          "logistic_regression",
+          "random_forest_clf",
+          "svm_clf"
+        ],
+        "models_accepted_unique": [
+          "gradient_boosting_clf",
+          "hist_gradient_boosting_clf",
+          "logistic_regression",
+          "random_forest_clf",
+          "svm_clf"
+        ],
+        "models_rejected_count": 0,
+        "operations_proposed_count": 0,
+        "operations_accepted_count": 0,
+        "operations_rejected_count": 0,
+        "operations_proposed_unique": [],
+        "operations_accepted_unique": []
+      }
+    },
+    "winequality_red": {
+      "problem_type": "regression",
+      "primary_metric": "rmse",
+      "metric_direction": "minimize",
+      "rows_total": 800,
+      "rows_train": 640,
+      "rows_holdout": 160,
+      "dataset_hash": "4a402cf041b025d4",
+      "conditions": {
+        "deterministic": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            -0.6152,
+            -0.6091,
+            -0.5909
+          ],
+          "cv_mean": -0.6051,
+          "cv_std": 0.0103,
+          "holdout_scores": [
+            0.5461,
+            0.5289,
+            0.5881
+          ],
+          "holdout_mean": 0.5544,
+          "holdout_std": 0.0249,
+          "holdout_min": 0.5289,
+          "holdout_max": 0.5881,
+          "runtimes": [
+            6.33,
+            7.02,
+            5.69
+          ],
+          "runtime_mean": 6.35,
+          "selected_pipelines": [
+            "ensemble_weighted",
+            "ensemble_weighted",
+            "ensemble_weighted"
+          ],
+          "secondary_metrics_means": {
+            "rmse": 0.5544,
+            "mae": 0.4183,
+            "r2": 0.4228,
+            "mse": 0.308
+          }
+        },
+        "llm_model_only": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            -0.6152,
+            -0.6092,
+            -0.5988
+          ],
+          "cv_mean": -0.6077,
+          "cv_std": 0.0068,
+          "holdout_scores": [
+            0.5461,
+            0.5285,
+            0.5921
+          ],
+          "holdout_mean": 0.5556,
+          "holdout_std": 0.0268,
+          "holdout_min": 0.5285,
+          "holdout_max": 0.5921,
+          "runtimes": [
+            6.13,
+            7.08,
+            5.65
+          ],
+          "runtime_mean": 6.29,
+          "selected_pipelines": [
+            "ensemble_weighted",
+            "ensemble_weighted",
+            "ensemble_weighted"
+          ],
+          "secondary_metrics_means": {
+            "rmse": 0.5556,
+            "mae": 0.4224,
+            "r2": 0.42,
+            "mse": 0.3094
+          }
+        },
+        "llm_guided": {
+          "count": 3,
+          "seeds": [
+            42,
+            123,
+            456
+          ],
+          "cv_scores": [
+            -0.6152,
+            -0.6092,
+            -0.5988
+          ],
+          "cv_mean": -0.6077,
+          "cv_std": 0.0068,
+          "holdout_scores": [
+            0.5461,
+            0.5285,
+            0.5921
+          ],
+          "holdout_mean": 0.5556,
+          "holdout_std": 0.0268,
+          "holdout_min": 0.5285,
+          "holdout_max": 0.5921,
+          "runtimes": [
+            6.07,
+            6.92,
+            5.62
+          ],
+          "runtime_mean": 6.21,
+          "selected_pipelines": [
+            "ensemble_weighted",
+            "ensemble_weighted",
+            "ensemble_weighted"
+          ],
+          "secondary_metrics_means": {
+            "rmse": 0.5556,
+            "mae": 0.4224,
+            "r2": 0.42,
+            "mse": 0.3094
+          }
+        }
+      },
+      "comparisons": {
+        "llm_guided_vs_deterministic": {
+          "deterministic_condition": "deterministic",
+          "llm_condition": "llm_guided",
+          "metric": "rmse",
+          "direction": "minimize",
+          "deterministic_holdout_mean": 0.5544,
+          "llm_holdout_mean": 0.5556,
+          "raw_difference": 0.0012,
+          "direction_adjusted_delta": -0.0012,
+          "cv_delta": -0.0026,
+          "interpretation": "Deterministic showed +0.0012 advantage"
+        },
+        "ablation_model_only_vs_deterministic": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "deterministic_holdout_mean": 0.5544,
+          "ablation_holdout_mean": 0.5556,
+          "direction_adjusted_delta": -0.0012
+        }
+      },
+      "pipeline_behavior": {
+        "total_llm_runs": 6,
+        "fallback_runs": 0,
+        "fallback_rate": 0.0,
+        "models_proposed_unique": [
+          "gradient_boosting_reg",
+          "random_forest_reg",
+          "ridge"
+        ],
+        "models_accepted_unique": [
+          "gradient_boosting_reg",
+          "random_forest_reg",
+          "ridge"
+        ],
+        "models_rejected_count": 0,
+        "operations_proposed_count": 0,
+        "operations_accepted_count": 0,
+        "operations_rejected_count": 0,
+        "operations_proposed_unique": [],
+        "operations_accepted_unique": []
+      }
+    }
+  }
+}

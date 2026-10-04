@@ -259,6 +259,169 @@ function ResearchEvaluationSection({ results, exp }) {
 }
 
 /**
+ * Renders the Multi-Seed Benchmark Evaluation Section.
+ */
+function MultiSeedBenchmarkSection() {
+  const [summary, setSummary] = useState(null)
+  const [selectedDataset, setSelectedDataset] = useState('adult_census_income')
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/experiments/benchmarks/summary')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.datasets) {
+          setSummary(data)
+          const firstKey = Object.keys(data.datasets)[0]
+          if (firstKey) setSelectedDataset(firstKey)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  if (!summary || !summary.datasets || Object.keys(summary.datasets).length === 0) {
+    return null
+  }
+
+  const dsNames = Object.keys(summary.datasets)
+  const curDs = summary.datasets[selectedDataset] || summary.datasets[dsNames[0]]
+  const conditions = curDs?.conditions || {}
+  const comparisons = curDs?.comparisons || {}
+  const behavior = curDs?.pipeline_behavior || {}
+  const proto = summary.protocol || {}
+
+  return (
+    <div style={{ marginTop: 20, padding: 18, background: '#12161f', border: '1px solid #233554', borderRadius: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>📈</span>
+          <span style={{ fontWeight: 600, fontSize: 15, color: '#90caf9' }}>
+            Multi-Seed Empirical Benchmark Evaluation
+          </span>
+          <span className="tag" style={{ background: 'rgba(33,150,243,0.15)', color: '#64b5f6', borderColor: '#64b5f6' }}>
+            N={proto.seeds?.length || 3} Seeds Tested
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a
+            href="/api/experiments/benchmarks/report"
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-secondary btn-sm"
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            <span>Open Research Report (HTML)</span> ↗
+          </a>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? 'Collapse' : 'Expand Matrix'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+        {proto.holdout_policy} <em>{proto.statistical_statement}</em>
+      </div>
+
+      {isExpanded && (
+        <div style={{ marginTop: 16 }}>
+          {/* Dataset Tabs */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            {dsNames.map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={`btn btn-sm ${selectedDataset === name ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setSelectedDataset(name)}
+                style={{ textTransform: 'none' }}
+              >
+                {name} ({summary.datasets[name].problem_type})
+              </button>
+            ))}
+          </div>
+
+          {/* Aggregate Benchmark Table */}
+          <div className="table-container" style={{ marginBottom: 16 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Condition</th>
+                  <th>CV Score (Mean ± Std)</th>
+                  <th>Holdout Score (Mean ± Std)</th>
+                  <th>Holdout [Min, Max]</th>
+                  <th>Mean Runtime</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(conditions).map(([cName, cData]) => {
+                  const isDet = cName === 'deterministic'
+                  const isFull = cName === 'llm_guided'
+                  return (
+                    <tr key={cName}>
+                      <td>
+                        <strong>{cName}</strong>
+                        {isDet && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}> (Rule-based)</span>}
+                        {isFull && <span style={{ color: '#ce93d8', fontSize: 11 }}> (Full Pipeline Plan)</span>}
+                      </td>
+                      <td>{cData.cv_mean != null ? `${cData.cv_mean.toFixed(4)} ± ${cData.cv_std.toFixed(4)}` : '—'}</td>
+                      <td>
+                        <strong style={{ color: isFull ? '#ba68c8' : isDet ? '#64b5f6' : '#fff' }}>
+                          {cData.holdout_mean != null ? `${cData.holdout_mean.toFixed(4)} ± ${cData.holdout_std.toFixed(4)}` : '—'}
+                        </strong>
+                      </td>
+                      <td>{cData.holdout_min != null ? `[${cData.holdout_min.toFixed(4)}, ${cData.holdout_max.toFixed(4)}]` : '—'}</td>
+                      <td>{cData.runtime_mean != null ? `${cData.runtime_mean.toFixed(2)}s` : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Comparison Delta Box */}
+          {comparisons.llm_guided_vs_deterministic && (
+            <div style={{ background: '#1c2433', border: '1px solid #2e4368', borderRadius: 6, padding: 12, marginBottom: 16, fontSize: 13 }}>
+              <div style={{ fontWeight: 600, color: '#90caf9', marginBottom: 4 }}>
+                Empirical Delta: Full LLM-Guided vs. Deterministic Baseline ({curDs.primary_metric})
+              </div>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div>Deterministic Mean: <strong>{comparisons.llm_guided_vs_deterministic.deterministic_holdout_mean?.toFixed(4)}</strong></div>
+                <div>LLM-Guided Mean: <strong>{comparisons.llm_guided_vs_deterministic.llm_holdout_mean?.toFixed(4)}</strong></div>
+                <div>
+                  Direction-Adjusted Δ: <strong style={{ color: comparisons.llm_guided_vs_deterministic.direction_adjusted_delta > 0 ? '#81c784' : '#e57373' }}>
+                    {comparisons.llm_guided_vs_deterministic.direction_adjusted_delta > 0 ? '+' : ''}
+                    {comparisons.llm_guided_vs_deterministic.direction_adjusted_delta?.toFixed(4)}
+                  </strong>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>
+                    ({comparisons.llm_guided_vs_deterministic.interpretation})
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pipeline Behavior Summary */}
+          <div style={{ background: '#181818', border: '1px solid #262626', borderRadius: 6, padding: 12, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: '#e0e0e0', marginBottom: 6 }}>
+              🔍 LLM Pipeline Behavior &amp; Constraint Enforcement:
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, color: 'var(--text-secondary)' }}>
+              <div><strong>Models Proposed:</strong> <code>{behavior.models_proposed_unique?.join(', ') || 'None'}</code></div>
+              <div><strong>Models Validated:</strong> <code>{behavior.models_accepted_unique?.join(', ') || 'None'}</code></div>
+              <div><strong>Feature Operations:</strong> {behavior.operations_proposed_count || 0} proposed ({behavior.operations_accepted_count || 0} accepted)</div>
+              <div><strong>Fallback Runs:</strong> {behavior.fallback_runs || 0} / {behavior.total_llm_runs || 0} ({((behavior.fallback_rate || 0) * 100).toFixed(0)}%)</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * Renders the LLM-Guided AutoML Pipeline Plan and Execution Provenance.
  */
 function PipelinePlanSection({ planProvenance, fallbackPlan, exp }) {
@@ -1067,6 +1230,7 @@ export default function Experiment() {
                   fallbackPlan={results.research_evaluation?.pipeline_plan}
                   exp={exp}
                 />
+                <MultiSeedBenchmarkSection />
                 <ModelFusionSection ensembleCandidates={results.ensemble_candidates} models={models} bestModelName={results.best_model_name} primaryMetric={results.primary_metric} />
                 <OptunaTrials models={models} />
                 {cm.length > 0 && (

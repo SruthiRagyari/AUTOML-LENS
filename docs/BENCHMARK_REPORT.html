@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AutoML-Lens Multi-Seed Research Benchmark Summary</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 24px; }
+.container { max-width: 1040px; margin: 0 auto; }
+.header { border-bottom: 2px solid #2a2a2a; padding-bottom: 16px; margin-bottom: 24px; }
+h1 { margin: 0 0 6px 0; font-size: 24px; color: #fff; }
+.meta { font-size: 13px; color: #888; }
+.section { background: #161616; border: 1px solid #282828; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+h2 { margin-top: 0; font-size: 18px; color: #64b5f6; border-bottom: 1px solid #282828; padding-bottom: 8px; }
+h3 { font-size: 15px; margin: 16px 0 8px 0; color: #e0e0e0; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #262626; }
+th { background: #1c1c1c; color: #aaa; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+tr:hover { background: #1a1a1a; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #222; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #ce93d8; }
+.footer { text-align: center; font-size: 12px; color: #666; margin-top: 40px; border-top: 1px solid #222; padding-top: 20px; }
+.alert { background: #1a2332; border-left: 4px solid #64b5f6; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+    <h1>AutoML-Lens Multi-Seed Research Benchmark Summary</h1>
+    <div class="meta">Generated: 2026-10-04 13:25:57 &middot; Git Revision: <code>b8d45be</code> &middot; Evaluated Seeds: <code>42, 123, 456</code></div>
+</div>
+
+<div class="section">
+    <h2>1. Research Objective &amp; Methodology</h2>
+    <p>This report documents the rigorous empirical comparison between <strong>Deterministic Rule-Based AutoML</strong> and <strong>LLM-Guided Structured AutoML Pipeline Planning</strong>.</p>
+    <div class="alert">
+        <strong>Holdout Discipline:</strong> Model/pipeline selection was performed using training-side cross-validation only; the holdout set was reserved exclusively for final evaluation.
+    </div>
+    <p><strong>Evaluation Protocol:</strong> Strict fold-safe cross-validation on train split only; holdout set reserved exclusively for final evaluation. <em>Descriptive multi-seed comparison only (N=3 seeds per condition). No inferential p-values claimed.</em></p>
+</div>
+
+
+            <div class="section">
+                <h2>Dataset: <code>adult_census_income</code> (CLASSIFICATION)</h2>
+                <p><strong>Target:</strong> Primary Metric: <code>f1_weighted</code> (maximize) &middot; Rows: 1000 (800 train / 200 holdout) &middot; SHA256: <code>5b00264637dbfec3</code></p>
+                
+                <div style="background:#1a2332;border:1px solid #2e4368;border-radius:6px;padding:14px;margin:16px 0;">
+                    <h4 style="margin:0 0 8px 0;color:#90caf9;">Empirical Comparison (Direction: maximize)</h4>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                        <div>Deterministic Mean: <strong>0.8148</strong></div>
+                        <div>LLM-Guided Mean: <strong>0.822</strong></div>
+                        <div style="color:#81c784;font-weight:600;">Direction-Adjusted &Delta;: +0.0072 (LLM showed +0.0072 improvement)</div>
+                        <div style="color:#aaa;font-size:12px;">Raw Difference: +0.0072</div>
+                    </div>
+                </div>
+                
+                <h3>Aggregate Benchmark Matrix (Multi-Seed Descriptive Statistics)</h3>
+                <table>
+                    <thead><tr><th>Condition</th><th>CV Score (Mean &plusmn; Std)</th><th>Holdout Score (Mean &plusmn; Std)</th><th>Holdout Range [Min, Max]</th><th>Runtime</th></tr></thead>
+                    <tbody><tr><td><strong>Deterministic Baseline</strong> (<code>deterministic</code>)</td><td>0.8376 &plusmn; 0.0035</td><td><strong>0.8148 &plusmn; 0.0181</strong></td><td>[0.7937, 0.8379]</td><td>14.97s</td></tr><tr><td><strong>LLM Model Only (Ablation)</strong> (<code>llm_model_only</code>)</td><td>0.8395 &plusmn; 0.0035</td><td><strong>0.8220 &plusmn; 0.0173</strong></td><td>[0.7980, 0.8379]</td><td>15.69s</td></tr><tr><td><strong>Full LLM-Guided</strong> (<code>llm_guided</code>)</td><td>0.8395 &plusmn; 0.0035</td><td><strong>0.8220 &plusmn; 0.0173</strong></td><td>[0.7980, 0.8379]</td><td>16.90s</td></tr></tbody>
+                </table>
+                <h3 style="margin-top:20px;">Per-Seed Execution Records</h3>
+                <table>
+                    <thead><tr><th>Seed</th><th>Condition</th><th>CV Score</th><th>Holdout Score</th><th>Selected Winning Pipeline</th><th>Runtime</th></tr></thead>
+                    <tbody><tr><td><code>42</code></td><td>Deterministic</td><td>0.8423</td><td>0.7937</td><td><code>ensemble_soft_voting</code></td><td>11.91s</td></tr><tr><td><code>123</code></td><td>Deterministic</td><td>0.8363</td><td>0.8379</td><td><code>ensemble_stacking</code></td><td>18.52s</td></tr><tr><td><code>456</code></td><td>Deterministic</td><td>0.8342</td><td>0.8127</td><td><code>ensemble_soft_voting</code></td><td>14.49s</td></tr><tr><td><code>42</code></td><td>LLM Model Only</td><td>0.8430</td><td>0.7980</td><td><code>ensemble_soft_voting</code></td><td>13.69s</td></tr><tr><td><code>123</code></td><td>LLM Model Only</td><td>0.8347</td><td>0.8379</td><td><code>ensemble_stacking</code></td><td>18.69s</td></tr><tr><td><code>456</code></td><td>LLM Model Only</td><td>0.8408</td><td>0.8300</td><td><code>svm_clf</code></td><td>14.70s</td></tr><tr><td><code>42</code></td><td>Full LLM</td><td>0.8430</td><td>0.7980</td><td><code>ensemble_soft_voting</code></td><td>15.79s</td></tr><tr><td><code>123</code></td><td>Full LLM</td><td>0.8347</td><td>0.8379</td><td><code>ensemble_stacking</code></td><td>19.11s</td></tr><tr><td><code>456</code></td><td>Full LLM</td><td>0.8408</td><td>0.8300</td><td><code>svm_clf</code></td><td>15.79s</td></tr></tbody>
+                </table>
+                
+            <div style="background:#1f1f1f;border:1px solid #333;border-radius:6px;padding:14px;margin-top:14px;">
+                <h4 style="margin:0 0 8px 0;color:#e0e0e0;">Pipeline Behavior &amp; Registry Validation</h4>
+                <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6;">
+                    <li><strong>Candidate Models Proposed by LLM:</strong> <code>gradient_boosting_clf, hist_gradient_boosting_clf, logistic_regression, random_forest_clf, svm_clf</code></li>
+                    <li><strong>Candidate Models Accepted into Registry:</strong> <code>gradient_boosting_clf, hist_gradient_boosting_clf, logistic_regression, random_forest_clf, svm_clf</code></li>
+                    <li><strong>Feature Operations Proposed:</strong> 0 (<code>None</code>)</li>
+                    <li><strong>Feature Operations Accepted:</strong> 0</li>
+                    <li><strong>Fallback Events:</strong> 0 / 6 (Rate: 0%)</li>
+                </ul>
+            </div>
+            
+            </div>
+            
+            <div class="section">
+                <h2>Dataset: <code>winequality_red</code> (REGRESSION)</h2>
+                <p><strong>Target:</strong> Primary Metric: <code>rmse</code> (minimize) &middot; Rows: 800 (640 train / 160 holdout) &middot; SHA256: <code>4a402cf041b025d4</code></p>
+                
+                <div style="background:#1a2332;border:1px solid #2e4368;border-radius:6px;padding:14px;margin:16px 0;">
+                    <h4 style="margin:0 0 8px 0;color:#90caf9;">Empirical Comparison (Direction: minimize)</h4>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                        <div>Deterministic Mean: <strong>0.5544</strong></div>
+                        <div>LLM-Guided Mean: <strong>0.5556</strong></div>
+                        <div style="color:#e57373;font-weight:600;">Direction-Adjusted &Delta;: -0.0012 (Deterministic showed +0.0012 advantage)</div>
+                        <div style="color:#aaa;font-size:12px;">Raw Difference: +0.0012</div>
+                    </div>
+                </div>
+                
+                <h3>Aggregate Benchmark Matrix (Multi-Seed Descriptive Statistics)</h3>
+                <table>
+                    <thead><tr><th>Condition</th><th>CV Score (Mean &plusmn; Std)</th><th>Holdout Score (Mean &plusmn; Std)</th><th>Holdout Range [Min, Max]</th><th>Runtime</th></tr></thead>
+                    <tbody><tr><td><strong>Deterministic Baseline</strong> (<code>deterministic</code>)</td><td>-0.6051 &plusmn; 0.0103</td><td><strong>0.5544 &plusmn; 0.0249</strong></td><td>[0.5289, 0.5881]</td><td>6.35s</td></tr><tr><td><strong>LLM Model Only (Ablation)</strong> (<code>llm_model_only</code>)</td><td>-0.6077 &plusmn; 0.0068</td><td><strong>0.5556 &plusmn; 0.0268</strong></td><td>[0.5285, 0.5921]</td><td>6.29s</td></tr><tr><td><strong>Full LLM-Guided</strong> (<code>llm_guided</code>)</td><td>-0.6077 &plusmn; 0.0068</td><td><strong>0.5556 &plusmn; 0.0268</strong></td><td>[0.5285, 0.5921]</td><td>6.21s</td></tr></tbody>
+                </table>
+                <h3 style="margin-top:20px;">Per-Seed Execution Records</h3>
+                <table>
+                    <thead><tr><th>Seed</th><th>Condition</th><th>CV Score</th><th>Holdout Score</th><th>Selected Winning Pipeline</th><th>Runtime</th></tr></thead>
+                    <tbody><tr><td><code>42</code></td><td>Deterministic</td><td>-0.6152</td><td>0.5461</td><td><code>ensemble_weighted</code></td><td>6.33s</td></tr><tr><td><code>123</code></td><td>Deterministic</td><td>-0.6091</td><td>0.5289</td><td><code>ensemble_weighted</code></td><td>7.02s</td></tr><tr><td><code>456</code></td><td>Deterministic</td><td>-0.5909</td><td>0.5881</td><td><code>ensemble_weighted</code></td><td>5.69s</td></tr><tr><td><code>42</code></td><td>LLM Model Only</td><td>-0.6152</td><td>0.5461</td><td><code>ensemble_weighted</code></td><td>6.13s</td></tr><tr><td><code>123</code></td><td>LLM Model Only</td><td>-0.6092</td><td>0.5285</td><td><code>ensemble_weighted</code></td><td>7.08s</td></tr><tr><td><code>456</code></td><td>LLM Model Only</td><td>-0.5988</td><td>0.5921</td><td><code>ensemble_weighted</code></td><td>5.65s</td></tr><tr><td><code>42</code></td><td>Full LLM</td><td>-0.6152</td><td>0.5461</td><td><code>ensemble_weighted</code></td><td>6.07s</td></tr><tr><td><code>123</code></td><td>Full LLM</td><td>-0.6092</td><td>0.5285</td><td><code>ensemble_weighted</code></td><td>6.92s</td></tr><tr><td><code>456</code></td><td>Full LLM</td><td>-0.5988</td><td>0.5921</td><td><code>ensemble_weighted</code></td><td>5.62s</td></tr></tbody>
+                </table>
+                
+            <div style="background:#1f1f1f;border:1px solid #333;border-radius:6px;padding:14px;margin-top:14px;">
+                <h4 style="margin:0 0 8px 0;color:#e0e0e0;">Pipeline Behavior &amp; Registry Validation</h4>
+                <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6;">
+                    <li><strong>Candidate Models Proposed by LLM:</strong> <code>gradient_boosting_reg, random_forest_reg, ridge</code></li>
+                    <li><strong>Candidate Models Accepted into Registry:</strong> <code>gradient_boosting_reg, random_forest_reg, ridge</code></li>
+                    <li><strong>Feature Operations Proposed:</strong> 0 (<code>None</code>)</li>
+                    <li><strong>Feature Operations Accepted:</strong> 0</li>
+                    <li><strong>Fallback Events:</strong> 0 / 6 (Rate: 0%)</li>
+                </ul>
+            </div>
+            
+            </div>
+            
+
+<div class="section">
+    <h2>3. Limitations &amp; Scientific Conclusion</h2>
+    <ul style="font-size:13px;line-height:1.6;padding-left:18px;">
+        <li><strong>Sample Scope:</strong> Evaluated on UCI Adult Census Income (binary classification) and UCI Wine Quality Red (regression) across 3 reproducible seeds.</li>
+        <li><strong>Registry Boundary:</strong> All candidate models and feature operations were constrained to pre-validated registries; zero arbitrary code was executed.</li>
+        <li><strong>Claim Boundary:</strong> Does not claim reinforcement learning, autonomous code generation, or state-of-the-art general intelligence. Results represent descriptive multi-seed comparison only.</li>
+    </ul>
+    <p style="margin-top:14px;"><strong>Conclusion:</strong> Structured LLM-guided pipeline planning operates safely within registry constraints and can automatically formulate model ensembles, feature operations, and hyperparameter strategies. Measured holdout performance must be interpreted relative to the deterministic baseline under identical seed and fold protocols.</p>
+</div>
+
+<div class="footer">
+    <p>Generated by <strong>AutoML-Lens</strong> &mdash; Structured LLM-Guided Automated Machine Learning</p>
+</div>
+</div>
+</body>
+</html>

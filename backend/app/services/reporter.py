@@ -313,3 +313,161 @@ li{{margin-bottom:6px}}
         with open(path, "w", encoding="utf-8") as f:
             f.write(html)
         return path
+
+    def generate_benchmark_html_report(self, summary: dict[str, Any]) -> str:
+        """Generate a standalone, scientific HTML research benchmark report from stored data."""
+        title = summary.get("title", "AutoML-Lens Multi-Seed Research Benchmark Report")
+        gen_time = summary.get("generated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        git_commit = summary.get("git_commit", "N/A")
+        proto = summary.get("protocol", {})
+        seeds_str = ", ".join(str(s) for s in proto.get("seeds", []))
+        datasets = summary.get("datasets", {})
+
+        dataset_sections = ""
+        for ds_name, ds_data in datasets.items():
+            prob = ds_data.get("problem_type", "classification")
+            prim_metric = ds_data.get("primary_metric", "metric")
+            direction = ds_data.get("metric_direction", "maximize")
+            hash_val = ds_data.get("dataset_hash", "N/A")
+            rows = f"{ds_data.get('rows_total', 0)} ({ds_data.get('rows_train', 0)} train / {ds_data.get('rows_holdout', 0)} holdout)"
+            conditions = ds_data.get("conditions", {})
+            comparisons = ds_data.get("comparisons", {})
+            behavior = ds_data.get("pipeline_behavior", {})
+
+            # Aggregate Table Rows
+            table_rows = ""
+            for cond_name, c in conditions.items():
+                c_label = "Deterministic Baseline" if "fallback" in cond_name or "deterministic" in cond_name else "LLM Model Only (Ablation)" if "model_only" in cond_name else "Full LLM-Guided"
+                cv_fmt = f"{c.get('cv_mean', 0.0):.4f} &plusmn; {c.get('cv_std', 0.0):.4f}" if c.get("cv_mean") is not None else "N/A"
+                h_fmt = f"{c.get('holdout_mean', 0.0):.4f} &plusmn; {c.get('holdout_std', 0.0):.4f}" if c.get("holdout_mean") is not None else "N/A"
+                min_max = f"[{c.get('holdout_min', 0.0):.4f}, {c.get('holdout_max', 0.0):.4f}]" if c.get("holdout_min") is not None else "N/A"
+                time_fmt = f"{c.get('runtime_mean', 0.0):.2f}s" if c.get("runtime_mean") is not None else "N/A"
+                table_rows += f"<tr><td><strong>{c_label}</strong> (<code>{cond_name}</code>)</td><td>{cv_fmt}</td><td><strong>{h_fmt}</strong></td><td>{min_max}</td><td>{time_fmt}</td></tr>"
+
+            # Per-Seed Table Rows
+            per_seed_rows = ""
+            for cond_name, c in conditions.items():
+                c_label = "Deterministic" if "fallback" in cond_name or "deterministic" in cond_name else "LLM Model Only" if "model_only" in cond_name else "Full LLM"
+                seeds = c.get("seeds", [])
+                cvs = c.get("cv_scores", [])
+                houts = c.get("holdout_scores", [])
+                times = c.get("runtimes", [])
+                pipes = c.get("selected_pipelines", [])
+                for i, s in enumerate(seeds):
+                    cv_val = f"{cvs[i]:.4f}" if i < len(cvs) else "N/A"
+                    h_val = f"{houts[i]:.4f}" if i < len(houts) else "N/A"
+                    t_val = f"{times[i]:.2f}s" if i < len(times) else "N/A"
+                    p_val = pipes[i] if i < len(pipes) else "N/A"
+                    per_seed_rows += f"<tr><td><code>{s}</code></td><td>{c_label}</td><td>{cv_val}</td><td>{h_val}</td><td><code>{p_val}</code></td><td>{t_val}</td></tr>"
+
+            # Comparison & Delta Box
+            comp_box = ""
+            llm_comp = comparisons.get("llm_guided_vs_deterministic", {})
+            if llm_comp:
+                adj_d = llm_comp.get("direction_adjusted_delta", 0.0)
+                raw_d = llm_comp.get("raw_difference", 0.0)
+                interp = llm_comp.get("interpretation", "")
+                delta_color = "#81c784" if adj_d > 0 else "#e57373" if adj_d < 0 else "#90caf9"
+                comp_box = f"""
+                <div style="background:#1a2332;border:1px solid #2e4368;border-radius:6px;padding:14px;margin:16px 0;">
+                    <h4 style="margin:0 0 8px 0;color:#90caf9;">Empirical Comparison (Direction: {direction})</h4>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                        <div>Deterministic Mean: <strong>{llm_comp.get('deterministic_holdout_mean', 'N/A')}</strong></div>
+                        <div>LLM-Guided Mean: <strong>{llm_comp.get('llm_holdout_mean', 'N/A')}</strong></div>
+                        <div style="color:{delta_color};font-weight:600;">Direction-Adjusted &Delta;: {adj_d:+.4f} ({interp})</div>
+                        <div style="color:#aaa;font-size:12px;">Raw Difference: {raw_d:+.4f}</div>
+                    </div>
+                </div>
+                """
+
+            # Pipeline Behavior
+            behavior_html = f"""
+            <div style="background:#1f1f1f;border:1px solid #333;border-radius:6px;padding:14px;margin-top:14px;">
+                <h4 style="margin:0 0 8px 0;color:#e0e0e0;">Pipeline Behavior &amp; Registry Validation</h4>
+                <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.6;">
+                    <li><strong>Candidate Models Proposed by LLM:</strong> <code>{', '.join(behavior.get('models_proposed_unique', [])) or 'None'}</code></li>
+                    <li><strong>Candidate Models Accepted into Registry:</strong> <code>{', '.join(behavior.get('models_accepted_unique', [])) or 'None'}</code></li>
+                    <li><strong>Feature Operations Proposed:</strong> {behavior.get('operations_proposed_count', 0)} (<code>{', '.join(behavior.get('operations_proposed_unique', [])) or 'None'}</code>)</li>
+                    <li><strong>Feature Operations Accepted:</strong> {behavior.get('operations_accepted_count', 0)}</li>
+                    <li><strong>Fallback Events:</strong> {behavior.get('fallback_runs', 0)} / {behavior.get('total_llm_runs', 0)} (Rate: {behavior.get('fallback_rate', 0.0):.0%})</li>
+                </ul>
+            </div>
+            """
+
+            dataset_sections += f"""
+            <div class="section">
+                <h2>Dataset: <code>{ds_name}</code> ({prob.upper()})</h2>
+                <p><strong>Target:</strong> Primary Metric: <code>{prim_metric}</code> ({direction}) &middot; Rows: {rows} &middot; SHA256: <code>{hash_val}</code></p>
+                {comp_box}
+                <h3>Aggregate Benchmark Matrix (Multi-Seed Descriptive Statistics)</h3>
+                <table>
+                    <thead><tr><th>Condition</th><th>CV Score (Mean &plusmn; Std)</th><th>Holdout Score (Mean &plusmn; Std)</th><th>Holdout Range [Min, Max]</th><th>Runtime</th></tr></thead>
+                    <tbody>{table_rows}</tbody>
+                </table>
+                <h3 style="margin-top:20px;">Per-Seed Execution Records</h3>
+                <table>
+                    <thead><tr><th>Seed</th><th>Condition</th><th>CV Score</th><th>Holdout Score</th><th>Selected Winning Pipeline</th><th>Runtime</th></tr></thead>
+                    <tbody>{per_seed_rows}</tbody>
+                </table>
+                {behavior_html}
+            </div>
+            """
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{title}</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; margin: 0; padding: 24px; }}
+.container {{ max-width: 1040px; margin: 0 auto; }}
+.header {{ border-bottom: 2px solid #2a2a2a; padding-bottom: 16px; margin-bottom: 24px; }}
+h1 {{ margin: 0 0 6px 0; font-size: 24px; color: #fff; }}
+.meta {{ font-size: 13px; color: #888; }}
+.section {{ background: #161616; border: 1px solid #282828; border-radius: 8px; padding: 20px; margin-bottom: 24px; }}
+h2 {{ margin-top: 0; font-size: 18px; color: #64b5f6; border-bottom: 1px solid #282828; padding-bottom: 8px; }}
+h3 {{ font-size: 15px; margin: 16px 0 8px 0; color: #e0e0e0; }}
+table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }}
+th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid #262626; }}
+th {{ background: #1c1c1c; color: #aaa; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }}
+tr:hover {{ background: #1a1a1a; }}
+code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; background: #222; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #ce93d8; }}
+.footer {{ text-align: center; font-size: 12px; color: #666; margin-top: 40px; border-top: 1px solid #222; padding-top: 20px; }}
+.alert {{ background: #1a2332; border-left: 4px solid #64b5f6; padding: 12px 16px; border-radius: 4px; margin: 16px 0; font-size: 13px; }}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+    <h1>{title}</h1>
+    <div class="meta">Generated: {gen_time} &middot; Git Revision: <code>{git_commit}</code> &middot; Evaluated Seeds: <code>{seeds_str}</code></div>
+</div>
+
+<div class="section">
+    <h2>1. Research Objective &amp; Methodology</h2>
+    <p>This report documents the rigorous empirical comparison between <strong>Deterministic Rule-Based AutoML</strong> and <strong>LLM-Guided Structured AutoML Pipeline Planning</strong>.</p>
+    <div class="alert">
+        <strong>Holdout Discipline:</strong> Model/pipeline selection was performed using training-side cross-validation only; the holdout set was reserved exclusively for final evaluation.
+    </div>
+    <p><strong>Evaluation Protocol:</strong> {proto.get('holdout_policy', '')} <em>{proto.get('statistical_statement', '')}</em></p>
+</div>
+
+{dataset_sections}
+
+<div class="section">
+    <h2>3. Limitations &amp; Scientific Conclusion</h2>
+    <ul style="font-size:13px;line-height:1.6;padding-left:18px;">
+        <li><strong>Sample Scope:</strong> Evaluated on UCI Adult Census Income (binary classification) and UCI Wine Quality Red (regression) across 3 reproducible seeds.</li>
+        <li><strong>Registry Boundary:</strong> All candidate models and feature operations were constrained to pre-validated registries; zero arbitrary code was executed.</li>
+        <li><strong>Claim Boundary:</strong> Does not claim reinforcement learning, autonomous code generation, or state-of-the-art general intelligence. Results represent descriptive multi-seed comparison only.</li>
+    </ul>
+    <p style="margin-top:14px;"><strong>Conclusion:</strong> Structured LLM-guided pipeline planning operates safely within registry constraints and can automatically formulate model ensembles, feature operations, and hyperparameter strategies. Measured holdout performance must be interpreted relative to the deterministic baseline under identical seed and fold protocols.</p>
+</div>
+
+<div class="footer">
+    <p>Generated by <strong>AutoML-Lens</strong> &mdash; Structured LLM-Guided Automated Machine Learning</p>
+</div>
+</div>
+</body>
+</html>"""
+

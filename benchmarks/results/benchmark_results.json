@@ -8,7 +8,7 @@
     "n_features_transformed": 87,
     "problem_type": "classification",
     "primary_metric": "f1_weighted",
-    "condition": "fallback",
+    "condition": "deterministic",
     "seed": 42,
     "n_folds": 3,
     "n_trials": 0,
@@ -28,7 +28,7 @@
         "cv_std": 0.013482,
         "selection_score": 0.833623,
         "holdout_score": 0.806967,
-        "training_time": 0.0314,
+        "training_time": 0.0318,
         "best_params": {
           "C": 0.31489116479568624,
           "solver": "lbfgs"
@@ -48,12 +48,56 @@
         "cv_std": 0.008925,
         "selection_score": 0.820868,
         "holdout_score": 0.787764,
-        "training_time": 0.2832,
+        "training_time": 0.2671,
         "best_params": {
           "n_estimators": 144,
           "max_depth": 29,
           "min_samples_split": 12,
           "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.807437,
+          0.84473,
+          0.826388
+        ],
+        "cv_mean": 0.826185,
+        "cv_std": 0.015225,
+        "selection_score": 0.826185,
+        "holdout_score": 0.795426,
+        "training_time": 1.0184,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.81282,
+          0.822618,
+          0.811696
+        ],
+        "cv_mean": 0.815711,
+        "cv_std": 0.004905,
+        "selection_score": 0.815711,
+        "holdout_score": 0.778567,
+        "training_time": 0.5596,
+        "best_params": {
+          "max_iter": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 12,
+          "min_samples_leaf": 32
         }
       }
     ],
@@ -64,13 +108,15 @@
         "is_ensemble": true,
         "strategy": "soft_voting",
         "weights": {
-          "logistic_regression": 0.5,
-          "random_forest_clf": 0.5
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
         },
         "status": "COMPLETED",
-        "selection_score": 0.832218,
-        "cv_mean": 0.832218,
-        "holdout_score": 0.80467,
+        "selection_score": 0.842315,
+        "cv_mean": 0.842315,
+        "holdout_score": 0.793692,
         "training_time": 0.0
       },
       {
@@ -79,13 +125,15 @@
         "is_ensemble": true,
         "strategy": "weighted_average",
         "weights": {
-          "logistic_regression": 1.0,
-          "random_forest_clf": 0.0
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
         },
         "status": "COMPLETED",
-        "selection_score": 0.833623,
-        "cv_mean": 0.833623,
-        "holdout_score": 0.806967,
+        "selection_score": 0.842315,
+        "cv_mean": 0.842315,
+        "holdout_score": 0.793692,
         "training_time": 0.0
       },
       {
@@ -94,12 +142,14 @@
         "is_ensemble": true,
         "strategy": "stacking",
         "weights": {
-          "logistic_regression": 0.5,
-          "random_forest_clf": 0.5
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
         },
         "status": "COMPLETED",
-        "selection_score": 0.83803,
-        "cv_mean": 0.83803,
+        "selection_score": 0.841684,
+        "cv_mean": 0.841684,
         "holdout_score": 0.800375,
         "training_time": 0.0
       }
@@ -107,28 +157,89 @@
     "best_individual_model": "logistic_regression",
     "best_individual_cv_score": 0.833623,
     "best_individual_holdout_score": 0.806967,
-    "best_ensemble_model": "ensemble_stacking",
-    "best_ensemble_cv_score": 0.83803,
-    "best_ensemble_holdout_score": 0.800375,
-    "overall_winner": "ensemble_stacking",
+    "best_ensemble_model": "ensemble_soft_voting",
+    "best_ensemble_cv_score": 0.842315,
+    "best_ensemble_holdout_score": 0.793692,
+    "overall_winner": "ensemble_soft_voting",
     "overall_winner_type": "ensemble",
-    "overall_cv_score": 0.83803,
-    "overall_holdout_score": 0.800375,
-    "ensemble_improvement_cv": 0.004408,
-    "ensemble_improvement_holdout": -0.006593,
-    "llm_provider": "Fallback (Deterministic)",
+    "overall_cv_score": 0.842315,
+    "overall_holdout_score": 0.793692,
+    "ensemble_improvement_cv": 0.008693,
+    "ensemble_improvement_holdout": -0.013276,
+    "llm_provider": "LLM-Assisted",
     "llm_recommended_models": [
       "logistic_regression",
-      "random_forest_clf"
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
     ],
     "llm_proposed_operations": [],
     "operations_accepted": [],
     "operations_rejected": [],
     "llm_model_match": true,
-    "feature_engineering_time": 0.0322,
-    "training_time": 2.1465,
-    "total_time": 3.3054,
-    "timestamp": "2026-10-03 23:27:11"
+    "feature_engineering_time": 0.0284,
+    "training_time": 8.2668,
+    "total_time": 11.9125,
+    "timestamp": "2026-10-04 13:22:45",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for classification task on 'income' (1000 rows, 13 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_deterministic_s42",
+    "secondary_metrics": {
+      "accuracy": 0.8,
+      "balanced_accuracy": 0.702122,
+      "roc_auc": 0.868496,
+      "f1_weighted": 0.793692
+    }
   },
   {
     "dataset_name": "adult_census_income",
@@ -136,10 +247,10 @@
     "rows_train": 800,
     "rows_holdout": 200,
     "n_features_raw": 14,
-    "n_features_transformed": 83,
+    "n_features_transformed": 87,
     "problem_type": "classification",
     "primary_metric": "f1_weighted",
-    "condition": "fallback_with_llm_features",
+    "condition": "llm_model_only",
     "seed": 42,
     "n_folds": 3,
     "n_trials": 0,
@@ -151,15 +262,15 @@
         "is_ensemble": false,
         "status": "COMPLETED",
         "cv_scores": [
-          0.81043,
-          0.857209,
-          0.821534
+          0.824724,
+          0.852675,
+          0.823469
         ],
-        "cv_mean": 0.829724,
-        "cv_std": 0.019956,
-        "selection_score": 0.829724,
-        "holdout_score": 0.800516,
-        "training_time": 0.0295,
+        "cv_mean": 0.833623,
+        "cv_std": 0.013482,
+        "selection_score": 0.833623,
+        "holdout_score": 0.806967,
+        "training_time": 0.0373,
         "best_params": {
           "C": 0.31489116479568624,
           "solver": "lbfgs"
@@ -171,20 +282,84 @@
         "is_ensemble": false,
         "status": "COMPLETED",
         "cv_scores": [
-          0.822186,
-          0.837428,
-          0.812231
+          0.811033,
+          0.832636,
+          0.818934
         ],
-        "cv_mean": 0.823948,
-        "cv_std": 0.010362,
-        "selection_score": 0.823948,
-        "holdout_score": 0.798376,
-        "training_time": 0.3022,
+        "cv_mean": 0.820868,
+        "cv_std": 0.008925,
+        "selection_score": 0.820868,
+        "holdout_score": 0.787764,
+        "training_time": 0.2841,
         "best_params": {
           "n_estimators": 144,
           "max_depth": 29,
           "min_samples_split": 12,
           "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.807437,
+          0.84473,
+          0.826388
+        ],
+        "cv_mean": 0.826185,
+        "cv_std": 0.015225,
+        "selection_score": 0.826185,
+        "holdout_score": 0.795426,
+        "training_time": 1.0087,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.81282,
+          0.822618,
+          0.811696
+        ],
+        "cv_mean": 0.815711,
+        "cv_std": 0.004905,
+        "selection_score": 0.815711,
+        "holdout_score": 0.778567,
+        "training_time": 0.6298,
+        "best_params": {
+          "max_iter": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 12,
+          "min_samples_leaf": 32
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.817545,
+          0.858275,
+          0.799955
+        ],
+        "cv_mean": 0.825258,
+        "cv_std": 0.024426,
+        "selection_score": 0.825258,
+        "holdout_score": 0.817691,
+        "training_time": 0.1855,
+        "best_params": {
+          "C": 1.3292918943162166,
+          "kernel": "rbf"
         }
       }
     ],
@@ -195,13 +370,16 @@
         "is_ensemble": true,
         "strategy": "soft_voting",
         "weights": {
-          "logistic_regression": 0.5,
-          "random_forest_clf": 0.5
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
         },
         "status": "COMPLETED",
-        "selection_score": 0.837651,
-        "cv_mean": 0.837651,
-        "holdout_score": 0.80266,
+        "selection_score": 0.842963,
+        "cv_mean": 0.842963,
+        "holdout_score": 0.797962,
         "training_time": 0.0
       },
       {
@@ -210,13 +388,16 @@
         "is_ensemble": true,
         "strategy": "weighted_average",
         "weights": {
-          "logistic_regression": 0.5,
-          "random_forest_clf": 0.5
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
         },
         "status": "COMPLETED",
-        "selection_score": 0.837651,
-        "cv_mean": 0.837651,
-        "holdout_score": 0.80266,
+        "selection_score": 0.842963,
+        "cv_mean": 0.842963,
+        "holdout_score": 0.797962,
         "training_time": 0.0
       },
       {
@@ -225,73 +406,1914 @@
         "is_ensemble": true,
         "strategy": "stacking",
         "weights": {
-          "logistic_regression": 0.5,
-          "random_forest_clf": 0.5
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
         },
         "status": "COMPLETED",
-        "selection_score": 0.842139,
-        "cv_mean": 0.842139,
-        "holdout_score": 0.794112,
+        "selection_score": 0.840075,
+        "cv_mean": 0.840075,
+        "holdout_score": 0.800375,
         "training_time": 0.0
       }
     ],
     "best_individual_model": "logistic_regression",
-    "best_individual_cv_score": 0.829724,
-    "best_individual_holdout_score": 0.800516,
-    "best_ensemble_model": "ensemble_stacking",
-    "best_ensemble_cv_score": 0.842139,
-    "best_ensemble_holdout_score": 0.794112,
-    "overall_winner": "ensemble_stacking",
+    "best_individual_cv_score": 0.833623,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_soft_voting",
+    "best_ensemble_cv_score": 0.842963,
+    "best_ensemble_holdout_score": 0.797962,
+    "overall_winner": "ensemble_soft_voting",
     "overall_winner_type": "ensemble",
-    "overall_cv_score": 0.842139,
-    "overall_holdout_score": 0.794112,
-    "ensemble_improvement_cv": 0.012415,
-    "ensemble_improvement_holdout": -0.006404,
+    "overall_cv_score": 0.842963,
+    "overall_holdout_score": 0.797962,
+    "ensemble_improvement_cv": 0.00934,
+    "ensemble_improvement_holdout": -0.009005,
     "llm_provider": "LLM-Assisted",
     "llm_recommended_models": [
       "logistic_regression",
-      "random_forest_clf"
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
     ],
-    "llm_proposed_operations": [
-      {
-        "operation": "log1p",
-        "column": "capital_gain",
-        "new_column_name": "capital_gain_log1p"
-      },
-      {
-        "operation": "frequency_encoding",
-        "column": "workclass",
-        "new_column_name": "workclass_freq"
-      }
-    ],
-    "operations_accepted": [
-      {
-        "column": "capital_gain",
-        "operation": "log1p",
-        "params": {},
-        "reason": null,
-        "category": "numeric",
-        "features": [
-          "capital_gain_log1p"
-        ]
-      },
-      {
-        "column": "workclass",
-        "operation": "frequency_encoding",
-        "params": {},
-        "reason": null,
-        "category": "categorical",
-        "features": [
-          "workclass_freq"
-        ]
-      }
-    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
     "operations_rejected": [],
     "llm_model_match": true,
-    "feature_engineering_time": 0.0025,
-    "training_time": 1.9344,
-    "total_time": 3.2142,
-    "timestamp": "2026-10-03 23:27:14"
+    "feature_engineering_time": 0.0201,
+    "training_time": 9.2493,
+    "total_time": 13.6925,
+    "timestamp": "2026-10-04 13:22:59",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_model_only_s42",
+    "secondary_metrics": {
+      "accuracy": 0.805,
+      "balanced_accuracy": 0.705433,
+      "roc_auc": 0.869982,
+      "f1_weighted": 0.797962
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 87,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "llm_guided",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.824724,
+          0.852675,
+          0.823469
+        ],
+        "cv_mean": 0.833623,
+        "cv_std": 0.013482,
+        "selection_score": 0.833623,
+        "holdout_score": 0.806967,
+        "training_time": 0.0371,
+        "best_params": {
+          "C": 0.31489116479568624,
+          "solver": "lbfgs"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.811033,
+          0.832636,
+          0.818934
+        ],
+        "cv_mean": 0.820868,
+        "cv_std": 0.008925,
+        "selection_score": 0.820868,
+        "holdout_score": 0.787764,
+        "training_time": 0.3011,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.807437,
+          0.84473,
+          0.826388
+        ],
+        "cv_mean": 0.826185,
+        "cv_std": 0.015225,
+        "selection_score": 0.826185,
+        "holdout_score": 0.795426,
+        "training_time": 1.207,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.81282,
+          0.822618,
+          0.811696
+        ],
+        "cv_mean": 0.815711,
+        "cv_std": 0.004905,
+        "selection_score": 0.815711,
+        "holdout_score": 0.778567,
+        "training_time": 0.8014,
+        "best_params": {
+          "max_iter": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 12,
+          "min_samples_leaf": 32
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.817545,
+          0.858275,
+          0.799955
+        ],
+        "cv_mean": 0.825258,
+        "cv_std": 0.024426,
+        "selection_score": 0.825258,
+        "holdout_score": 0.817691,
+        "training_time": 0.2312,
+        "best_params": {
+          "C": 1.3292918943162166,
+          "kernel": "rbf"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.842963,
+        "cv_mean": 0.842963,
+        "holdout_score": 0.797962,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.842963,
+        "cv_mean": 0.842963,
+        "holdout_score": 0.797962,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.840075,
+        "cv_mean": 0.840075,
+        "holdout_score": 0.800375,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "logistic_regression",
+    "best_individual_cv_score": 0.833623,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_soft_voting",
+    "best_ensemble_cv_score": 0.842963,
+    "best_ensemble_holdout_score": 0.797962,
+    "overall_winner": "ensemble_soft_voting",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.842963,
+    "overall_holdout_score": 0.797962,
+    "ensemble_improvement_cv": 0.00934,
+    "ensemble_improvement_holdout": -0.009005,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0203,
+    "training_time": 11.3161,
+    "total_time": 15.7911,
+    "timestamp": "2026-10-04 13:23:14",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_guided_s42",
+    "secondary_metrics": {
+      "accuracy": 0.805,
+      "balanced_accuracy": 0.705433,
+      "roc_auc": 0.869982,
+      "f1_weighted": 0.797962
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "deterministic",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856997,
+          0.816934,
+          0.778664
+        ],
+        "cv_mean": 0.817532,
+        "cv_std": 0.031982,
+        "selection_score": 0.817532,
+        "holdout_score": 0.824387,
+        "training_time": 0.5205,
+        "best_params": {
+          "C": 6.107686573608484,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856855,
+          0.804913,
+          0.807446
+        ],
+        "cv_mean": 0.823071,
+        "cv_std": 0.023911,
+        "selection_score": 0.823071,
+        "holdout_score": 0.806967,
+        "training_time": 0.4043,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.846838,
+          0.812858,
+          0.805196
+        ],
+        "cv_mean": 0.821631,
+        "cv_std": 0.018097,
+        "selection_score": 0.821631,
+        "holdout_score": 0.872658,
+        "training_time": 0.8942,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.839366,
+          0.784137,
+          0.794196
+        ],
+        "cv_mean": 0.8059,
+        "cv_std": 0.024018,
+        "selection_score": 0.8059,
+        "holdout_score": 0.852283,
+        "training_time": 0.8788,
+        "best_params": {
+          "max_iter": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 5,
+          "min_samples_leaf": 30
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.827717,
+        "cv_mean": 0.827717,
+        "holdout_score": 0.845269,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.827717,
+        "cv_mean": 0.827717,
+        "holdout_score": 0.845269,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.836262,
+        "cv_mean": 0.836262,
+        "holdout_score": 0.837925,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_clf",
+    "best_individual_cv_score": 0.823071,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.836262,
+    "best_ensemble_holdout_score": 0.837925,
+    "overall_winner": "ensemble_stacking",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.836262,
+    "overall_holdout_score": 0.837925,
+    "ensemble_improvement_cv": 0.013191,
+    "ensemble_improvement_holdout": 0.030957,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0321,
+    "training_time": 12.5665,
+    "total_time": 18.5211,
+    "timestamp": "2026-10-04 13:23:33",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for classification task on 'income' (1000 rows, 13 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_deterministic_s123",
+    "secondary_metrics": {
+      "accuracy": 0.845,
+      "balanced_accuracy": 0.752602,
+      "roc_auc": 0.91215,
+      "f1_weighted": 0.837925
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "llm_model_only",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856997,
+          0.816934,
+          0.778664
+        ],
+        "cv_mean": 0.817532,
+        "cv_std": 0.031982,
+        "selection_score": 0.817532,
+        "holdout_score": 0.824387,
+        "training_time": 0.5119,
+        "best_params": {
+          "C": 6.107686573608484,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856855,
+          0.804913,
+          0.807446
+        ],
+        "cv_mean": 0.823071,
+        "cv_std": 0.023911,
+        "selection_score": 0.823071,
+        "holdout_score": 0.806967,
+        "training_time": 0.4575,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.846838,
+          0.812858,
+          0.805196
+        ],
+        "cv_mean": 0.821631,
+        "cv_std": 0.018097,
+        "selection_score": 0.821631,
+        "holdout_score": 0.872658,
+        "training_time": 0.8604,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.839366,
+          0.784137,
+          0.794196
+        ],
+        "cv_mean": 0.8059,
+        "cv_std": 0.024018,
+        "selection_score": 0.8059,
+        "holdout_score": 0.852283,
+        "training_time": 1.0016,
+        "best_params": {
+          "max_iter": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 5,
+          "min_samples_leaf": 30
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.828592,
+          0.814283,
+          0.807701
+        ],
+        "cv_mean": 0.816859,
+        "cv_std": 0.008721,
+        "selection_score": 0.816859,
+        "holdout_score": 0.818717,
+        "training_time": 0.2381,
+        "best_params": {
+          "C": 12.285916427548793,
+          "kernel": "rbf"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.829629,
+        "cv_mean": 0.829629,
+        "holdout_score": 0.839406,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.829629,
+        "cv_mean": 0.829629,
+        "holdout_score": 0.839406,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.834716,
+        "cv_mean": 0.834716,
+        "holdout_score": 0.837925,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_clf",
+    "best_individual_cv_score": 0.823071,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.834716,
+    "best_ensemble_holdout_score": 0.837925,
+    "overall_winner": "ensemble_stacking",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.834716,
+    "overall_holdout_score": 0.837925,
+    "ensemble_improvement_cv": 0.011644,
+    "ensemble_improvement_holdout": 0.030957,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0331,
+    "training_time": 13.184,
+    "total_time": 18.6864,
+    "timestamp": "2026-10-04 13:23:52",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_model_only_s123",
+    "secondary_metrics": {
+      "accuracy": 0.845,
+      "balanced_accuracy": 0.752602,
+      "roc_auc": 0.91188,
+      "f1_weighted": 0.837925
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "llm_guided",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856997,
+          0.816934,
+          0.778664
+        ],
+        "cv_mean": 0.817532,
+        "cv_std": 0.031982,
+        "selection_score": 0.817532,
+        "holdout_score": 0.824387,
+        "training_time": 0.52,
+        "best_params": {
+          "C": 6.107686573608484,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.856855,
+          0.804913,
+          0.807446
+        ],
+        "cv_mean": 0.823071,
+        "cv_std": 0.023911,
+        "selection_score": 0.823071,
+        "holdout_score": 0.806967,
+        "training_time": 0.4928,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.846838,
+          0.812858,
+          0.805196
+        ],
+        "cv_mean": 0.821631,
+        "cv_std": 0.018097,
+        "selection_score": 0.821631,
+        "holdout_score": 0.872658,
+        "training_time": 0.8805,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.839366,
+          0.784137,
+          0.794196
+        ],
+        "cv_mean": 0.8059,
+        "cv_std": 0.024018,
+        "selection_score": 0.8059,
+        "holdout_score": 0.852283,
+        "training_time": 0.8303,
+        "best_params": {
+          "max_iter": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 5,
+          "min_samples_leaf": 30
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.828592,
+          0.814283,
+          0.807701
+        ],
+        "cv_mean": 0.816859,
+        "cv_std": 0.008721,
+        "selection_score": 0.816859,
+        "holdout_score": 0.818717,
+        "training_time": 0.2371,
+        "best_params": {
+          "C": 12.285916427548793,
+          "kernel": "rbf"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.829629,
+        "cv_mean": 0.829629,
+        "holdout_score": 0.839406,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.829629,
+        "cv_mean": 0.829629,
+        "holdout_score": 0.839406,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.834716,
+        "cv_mean": 0.834716,
+        "holdout_score": 0.837925,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_clf",
+    "best_individual_cv_score": 0.823071,
+    "best_individual_holdout_score": 0.806967,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.834716,
+    "best_ensemble_holdout_score": 0.837925,
+    "overall_winner": "ensemble_stacking",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.834716,
+    "overall_holdout_score": 0.837925,
+    "ensemble_improvement_cv": 0.011644,
+    "ensemble_improvement_holdout": 0.030957,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0317,
+    "training_time": 13.5962,
+    "total_time": 19.1098,
+    "timestamp": "2026-10-04 13:24:11",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_guided_s123",
+    "secondary_metrics": {
+      "accuracy": 0.845,
+      "balanced_accuracy": 0.752602,
+      "roc_auc": 0.91188,
+      "f1_weighted": 0.837925
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "deterministic",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.826204,
+          0.837643,
+          0.821534
+        ],
+        "cv_mean": 0.82846,
+        "cv_std": 0.006767,
+        "selection_score": 0.82846,
+        "holdout_score": 0.833473,
+        "training_time": 0.1944,
+        "best_params": {
+          "C": 0.09886069002885628,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.759012,
+          0.80316,
+          0.824839
+        ],
+        "cv_mean": 0.79567,
+        "cv_std": 0.027391,
+        "selection_score": 0.79567,
+        "holdout_score": 0.832865,
+        "training_time": 0.2902,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.814283,
+          0.785926,
+          0.778283
+        ],
+        "cv_mean": 0.792831,
+        "cv_std": 0.015487,
+        "selection_score": 0.792831,
+        "holdout_score": 0.811533,
+        "training_time": 1.2299,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.824471,
+          0.81282,
+          0.825175
+        ],
+        "cv_mean": 0.820822,
+        "cv_std": 0.005666,
+        "selection_score": 0.820822,
+        "holdout_score": 0.806555,
+        "training_time": 0.6618,
+        "best_params": {
+          "max_iter": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 13,
+          "min_samples_leaf": 42
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.834168,
+        "cv_mean": 0.834168,
+        "holdout_score": 0.812657,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.834168,
+        "cv_mean": 0.834168,
+        "holdout_score": 0.812657,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.25,
+          "random_forest_clf": 0.25,
+          "gradient_boosting_clf": 0.25,
+          "hist_gradient_boosting_clf": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.832708,
+        "cv_mean": 0.832708,
+        "holdout_score": 0.821721,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "logistic_regression",
+    "best_individual_cv_score": 0.82846,
+    "best_individual_holdout_score": 0.833473,
+    "best_ensemble_model": "ensemble_soft_voting",
+    "best_ensemble_cv_score": 0.834168,
+    "best_ensemble_holdout_score": 0.812657,
+    "overall_winner": "ensemble_soft_voting",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": 0.834168,
+    "overall_holdout_score": 0.812657,
+    "ensemble_improvement_cv": 0.005708,
+    "ensemble_improvement_holdout": -0.020816,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0311,
+    "training_time": 10.1812,
+    "total_time": 14.4867,
+    "timestamp": "2026-10-04 13:24:26",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for classification task on 'income' (1000 rows, 13 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_deterministic_s456",
+    "secondary_metrics": {
+      "accuracy": 0.82,
+      "balanced_accuracy": 0.72226,
+      "roc_auc": 0.89404,
+      "f1_weighted": 0.812657
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "llm_model_only",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.826204,
+          0.837643,
+          0.821534
+        ],
+        "cv_mean": 0.82846,
+        "cv_std": 0.006767,
+        "selection_score": 0.82846,
+        "holdout_score": 0.833473,
+        "training_time": 0.1894,
+        "best_params": {
+          "C": 0.09886069002885628,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.759012,
+          0.80316,
+          0.824839
+        ],
+        "cv_mean": 0.79567,
+        "cv_std": 0.027391,
+        "selection_score": 0.79567,
+        "holdout_score": 0.832865,
+        "training_time": 0.2809,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.814283,
+          0.785926,
+          0.778283
+        ],
+        "cv_mean": 0.792831,
+        "cv_std": 0.015487,
+        "selection_score": 0.792831,
+        "holdout_score": 0.811533,
+        "training_time": 1.2107,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.824471,
+          0.81282,
+          0.825175
+        ],
+        "cv_mean": 0.820822,
+        "cv_std": 0.005666,
+        "selection_score": 0.820822,
+        "holdout_score": 0.806555,
+        "training_time": 0.7267,
+        "best_params": {
+          "max_iter": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 13,
+          "min_samples_leaf": 42
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.830737,
+          0.854309,
+          0.837443
+        ],
+        "cv_mean": 0.84083,
+        "cv_std": 0.009917,
+        "selection_score": 0.84083,
+        "holdout_score": 0.83,
+        "training_time": 0.1868,
+        "best_params": {
+          "C": 0.5575293412686263,
+          "kernel": "linear"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.833402,
+        "cv_mean": 0.833402,
+        "holdout_score": 0.821388,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.000967,
+          "random_forest_clf": 0.0,
+          "gradient_boosting_clf": 1e-06,
+          "hist_gradient_boosting_clf": 1e-06,
+          "svm_clf": 0.999032
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.833396,
+        "cv_mean": 0.833396,
+        "holdout_score": 0.840794,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.839509,
+        "cv_mean": 0.839509,
+        "holdout_score": 0.83,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "svm_clf",
+    "best_individual_cv_score": 0.84083,
+    "best_individual_holdout_score": 0.83,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.839509,
+    "best_ensemble_holdout_score": 0.83,
+    "overall_winner": "svm_clf",
+    "overall_winner_type": "individual",
+    "overall_cv_score": 0.84083,
+    "overall_holdout_score": 0.83,
+    "ensemble_improvement_cv": -0.001321,
+    "ensemble_improvement_holdout": 0.0,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0304,
+    "training_time": 10.345,
+    "total_time": 14.7018,
+    "timestamp": "2026-10-04 13:24:40",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_model_only_s456",
+    "secondary_metrics": {
+      "accuracy": 0.83,
+      "balanced_accuracy": 0.770239,
+      "roc_auc": 0.874848,
+      "f1_weighted": 0.83
+    }
+  },
+  {
+    "dataset_name": "adult_census_income",
+    "rows_total": 1000,
+    "rows_train": 800,
+    "rows_holdout": 200,
+    "n_features_raw": 14,
+    "n_features_transformed": 88,
+    "problem_type": "classification",
+    "primary_metric": "f1_weighted",
+    "condition": "llm_guided",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "logistic_regression",
+        "display_name": "Logistic Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.826204,
+          0.837643,
+          0.821534
+        ],
+        "cv_mean": 0.82846,
+        "cv_std": 0.006767,
+        "selection_score": 0.82846,
+        "holdout_score": 0.833473,
+        "training_time": 0.1969,
+        "best_params": {
+          "C": 0.09886069002885628,
+          "solver": "saga"
+        }
+      },
+      {
+        "model_name": "random_forest_clf",
+        "display_name": "Random Forest",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.759012,
+          0.80316,
+          0.824839
+        ],
+        "cv_mean": 0.79567,
+        "cv_std": 0.027391,
+        "selection_score": 0.79567,
+        "holdout_score": 0.832865,
+        "training_time": 0.2882,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_clf",
+        "display_name": "Gradient Boosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.814283,
+          0.785926,
+          0.778283
+        ],
+        "cv_mean": 0.792831,
+        "cv_std": 0.015487,
+        "selection_score": 0.792831,
+        "holdout_score": 0.811533,
+        "training_time": 1.267,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      },
+      {
+        "model_name": "hist_gradient_boosting_clf",
+        "display_name": "HistGradientBoosting",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.824471,
+          0.81282,
+          0.825175
+        ],
+        "cv_mean": 0.820822,
+        "cv_std": 0.005666,
+        "selection_score": 0.820822,
+        "holdout_score": 0.806555,
+        "training_time": 0.6931,
+        "best_params": {
+          "max_iter": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 13,
+          "min_samples_leaf": 42
+        }
+      },
+      {
+        "model_name": "svm_clf",
+        "display_name": "Support Vector Machine",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          0.830737,
+          0.854309,
+          0.837443
+        ],
+        "cv_mean": 0.84083,
+        "cv_std": 0.009917,
+        "selection_score": 0.84083,
+        "holdout_score": 0.83,
+        "training_time": 0.1906,
+        "best_params": {
+          "C": 0.5575293412686263,
+          "kernel": "linear"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_soft_voting",
+        "display_name": "Ensemble (Soft Voting)",
+        "is_ensemble": true,
+        "strategy": "soft_voting",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.833402,
+        "cv_mean": 0.833402,
+        "holdout_score": 0.821388,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "logistic_regression": 0.000967,
+          "random_forest_clf": 0.0,
+          "gradient_boosting_clf": 1e-06,
+          "hist_gradient_boosting_clf": 1e-06,
+          "svm_clf": 0.999032
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.833396,
+        "cv_mean": 0.833396,
+        "holdout_score": 0.840794,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "logistic_regression": 0.2,
+          "random_forest_clf": 0.2,
+          "gradient_boosting_clf": 0.2,
+          "hist_gradient_boosting_clf": 0.2,
+          "svm_clf": 0.2
+        },
+        "status": "COMPLETED",
+        "selection_score": 0.839509,
+        "cv_mean": 0.839509,
+        "holdout_score": 0.83,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "svm_clf",
+    "best_individual_cv_score": 0.84083,
+    "best_individual_holdout_score": 0.83,
+    "best_ensemble_model": "ensemble_stacking",
+    "best_ensemble_cv_score": 0.839509,
+    "best_ensemble_holdout_score": 0.83,
+    "overall_winner": "svm_clf",
+    "overall_winner_type": "individual",
+    "overall_cv_score": 0.84083,
+    "overall_holdout_score": 0.83,
+    "ensemble_improvement_cv": -0.001321,
+    "ensemble_improvement_holdout": 0.0,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "logistic_regression",
+      "random_forest_clf",
+      "gradient_boosting_clf",
+      "hist_gradient_boosting_clf",
+      "svm_clf"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.025,
+    "training_time": 10.9592,
+    "total_time": 15.7863,
+    "timestamp": "2026-10-04 13:24:56",
+    "dataset_hash": "5b00264637dbfec3",
+    "git_commit": "b8d45be",
+    "cv_scoring": "f1_weighted",
+    "cv_direction": "maximize",
+    "holdout_metric": "f1_weighted",
+    "holdout_direction": "maximize",
+    "pipeline_plan": {
+      "problem_type": "classification",
+      "target_column": "income",
+      "primary_metric": "f1_weighted",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "logistic_regression",
+        "random_forest_clf",
+        "gradient_boosting_clf",
+        "hist_gradient_boosting_clf",
+        "svm_clf"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "soft_voting",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Standard classification pipeline for predicting income category based on demographic and employment features. Applies robust imputation, standard scaling, and evaluates multiple high-performing classifiers optimized for weighted F1 score.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "adult_census_income_llm_guided_s456",
+    "secondary_metrics": {
+      "accuracy": 0.83,
+      "balanced_accuracy": 0.770239,
+      "roc_auc": 0.874848,
+      "f1_weighted": 0.83
+    }
   },
   {
     "dataset_name": "winequality_red",
@@ -302,7 +2324,7 @@
     "n_features_transformed": 11,
     "problem_type": "regression",
     "primary_metric": "rmse",
-    "condition": "fallback",
+    "condition": "deterministic",
     "seed": 42,
     "n_folds": 3,
     "n_trials": 0,
@@ -322,7 +2344,7 @@
         "cv_std": 0.016801,
         "selection_score": -0.653738,
         "holdout_score": 0.619917,
-        "training_time": 0.004,
+        "training_time": 0.0031,
         "best_params": {
           "alpha": 0.31489116479568624
         }
@@ -341,12 +2363,54 @@
         "cv_std": 0.007012,
         "selection_score": -0.619366,
         "holdout_score": 0.551109,
-        "training_time": 0.3268,
+        "training_time": 0.3706,
         "best_params": {
           "n_estimators": 144,
           "max_depth": 29,
           "min_samples_split": 12,
           "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.696202,
+          -0.665072,
+          -0.653822
+        ],
+        "cv_mean": -0.671699,
+        "cv_std": 0.017925,
+        "selection_score": -0.671699,
+        "holdout_score": 0.566197,
+        "training_time": 0.5884,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
+        }
+      },
+      {
+        "model_name": "knn_reg",
+        "display_name": "K-Nearest Neighbors Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.688343,
+          -0.670043,
+          -0.648114
+        ],
+        "cv_mean": -0.668833,
+        "cv_std": 0.016446,
+        "selection_score": -0.668833,
+        "holdout_score": 0.568863,
+        "training_time": 0.002,
+        "best_params": {
+          "n_neighbors": 11,
+          "weights": "uniform"
         }
       }
     ],
@@ -357,13 +2421,15 @@
         "is_ensemble": true,
         "strategy": "uniform_average",
         "weights": {
-          "ridge": 0.5,
-          "random_forest_reg": 0.5
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
         },
         "status": "COMPLETED",
-        "selection_score": -0.622644,
-        "cv_mean": -0.622644,
-        "holdout_score": 0.57148,
+        "selection_score": -0.621553,
+        "cv_mean": -0.621553,
+        "holdout_score": 0.540401,
         "training_time": 0.0
       },
       {
@@ -372,13 +2438,15 @@
         "is_ensemble": true,
         "strategy": "weighted_average",
         "weights": {
-          "ridge": 0.193629,
-          "random_forest_reg": 0.806371
+          "ridge": 0.222214,
+          "random_forest_reg": 0.610884,
+          "gradient_boosting_reg": 0.166903,
+          "knn_reg": 0.0
         },
         "status": "COMPLETED",
-        "selection_score": -0.617223,
-        "cv_mean": -0.617223,
-        "holdout_score": 0.555377,
+        "selection_score": -0.615179,
+        "cv_mean": -0.615179,
+        "holdout_score": 0.546121,
         "training_time": 0.0
       },
       {
@@ -387,13 +2455,15 @@
         "is_ensemble": true,
         "strategy": "stacking",
         "weights": {
-          "ridge": 0.5,
-          "random_forest_reg": 0.5
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
         },
         "status": "COMPLETED",
-        "selection_score": -0.62163,
-        "cv_mean": -0.62163,
-        "holdout_score": 0.557055,
+        "selection_score": -0.623505,
+        "cv_mean": -0.623505,
+        "holdout_score": 0.549692,
         "training_time": 0.0
       }
     ],
@@ -401,27 +2471,88 @@
     "best_individual_cv_score": -0.619366,
     "best_individual_holdout_score": 0.551109,
     "best_ensemble_model": "ensemble_weighted",
-    "best_ensemble_cv_score": -0.617223,
-    "best_ensemble_holdout_score": 0.555377,
+    "best_ensemble_cv_score": -0.615179,
+    "best_ensemble_holdout_score": 0.546121,
     "overall_winner": "ensemble_weighted",
     "overall_winner_type": "ensemble",
-    "overall_cv_score": -0.617223,
-    "overall_holdout_score": 0.555377,
-    "ensemble_improvement_cv": -0.002143,
-    "ensemble_improvement_holdout": -0.004268,
-    "llm_provider": "Fallback (Deterministic)",
+    "overall_cv_score": -0.615179,
+    "overall_holdout_score": 0.546121,
+    "ensemble_improvement_cv": 0.004187,
+    "ensemble_improvement_holdout": 0.004989,
+    "llm_provider": "LLM-Assisted",
     "llm_recommended_models": [
       "ridge",
-      "random_forest_reg"
+      "random_forest_reg",
+      "gradient_boosting_reg",
+      "knn_reg"
     ],
     "llm_proposed_operations": [],
     "operations_accepted": [],
     "operations_rejected": [],
     "llm_model_match": true,
-    "feature_engineering_time": 0.0,
-    "training_time": 1.7318,
-    "total_time": 2.5169,
-    "timestamp": "2026-10-03 23:27:17"
+    "feature_engineering_time": 0.001,
+    "training_time": 4.3903,
+    "total_time": 6.3295,
+    "timestamp": "2026-10-04 13:25:06",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg",
+        "knn_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "uniform_average",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for regression task on 'quality' (800 rows, 12 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_deterministic_s42",
+    "secondary_metrics": {
+      "rmse": 0.546121,
+      "mae": 0.421347,
+      "mse": 0.298248,
+      "r2": 0.430383
+    }
   },
   {
     "dataset_name": "winequality_red",
@@ -429,10 +2560,10 @@
     "rows_train": 640,
     "rows_holdout": 160,
     "n_features_raw": 11,
-    "n_features_transformed": 13,
+    "n_features_transformed": 11,
     "problem_type": "regression",
     "primary_metric": "rmse",
-    "condition": "fallback_with_llm_features",
+    "condition": "llm_model_only",
     "seed": 42,
     "n_folds": 3,
     "n_trials": 0,
@@ -444,15 +2575,15 @@
         "is_ensemble": false,
         "status": "COMPLETED",
         "cv_scores": [
-          -0.636337,
-          -0.677176,
-          -0.648892
+          -0.63603,
+          -0.676312,
+          -0.648871
         ],
-        "cv_mean": -0.654135,
-        "cv_std": 0.01708,
-        "selection_score": -0.654135,
-        "holdout_score": 0.620075,
-        "training_time": 0.0027,
+        "cv_mean": -0.653738,
+        "cv_std": 0.016801,
+        "selection_score": -0.653738,
+        "holdout_score": 0.619917,
+        "training_time": 0.0022,
         "best_params": {
           "alpha": 0.31489116479568624
         }
@@ -463,20 +2594,42 @@
         "is_ensemble": false,
         "status": "COMPLETED",
         "cv_scores": [
-          -0.625439,
-          -0.620165,
-          -0.610204
+          -0.62712,
+          -0.620842,
+          -0.610135
         ],
-        "cv_mean": -0.618603,
-        "cv_std": 0.006317,
-        "selection_score": -0.618603,
-        "holdout_score": 0.550511,
-        "training_time": 0.2877,
+        "cv_mean": -0.619366,
+        "cv_std": 0.007012,
+        "selection_score": -0.619366,
+        "holdout_score": 0.551109,
+        "training_time": 0.361,
         "best_params": {
           "n_estimators": 144,
           "max_depth": 29,
           "min_samples_split": 12,
           "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.696202,
+          -0.665072,
+          -0.653822
+        ],
+        "cv_mean": -0.671699,
+        "cv_std": 0.017925,
+        "selection_score": -0.671699,
+        "holdout_score": 0.566197,
+        "training_time": 0.5981,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
         }
       }
     ],
@@ -487,13 +2640,14 @@
         "is_ensemble": true,
         "strategy": "uniform_average",
         "weights": {
-          "ridge": 0.5,
-          "random_forest_reg": 0.5
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
         },
         "status": "COMPLETED",
-        "selection_score": -0.622427,
-        "cv_mean": -0.622427,
-        "holdout_score": 0.571139,
+        "selection_score": -0.617605,
+        "cv_mean": -0.617605,
+        "holdout_score": 0.543754,
         "training_time": 0.0
       },
       {
@@ -502,13 +2656,14 @@
         "is_ensemble": true,
         "strategy": "weighted_average",
         "weights": {
-          "ridge": 0.183581,
-          "random_forest_reg": 0.816419
+          "ridge": 0.222214,
+          "random_forest_reg": 0.610883,
+          "gradient_boosting_reg": 0.166902
         },
         "status": "COMPLETED",
-        "selection_score": -0.616651,
-        "cv_mean": -0.616651,
-        "holdout_score": 0.554503,
+        "selection_score": -0.615179,
+        "cv_mean": -0.615179,
+        "holdout_score": 0.546121,
         "training_time": 0.0
       },
       {
@@ -517,72 +2672,1624 @@
         "is_ensemble": true,
         "strategy": "stacking",
         "weights": {
-          "ridge": 0.5,
-          "random_forest_reg": 0.5
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
         },
         "status": "COMPLETED",
-        "selection_score": -0.621004,
-        "cv_mean": -0.621004,
-        "holdout_score": 0.55622,
+        "selection_score": -0.620598,
+        "cv_mean": -0.620598,
+        "holdout_score": 0.547337,
         "training_time": 0.0
       }
     ],
     "best_individual_model": "random_forest_reg",
-    "best_individual_cv_score": -0.618603,
-    "best_individual_holdout_score": 0.550511,
+    "best_individual_cv_score": -0.619366,
+    "best_individual_holdout_score": 0.551109,
     "best_ensemble_model": "ensemble_weighted",
-    "best_ensemble_cv_score": -0.616651,
-    "best_ensemble_holdout_score": 0.554503,
+    "best_ensemble_cv_score": -0.615179,
+    "best_ensemble_holdout_score": 0.546121,
     "overall_winner": "ensemble_weighted",
     "overall_winner_type": "ensemble",
-    "overall_cv_score": -0.616651,
-    "overall_holdout_score": 0.554503,
-    "ensemble_improvement_cv": -0.001951,
-    "ensemble_improvement_holdout": -0.003992,
+    "overall_cv_score": -0.615179,
+    "overall_holdout_score": 0.546121,
+    "ensemble_improvement_cv": 0.004187,
+    "ensemble_improvement_holdout": 0.004989,
     "llm_provider": "LLM-Assisted",
     "llm_recommended_models": [
       "ridge",
-      "random_forest_reg"
+      "random_forest_reg",
+      "gradient_boosting_reg"
     ],
-    "llm_proposed_operations": [
-      {
-        "operation": "log1p",
-        "column": "residual sugar",
-        "new_column_name": "residual_sugar_log1p"
-      },
-      {
-        "operation": "zscore",
-        "column": "alcohol",
-        "new_column_name": "alcohol_zscore"
-      }
-    ],
-    "operations_accepted": [
-      {
-        "column": "residual sugar",
-        "operation": "log1p",
-        "params": {},
-        "reason": null,
-        "category": "numeric",
-        "features": [
-          "residual sugar_log1p"
-        ]
-      },
-      {
-        "column": "alcohol",
-        "operation": "zscore",
-        "params": {},
-        "reason": null,
-        "category": "numeric",
-        "features": [
-          "alcohol_zscore"
-        ]
-      }
-    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
     "operations_rejected": [],
     "llm_model_match": true,
-    "feature_engineering_time": 0.002,
-    "training_time": 1.5885,
-    "total_time": 2.4043,
-    "timestamp": "2026-10-03 23:27:19"
+    "feature_engineering_time": 0.0,
+    "training_time": 4.3103,
+    "total_time": 6.128,
+    "timestamp": "2026-10-04 13:25:12",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_model_only_s42",
+    "secondary_metrics": {
+      "rmse": 0.546121,
+      "mae": 0.421347,
+      "mse": 0.298248,
+      "r2": 0.430383
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "llm_guided",
+    "seed": 42,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.63603,
+          -0.676312,
+          -0.648871
+        ],
+        "cv_mean": -0.653738,
+        "cv_std": 0.016801,
+        "selection_score": -0.653738,
+        "holdout_score": 0.619917,
+        "training_time": 0.0038,
+        "best_params": {
+          "alpha": 0.31489116479568624
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.62712,
+          -0.620842,
+          -0.610135
+        ],
+        "cv_mean": -0.619366,
+        "cv_std": 0.007012,
+        "selection_score": -0.619366,
+        "holdout_score": 0.551109,
+        "training_time": 0.3376,
+        "best_params": {
+          "n_estimators": 144,
+          "max_depth": 29,
+          "min_samples_split": 12,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.696202,
+          -0.665072,
+          -0.653822
+        ],
+        "cv_mean": -0.671699,
+        "cv_std": 0.017925,
+        "selection_score": -0.671699,
+        "holdout_score": 0.566197,
+        "training_time": 0.6019,
+        "best_params": {
+          "n_estimators": 144,
+          "learning_rate": 0.2536999076681772,
+          "max_depth": 8,
+          "subsample": 0.8394633936788146
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.617605,
+        "cv_mean": -0.617605,
+        "holdout_score": 0.543754,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.222214,
+          "random_forest_reg": 0.610884,
+          "gradient_boosting_reg": 0.166903
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.615179,
+        "cv_mean": -0.615179,
+        "holdout_score": 0.546121,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.620598,
+        "cv_mean": -0.620598,
+        "holdout_score": 0.547337,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.619366,
+    "best_individual_holdout_score": 0.551109,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.615179,
+    "best_ensemble_holdout_score": 0.546121,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.615179,
+    "overall_holdout_score": 0.546121,
+    "ensemble_improvement_cv": 0.004187,
+    "ensemble_improvement_holdout": 0.004989,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0,
+    "training_time": 4.2647,
+    "total_time": 6.0722,
+    "timestamp": "2026-10-04 13:25:18",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_guided_s42",
+    "secondary_metrics": {
+      "rmse": 0.546121,
+      "mae": 0.421347,
+      "mse": 0.298248,
+      "r2": 0.430383
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "deterministic",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.626848,
+          -0.638188,
+          -0.690339
+        ],
+        "cv_mean": -0.651792,
+        "cv_std": 0.027647,
+        "selection_score": -0.651792,
+        "holdout_score": 0.59934,
+        "training_time": 0.0042,
+        "best_params": {
+          "alpha": 6.107686573608484
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.579199,
+          -0.588199,
+          -0.660319
+        ],
+        "cv_mean": -0.609239,
+        "cv_std": 0.036305,
+        "selection_score": -0.609239,
+        "holdout_score": 0.530422,
+        "training_time": 0.483,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.600689,
+          -0.615971,
+          -0.658931
+        ],
+        "cv_mean": -0.625197,
+        "cv_std": 0.024656,
+        "selection_score": -0.625197,
+        "holdout_score": 0.512956,
+        "training_time": 0.5313,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      },
+      {
+        "model_name": "knn_reg",
+        "display_name": "K-Nearest Neighbors Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.621174,
+          -0.619899,
+          -0.706559
+        ],
+        "cv_mean": -0.649211,
+        "cv_std": 0.040555,
+        "selection_score": -0.649211,
+        "holdout_score": 0.593799,
+        "training_time": 0.002,
+        "best_params": {
+          "n_neighbors": 19,
+          "weights": "uniform"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.616508,
+        "cv_mean": -0.616508,
+        "holdout_score": 0.544327,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.0,
+          "random_forest_reg": 0.86863,
+          "gradient_boosting_reg": 0.089144,
+          "knn_reg": 0.042226
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.609091,
+        "cv_mean": -0.609091,
+        "holdout_score": 0.528914,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.613953,
+        "cv_mean": -0.613953,
+        "holdout_score": 0.52392,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.609239,
+    "best_individual_holdout_score": 0.530422,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.609091,
+    "best_ensemble_holdout_score": 0.528914,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.609091,
+    "overall_holdout_score": 0.528914,
+    "ensemble_improvement_cv": 0.000148,
+    "ensemble_improvement_holdout": 0.001508,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg",
+      "knn_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0007,
+    "training_time": 4.9366,
+    "total_time": 7.0233,
+    "timestamp": "2026-10-04 13:25:26",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg",
+        "knn_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "uniform_average",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for regression task on 'quality' (800 rows, 12 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_deterministic_s123",
+    "secondary_metrics": {
+      "rmse": 0.528914,
+      "mae": 0.409164,
+      "mse": 0.27975,
+      "r2": 0.513346
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "llm_model_only",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.626848,
+          -0.638188,
+          -0.690339
+        ],
+        "cv_mean": -0.651792,
+        "cv_std": 0.027647,
+        "selection_score": -0.651792,
+        "holdout_score": 0.59934,
+        "training_time": 0.0032,
+        "best_params": {
+          "alpha": 6.107686573608484
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.579199,
+          -0.588199,
+          -0.660319
+        ],
+        "cv_mean": -0.609239,
+        "cv_std": 0.036305,
+        "selection_score": -0.609239,
+        "holdout_score": 0.530422,
+        "training_time": 0.4654,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.600689,
+          -0.615971,
+          -0.658931
+        ],
+        "cv_mean": -0.625197,
+        "cv_std": 0.024656,
+        "selection_score": -0.625197,
+        "holdout_score": 0.512956,
+        "training_time": 0.5334,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.614318,
+        "cv_mean": -0.614318,
+        "holdout_score": 0.536066,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.014737,
+          "random_forest_reg": 0.901833,
+          "gradient_boosting_reg": 0.08343
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.609166,
+        "cv_mean": -0.609166,
+        "holdout_score": 0.528535,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.614261,
+        "cv_mean": -0.614261,
+        "holdout_score": 0.525469,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.609239,
+    "best_individual_holdout_score": 0.530422,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.609166,
+    "best_ensemble_holdout_score": 0.528535,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.609166,
+    "overall_holdout_score": 0.528535,
+    "ensemble_improvement_cv": 7.3e-05,
+    "ensemble_improvement_holdout": 0.001887,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0,
+    "training_time": 4.9969,
+    "total_time": 7.0837,
+    "timestamp": "2026-10-04 13:25:33",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_model_only_s123",
+    "secondary_metrics": {
+      "rmse": 0.528535,
+      "mae": 0.40798,
+      "mse": 0.279349,
+      "r2": 0.514044
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "llm_guided",
+    "seed": 123,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.626848,
+          -0.638188,
+          -0.690339
+        ],
+        "cv_mean": -0.651792,
+        "cv_std": 0.027647,
+        "selection_score": -0.651792,
+        "holdout_score": 0.59934,
+        "training_time": 0.0033,
+        "best_params": {
+          "alpha": 6.107686573608484
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.579199,
+          -0.588199,
+          -0.660319
+        ],
+        "cv_mean": -0.609239,
+        "cv_std": 0.036305,
+        "selection_score": -0.609239,
+        "holdout_score": 0.530422,
+        "training_time": 0.4658,
+        "best_params": {
+          "n_estimators": 224,
+          "max_depth": 11,
+          "min_samples_split": 5,
+          "min_samples_leaf": 5
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.600689,
+          -0.615971,
+          -0.658931
+        ],
+        "cv_mean": -0.625197,
+        "cv_std": 0.024656,
+        "selection_score": -0.625197,
+        "holdout_score": 0.512956,
+        "training_time": 0.5249,
+        "best_params": {
+          "n_estimators": 224,
+          "learning_rate": 0.02646442689360642,
+          "max_depth": 4,
+          "subsample": 0.8205259076331565
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.614318,
+        "cv_mean": -0.614318,
+        "holdout_score": 0.536066,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.014737,
+          "random_forest_reg": 0.901833,
+          "gradient_boosting_reg": 0.08343
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.609166,
+        "cv_mean": -0.609166,
+        "holdout_score": 0.528535,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.614261,
+        "cv_mean": -0.614261,
+        "holdout_score": 0.525469,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.609239,
+    "best_individual_holdout_score": 0.530422,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.609166,
+    "best_ensemble_holdout_score": 0.528535,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.609166,
+    "overall_holdout_score": 0.528535,
+    "ensemble_improvement_cv": 7.3e-05,
+    "ensemble_improvement_holdout": 0.001887,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0,
+    "training_time": 4.8694,
+    "total_time": 6.9249,
+    "timestamp": "2026-10-04 13:25:40",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_guided_s123",
+    "secondary_metrics": {
+      "rmse": 0.528535,
+      "mae": 0.40798,
+      "mse": 0.279349,
+      "r2": 0.514044
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "deterministic",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.645439,
+          -0.688615,
+          -0.600935
+        ],
+        "cv_mean": -0.644996,
+        "cv_std": 0.035797,
+        "selection_score": -0.644996,
+        "holdout_score": 0.647457,
+        "training_time": 0.0016,
+        "best_params": {
+          "alpha": 0.09886069002885628
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.595457,
+          -0.651624,
+          -0.574147
+        ],
+        "cv_mean": -0.607076,
+        "cv_std": 0.032679,
+        "selection_score": -0.607076,
+        "holdout_score": 0.60767,
+        "training_time": 0.3018,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.584489,
+          -0.658866,
+          -0.620998
+        ],
+        "cv_mean": -0.621451,
+        "cv_std": 0.030366,
+        "selection_score": -0.621451,
+        "holdout_score": 0.585845,
+        "training_time": 0.5791,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      },
+      {
+        "model_name": "knn_reg",
+        "display_name": "K-Nearest Neighbors Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.592266,
+          -0.683239,
+          -0.583561
+        ],
+        "cv_mean": -0.619689,
+        "cv_std": 0.045077,
+        "selection_score": -0.619689,
+        "holdout_score": 0.625171,
+        "training_time": 0.002,
+        "best_params": {
+          "n_neighbors": 8,
+          "weights": "distance"
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.59224,
+        "cv_mean": -0.59224,
+        "holdout_score": 0.58837,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.116898,
+          "random_forest_reg": 0.3544,
+          "gradient_boosting_reg": 0.186041,
+          "knn_reg": 0.342661
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.590895,
+        "cv_mean": -0.590895,
+        "holdout_score": 0.588143,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.25,
+          "random_forest_reg": 0.25,
+          "gradient_boosting_reg": 0.25,
+          "knn_reg": 0.25
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.597185,
+        "cv_mean": -0.597185,
+        "holdout_score": 0.590555,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.607076,
+    "best_individual_holdout_score": 0.60767,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.590895,
+    "best_ensemble_holdout_score": 0.588143,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.590895,
+    "overall_holdout_score": 0.588143,
+    "ensemble_improvement_cv": 0.016181,
+    "ensemble_improvement_holdout": 0.019527,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg",
+      "knn_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0015,
+    "training_time": 4.0398,
+    "total_time": 5.6936,
+    "timestamp": "2026-10-04 13:25:45",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg",
+        "knn_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "weighted_average",
+          "uniform_average",
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "Deterministic rule-based AutoML pipeline plan for regression task on 'quality' (800 rows, 12 cols). Standardized preprocessing, Optuna tuning (20 trials, 5 folds), and model fusion ensemble.",
+      "constraints": {},
+      "source": "deterministic_fallback",
+      "provider_used": "Fallback (Deterministic)",
+      "model_used": "rule_based_engine",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [
+        "Generated by deterministic rule-based planner (no LLM key required)."
+      ],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_deterministic_s456",
+    "secondary_metrics": {
+      "rmse": 0.588143,
+      "mae": 0.424322,
+      "mse": 0.345912,
+      "r2": 0.324587
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "llm_model_only",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.645439,
+          -0.688615,
+          -0.600935
+        ],
+        "cv_mean": -0.644996,
+        "cv_std": 0.035797,
+        "selection_score": -0.644996,
+        "holdout_score": 0.647457,
+        "training_time": 0.004,
+        "best_params": {
+          "alpha": 0.09886069002885628
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.595457,
+          -0.651624,
+          -0.574147
+        ],
+        "cv_mean": -0.607076,
+        "cv_std": 0.032679,
+        "selection_score": -0.607076,
+        "holdout_score": 0.60767,
+        "training_time": 0.3223,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.584489,
+          -0.658866,
+          -0.620998
+        ],
+        "cv_mean": -0.621451,
+        "cv_std": 0.030366,
+        "selection_score": -0.621451,
+        "holdout_score": 0.585845,
+        "training_time": 0.5972,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.600261,
+        "cv_mean": -0.600261,
+        "holdout_score": 0.595316,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.176756,
+          "random_forest_reg": 0.443822,
+          "gradient_boosting_reg": 0.379422
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.598805,
+        "cv_mean": -0.598805,
+        "holdout_score": 0.592103,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.606534,
+        "cv_mean": -0.606534,
+        "holdout_score": 0.594367,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.607076,
+    "best_individual_holdout_score": 0.60767,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.598805,
+    "best_ensemble_holdout_score": 0.592103,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.598805,
+    "overall_holdout_score": 0.592103,
+    "ensemble_improvement_cv": 0.008271,
+    "ensemble_improvement_holdout": 0.015567,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0006,
+    "training_time": 4.005,
+    "total_time": 5.6515,
+    "timestamp": "2026-10-04 13:25:51",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_model_only_s456",
+    "secondary_metrics": {
+      "rmse": 0.592103,
+      "mae": 0.437787,
+      "mse": 0.350586,
+      "r2": 0.315461
+    }
+  },
+  {
+    "dataset_name": "winequality_red",
+    "rows_total": 800,
+    "rows_train": 640,
+    "rows_holdout": 160,
+    "n_features_raw": 11,
+    "n_features_transformed": 11,
+    "problem_type": "regression",
+    "primary_metric": "rmse",
+    "condition": "llm_guided",
+    "seed": 456,
+    "n_folds": 3,
+    "n_trials": 0,
+    "holdout_used_for_selection": false,
+    "candidate_models": [
+      {
+        "model_name": "ridge",
+        "display_name": "Ridge Regression",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.645439,
+          -0.688615,
+          -0.600935
+        ],
+        "cv_mean": -0.644996,
+        "cv_std": 0.035797,
+        "selection_score": -0.644996,
+        "holdout_score": 0.647457,
+        "training_time": 0.0035,
+        "best_params": {
+          "alpha": 0.09886069002885628
+        }
+      },
+      {
+        "model_name": "random_forest_reg",
+        "display_name": "Random Forest Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.595457,
+          -0.651624,
+          -0.574147
+        ],
+        "cv_mean": -0.607076,
+        "cv_std": 0.032679,
+        "selection_score": -0.607076,
+        "holdout_score": 0.60767,
+        "training_time": 0.3041,
+        "best_params": {
+          "n_estimators": 112,
+          "max_depth": 7,
+          "min_samples_split": 12,
+          "min_samples_leaf": 7
+        }
+      },
+      {
+        "model_name": "gradient_boosting_reg",
+        "display_name": "Gradient Boosting Regressor",
+        "is_ensemble": false,
+        "status": "COMPLETED",
+        "cv_scores": [
+          -0.584489,
+          -0.658866,
+          -0.620998
+        ],
+        "cv_mean": -0.621451,
+        "cv_std": 0.030366,
+        "selection_score": -0.621451,
+        "holdout_score": 0.585845,
+        "training_time": 0.5734,
+        "best_params": {
+          "n_estimators": 112,
+          "learning_rate": 0.01741283205775859,
+          "max_depth": 9,
+          "subsample": 0.9234093555365915
+        }
+      }
+    ],
+    "ensemble_candidates": [
+      {
+        "model_name": "ensemble_uniform_avg",
+        "display_name": "Ensemble (Uniform Average)",
+        "is_ensemble": true,
+        "strategy": "uniform_average",
+        "weights": {
+          "ridge": 0.333333,
+          "random_forest_reg": 0.333333,
+          "gradient_boosting_reg": 0.333333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.600261,
+        "cv_mean": -0.600261,
+        "holdout_score": 0.595316,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_weighted",
+        "display_name": "Ensemble (Optimized Weights)",
+        "is_ensemble": true,
+        "strategy": "weighted_average",
+        "weights": {
+          "ridge": 0.176756,
+          "random_forest_reg": 0.443822,
+          "gradient_boosting_reg": 0.379422
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.598805,
+        "cv_mean": -0.598805,
+        "holdout_score": 0.592103,
+        "training_time": 0.0
+      },
+      {
+        "model_name": "ensemble_stacking",
+        "display_name": "Ensemble (Stacking)",
+        "is_ensemble": true,
+        "strategy": "stacking",
+        "weights": {
+          "ridge": 0.3333,
+          "random_forest_reg": 0.3333,
+          "gradient_boosting_reg": 0.3333
+        },
+        "status": "COMPLETED",
+        "selection_score": -0.606534,
+        "cv_mean": -0.606534,
+        "holdout_score": 0.594367,
+        "training_time": 0.0
+      }
+    ],
+    "best_individual_model": "random_forest_reg",
+    "best_individual_cv_score": -0.607076,
+    "best_individual_holdout_score": 0.60767,
+    "best_ensemble_model": "ensemble_weighted",
+    "best_ensemble_cv_score": -0.598805,
+    "best_ensemble_holdout_score": 0.592103,
+    "overall_winner": "ensemble_weighted",
+    "overall_winner_type": "ensemble",
+    "overall_cv_score": -0.598805,
+    "overall_holdout_score": 0.592103,
+    "ensemble_improvement_cv": 0.008271,
+    "ensemble_improvement_holdout": 0.015567,
+    "llm_provider": "LLM-Assisted",
+    "llm_recommended_models": [
+      "ridge",
+      "random_forest_reg",
+      "gradient_boosting_reg"
+    ],
+    "llm_proposed_operations": [],
+    "operations_accepted": [],
+    "operations_rejected": [],
+    "llm_model_match": true,
+    "feature_engineering_time": 0.0,
+    "training_time": 4.013,
+    "total_time": 5.6213,
+    "timestamp": "2026-10-04 13:25:57",
+    "dataset_hash": "4a402cf041b025d4",
+    "git_commit": "b8d45be",
+    "cv_scoring": "neg_root_mean_squared_error",
+    "cv_direction": "maximize",
+    "holdout_metric": "rmse",
+    "holdout_direction": "minimize",
+    "pipeline_plan": {
+      "problem_type": "regression",
+      "target_column": "quality",
+      "primary_metric": "neg_root_mean_squared_error",
+      "preprocessing_strategy": {
+        "numeric_imputation": "median",
+        "categorical_imputation": "most_frequent",
+        "scaling": "standard",
+        "max_categories": 20
+      },
+      "feature_operations": [],
+      "candidate_models": [
+        "ridge",
+        "random_forest_reg",
+        "gradient_boosting_reg"
+      ],
+      "hyperparameter_strategy": {
+        "n_trials": 20,
+        "n_folds": 5,
+        "mode": "automl",
+        "sampler_seed": null
+      },
+      "ensemble_strategy": {
+        "enabled": true,
+        "strategies": [
+          "stacking"
+        ],
+        "meta_learner": null
+      },
+      "rationale": "The dataset represents physicochemical properties of wine with a target 'quality' score, making it a standard multi-class or binary classification problem. A robust tree-based and kernel-based model selection with standard scaling ensures reliable performance on continuous physicochemical features.",
+      "constraints": {},
+      "source": "llm",
+      "provider_used": "Google Gemini",
+      "model_used": "unknown",
+      "validation_status": "valid",
+      "validation_errors": [],
+      "validation_warnings": [],
+      "rejected_models": [],
+      "rejected_operations": [],
+      "fallback_reason": null
+    },
+    "benchmark_id": "winequality_red_llm_guided_s456",
+    "secondary_metrics": {
+      "rmse": 0.592103,
+      "mae": 0.437787,
+      "mse": 0.350586,
+      "r2": 0.315461
+    }
   }
 ]

@@ -176,6 +176,8 @@ class BenchmarkRecord:
     holdout_metric: Optional[str] = None
     holdout_direction: Optional[str] = None
     pipeline_plan: Optional[Dict[str, Any]] = None
+    benchmark_id: Optional[str] = None
+    secondary_metrics: Dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -414,6 +416,19 @@ class BenchmarkRunner:
         llm_recs = [m.name for m in model_defs]
         llm_match = best_single_name in llm_recs
 
+        # Extract secondary holdout metrics
+        secondary_metrics = {}
+        if config.problem_type == "classification":
+            for k in ("accuracy", "balanced_accuracy", "roc_auc", "f1_weighted"):
+                if k in ov_met and ov_met[k] is not None:
+                    secondary_metrics[k] = round(float(ov_met[k]), 6)
+        else:
+            for k in ("rmse", "mae", "mse", "r2"):
+                if k in ov_met and ov_met[k] is not None:
+                    secondary_metrics[k] = round(float(ov_met[k]), 6)
+
+        bench_id = f"{config.dataset_name}_{config.condition}_s{config.seed}"
+
         return BenchmarkRecord(
             dataset_name=config.dataset_name,
             rows_total=rows_total,
@@ -459,4 +474,192 @@ class BenchmarkRunner:
             holdout_metric=spec.metric,
             holdout_direction=spec.raw_direction,
             pipeline_plan=plan_dict,
+            benchmark_id=bench_id,
+            secondary_metrics=secondary_metrics,
         )
+
+
+def aggregate_benchmark_records(records: Union[List[BenchmarkRecord], List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Aggregate multi-seed benchmark records into rigorous statistical comparisons.
+    
+    Computes:
+    - Per-dataset, per-condition statistics (mean, std, min, max, per-seed scores, runtimes)
+    - Direction-aware deltas:
+        - For maximize metrics: delta = LLM_mean - Det_mean
+        - For minimize metrics: delta = Det_mean - LLM_mean (positive means LLM improved)
+    - Raw differences
+    - Ablation comparisons (Deterministic vs LLM Model Only vs Full LLM Guided)
+    - Pipeline behavior summary (models proposed/accepted/rejected, operations proposed/accepted/rejected, fallback rate)
+    - Reproducibility metadata and audit statements
+    """
+    raw_list: List[Dict[str, Any]] = [
+        r.to_dict() if hasattr(r, "to_dict") else r for r in records
+    ]
+    if not raw_list:
+        return {}
+
+    by_dataset: Dict[str, List[Dict[str, Any]]] = {}
+    for r in raw_list:
+        ds = r.get("dataset_name", "unknown")
+        by_dataset.setdefault(ds, []).append(r)
+
+    dataset_summaries = {}
+    all_seeds = sorted(list({r.get("seed") for r in raw_list if r.get("seed") is not None}))
+
+    for ds_name, ds_records in by_dataset.items():
+        sample = ds_records[0]
+        prob_type = sample.get("problem_type", "classification")
+        prim_metric = sample.get("primary_metric", "f1_weighted")
+        direction = sample.get("holdout_direction", "maximize" if is_higher_better(prim_metric) else "minimize")
+
+        by_cond: Dict[str, List[Dict[str, Any]]] = {}
+        for r in ds_records:
+            cond = r.get("condition", "default")
+            by_cond.setdefault(cond, []).append(r)
+
+        cond_summaries = {}
+        for cond_name, c_records in by_cond.items():
+            c_records_sorted = sorted(c_records, key=lambda x: x.get("seed", 0))
+            seeds = [x.get("seed") for x in c_records_sorted]
+            cv_scores = [x.get("overall_cv_score") for x in c_records_sorted if x.get("overall_cv_score") is not None]
+            h_scores = [x.get("overall_holdout_score") for x in c_records_sorted if x.get("overall_holdout_score") is not None]
+            runtimes = [x.get("total_time") for x in c_records_sorted if x.get("total_time") is not None]
+            winners = [x.get("overall_winner") for x in c_records_sorted]
+
+            sec_keys = set()
+            for x in c_records_sorted:
+                sec_keys.update(x.get("secondary_metrics", {}).keys())
+            sec_means = {}
+            for k in sec_keys:
+                vals = [x.get("secondary_metrics", {}).get(k) for x in c_records_sorted if x.get("secondary_metrics", {}).get(k) is not None]
+                if vals:
+                    sec_means[k] = round(float(np.mean(vals)), 4)
+
+            cond_summaries[cond_name] = {
+                "count": len(c_records_sorted),
+                "seeds": seeds,
+                "cv_scores": [round(s, 4) for s in cv_scores],
+                "cv_mean": round(float(np.mean(cv_scores)), 4) if cv_scores else None,
+                "cv_std": round(float(np.std(cv_scores)), 4) if cv_scores else None,
+                "holdout_scores": [round(s, 4) for s in h_scores],
+                "holdout_mean": round(float(np.mean(h_scores)), 4) if h_scores else None,
+                "holdout_std": round(float(np.std(h_scores)), 4) if h_scores else None,
+                "holdout_min": round(float(np.min(h_scores)), 4) if h_scores else None,
+                "holdout_max": round(float(np.max(h_scores)), 4) if h_scores else None,
+                "runtimes": [round(t, 2) for t in runtimes],
+                "runtime_mean": round(float(np.mean(runtimes)), 2) if runtimes else None,
+                "selected_pipelines": winners,
+                "secondary_metrics_means": sec_means,
+            }
+
+        # Comparisons
+        det_key = next((k for k in cond_summaries if "fallback" in k or "deterministic" in k), None)
+        llm_full_key = next((k for k in cond_summaries if k in ("llm_guided", "llm_assisted")), None)
+        llm_ablation_key = next((k for k in cond_summaries if "model_only" in k or "without_features" in k), None)
+
+        comparisons = {}
+        if det_key and llm_full_key and cond_summaries[det_key]["holdout_mean"] is not None and cond_summaries[llm_full_key]["holdout_mean"] is not None:
+            det_mean = cond_summaries[det_key]["holdout_mean"]
+            llm_mean = cond_summaries[llm_full_key]["holdout_mean"]
+            raw_diff = round(llm_mean - det_mean, 4)
+            adj_delta = round(llm_mean - det_mean if direction == "maximize" else det_mean - llm_mean, 4)
+            det_cv = cond_summaries[det_key]["cv_mean"]
+            llm_cv = cond_summaries[llm_full_key]["cv_mean"]
+            cv_delta = round(llm_cv - det_cv, 4) if (det_cv is not None and llm_cv is not None) else None
+
+            comparisons["llm_guided_vs_deterministic"] = {
+                "deterministic_condition": det_key,
+                "llm_condition": llm_full_key,
+                "metric": prim_metric,
+                "direction": direction,
+                "deterministic_holdout_mean": det_mean,
+                "llm_holdout_mean": llm_mean,
+                "raw_difference": raw_diff,
+                "direction_adjusted_delta": adj_delta,
+                "cv_delta": cv_delta,
+                "interpretation": (
+                    f"LLM showed +{adj_delta} improvement" if adj_delta > 0.0005
+                    else f"Deterministic showed +{-adj_delta} advantage" if adj_delta < -0.0005
+                    else "Comparable performance within margin"
+                ),
+            }
+
+        if det_key and llm_ablation_key and cond_summaries[det_key]["holdout_mean"] is not None and cond_summaries[llm_ablation_key]["holdout_mean"] is not None:
+            det_mean = cond_summaries[det_key]["holdout_mean"]
+            abl_mean = cond_summaries[llm_ablation_key]["holdout_mean"]
+            adj_delta = round(abl_mean - det_mean if direction == "maximize" else det_mean - abl_mean, 4)
+            comparisons["ablation_model_only_vs_deterministic"] = {
+                "metric": prim_metric,
+                "direction": direction,
+                "deterministic_holdout_mean": det_mean,
+                "ablation_holdout_mean": abl_mean,
+                "direction_adjusted_delta": adj_delta,
+            }
+
+        # Pipeline behavior tracking across LLM runs
+        llm_runs = [r for r in ds_records if r.get("condition") != det_key]
+        prop_models = []
+        acc_models = []
+        rej_models = []
+        prop_ops = []
+        acc_ops = []
+        rej_ops = []
+        fallback_count = 0
+
+        for lr in llm_runs:
+            prop_models.extend(lr.get("llm_recommended_models") or [])
+            acc_models.extend([m.get("model_name") for m in lr.get("candidate_models", [])])
+            for m in lr.get("operations_rejected", []):
+                if isinstance(m, dict) and "model_id" in m:
+                    rej_models.append(m.get("model_id"))
+            
+            p_ops = lr.get("llm_proposed_operations") or []
+            prop_ops.extend([op.get("operation") for op in p_ops if isinstance(op, dict)])
+            a_ops = lr.get("operations_accepted") or []
+            acc_ops.extend([op.get("operation") for op in a_ops if isinstance(op, dict)])
+            r_ops = lr.get("operations_rejected") or []
+            rej_ops.extend([op.get("operation") if isinstance(op, dict) else str(op) for op in r_ops])
+
+            if "fallback" in (lr.get("llm_provider") or "").lower():
+                fallback_count += 1
+
+        pipeline_behavior = {
+            "total_llm_runs": len(llm_runs),
+            "fallback_runs": fallback_count,
+            "fallback_rate": round(fallback_count / len(llm_runs), 2) if llm_runs else 0.0,
+            "models_proposed_unique": sorted(list(set(prop_models))),
+            "models_accepted_unique": sorted(list(set(acc_models))),
+            "models_rejected_count": len(rej_models),
+            "operations_proposed_count": len(prop_ops),
+            "operations_accepted_count": len(acc_ops),
+            "operations_rejected_count": len(rej_ops),
+            "operations_proposed_unique": sorted(list(set(prop_ops))),
+            "operations_accepted_unique": sorted(list(set(acc_ops))),
+        }
+
+        dataset_summaries[ds_name] = {
+            "problem_type": prob_type,
+            "primary_metric": prim_metric,
+            "metric_direction": direction,
+            "rows_total": sample.get("rows_total"),
+            "rows_train": sample.get("rows_train"),
+            "rows_holdout": sample.get("rows_holdout"),
+            "dataset_hash": sample.get("dataset_hash"),
+            "conditions": cond_summaries,
+            "comparisons": comparisons,
+            "pipeline_behavior": pipeline_behavior,
+        }
+
+    return {
+        "title": "AutoML-Lens Multi-Seed Research Benchmark Summary",
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "git_commit": raw_list[0].get("git_commit") if raw_list else None,
+        "protocol": {
+            "seeds": all_seeds,
+            "n_folds": raw_list[0].get("n_folds") if raw_list else 3,
+            "n_trials": raw_list[0].get("n_trials") if raw_list else 5,
+            "holdout_policy": "Strict fold-safe cross-validation on train split only; holdout set reserved exclusively for final evaluation.",
+            "statistical_statement": f"Descriptive multi-seed comparison only (N={len(all_seeds)} seeds per condition). No inferential p-values claimed.",
+        },
+        "datasets": dataset_summaries,
+    }
