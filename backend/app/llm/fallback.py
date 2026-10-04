@@ -232,115 +232,163 @@ class FallbackLLMProvider(LLMProvider):
         )
         return "\n".join(parts)
 
-    async def chat(self, message: str, experiment_context: Optional[dict] = None) -> str:
-        """Answer questions using pattern matching and experiment data."""
+    async def chat(self, message: str, experiment_context: Optional[dict] = None,
+                   history: Optional[list] = None, context_mode: str = "general", **kwargs) -> str:
+        """Answer questions using pattern matching and experiment data with honest fallback notices."""
         msg = message.lower().strip()
         ctx = experiment_context or {}
 
-        # Target question
-        if "target" in msg and ("what" in msg or "which" in msg):
-            target = ctx.get("target_column", "not set")
-            ptype = ctx.get("problem_type", "not determined")
-            return (
-                f"Your target column is **{target}** and the detected problem type is **{ptype}**.\n\n"
-                f"_Note: Running in Fallback Mode (no LLM API configured)._"
-            )
+        # 1. Project / AutoML queries
+        if context_mode == "project" or any(k in msg for k in [
+            "target", "metric", "f1", "accuracy", "rmse", "r2", "r-squared",
+            "model", "best model", "winner", "feature", "preprocessing",
+            "confusion matrix", "hyperparameter", "optuna", "experiment", "automl"
+        ]):
+            if "target" in msg and ("what" in msg or "which" in msg or "name" in msg):
+                target = ctx.get("target_column", "not set")
+                ptype = ctx.get("problem_type", "not determined")
+                return (
+                    f"### Target Column & Problem Type\n\n"
+                    f"- **Target Column**: `{target}`\n"
+                    f"- **Problem Type**: `{ptype}`\n\n"
+                    f"*(Answered via Deterministic Rule Engine. For general AI queries, configure a Gemini or OpenAI API key.)*"
+                )
 
-        # Metric explanations
-        if any(k in msg for k in ["what is f1", "explain f1", "f1 score"]):
-            return (
-                "**F1 Score** is the harmonic mean of precision and recall. It provides a balanced measure "
-                "that accounts for both false positives and false negatives. F1-weighted averages F1 across "
-                "all classes, weighted by their support (number of samples).\n\n"
-                "_Note: Running in Fallback Mode._"
-            )
-        if any(k in msg for k in ["what is accuracy", "explain accuracy"]):
-            return (
-                "**Accuracy** is the ratio of correct predictions to total predictions. While intuitive, "
-                "it can be misleading for imbalanced datasets where a model could achieve high accuracy "
-                "by always predicting the majority class.\n\n_Note: Running in Fallback Mode._"
-            )
-        if any(k in msg for k in ["what is rmse", "explain rmse"]):
-            return (
-                "**RMSE (Root Mean Squared Error)** measures the average magnitude of prediction errors. "
-                "It penalizes larger errors more heavily than MAE due to the squaring operation. "
-                "Lower RMSE indicates better model performance.\n\n_Note: Running in Fallback Mode._"
-            )
-        if any(k in msg for k in ["what is r2", "explain r2", "r-squared", "r squared"]):
-            return (
-                "**R² (R-squared)** measures how well the model explains the variance in the target variable. "
-                "A value of 1.0 means perfect prediction, 0.0 means the model is no better than predicting "
-                "the mean, and negative values indicate worse-than-mean predictions.\n\n"
-                "_Note: Running in Fallback Mode._"
-            )
+            if any(k in msg for k in ["best", "winner", "winning model"]) and ("model" in msg or "winner" in msg):
+                best = ctx.get("best_model_name", "Pending training completion")
+                score = ctx.get("best_score")
+                metric = ctx.get("primary_metric", "primary metric")
+                score_str = f"{score:.4f}" if isinstance(score, (int, float)) else "N/A"
+                return (
+                    f"### Winning Pipeline Overview\n\n"
+                    f"- **Best Model**: `{best}`\n"
+                    f"- **Validation Score ({metric})**: `{score_str}`\n\n"
+                    f"*(Answered via Deterministic Rule Engine.)*"
+                )
 
-        # Preprocessing
-        if "preprocessing" in msg or "preprocess" in msg:
-            preproc = ctx.get("preprocessing_summary", "No preprocessing information available.")
-            if isinstance(preproc, dict):
-                parts = []
-                for k, v in preproc.items():
-                    parts.append(f"- **{k}**: {v}")
-                preproc = "\n".join(parts)
-            return f"**Preprocessing Applied:**\n{preproc}\n\n_Note: Running in Fallback Mode._"
+            if any(k in msg for k in ["what is f1", "explain f1", "f1 score"]):
+                return (
+                    "### F1-Score (Harmonic Mean of Precision & Recall)\n\n"
+                    "The **F1-Score** balances precision and recall:\n\n"
+                    "$$\\text{F1} = 2 \\times \\frac{\\text{Precision} \\times \\text{Recall}}{\\text{Precision} + \\text{Recall}}$$\n\n"
+                    "- **Precision**: What proportion of positive identifications was actually correct?\n"
+                    "- **Recall**: What proportion of actual positives was identified correctly?\n"
+                    "- **F1-Weighted**: Averages individual class F1 scores weighted by the number of true instances in each class."
+                )
 
-        # Feature importance
-        if "feature" in msg and ("important" in msg or "importance" in msg):
-            top = ctx.get("top_features", [])
-            if top:
-                feat_list = "\n".join(f"{i+1}. {f}" for i, f in enumerate(top[:10]))
-                return f"**Top Important Features:**\n{feat_list}\n\n_Note: Running in Fallback Mode._"
-            return "Feature importance data is not yet available. Run training first.\n\n_Note: Running in Fallback Mode._"
+            if any(k in msg for k in ["what is accuracy", "explain accuracy"]):
+                return (
+                    "### Classification Accuracy\n\n"
+                    "**Accuracy** is the ratio of correct predictions to total predictions:\n\n"
+                    "$$\\text{Accuracy} = \\frac{\\text{True Positives} + \\text{True Negatives}}{\\text{Total Samples}}$$\n\n"
+                    "> **Caution**: In imbalanced datasets (e.g., 95% negative, 5% positive), a naive model predicting all negatives achieves 95% accuracy while remaining useless. For this reason, AutoML-Lens defaults to **F1-Weighted** or **Balanced Accuracy** for imbalanced classification."
+                )
 
-        # Best model
-        if "best" in msg and ("model" in msg or "winner" in msg):
-            best = ctx.get("best_model_name", "not yet determined")
-            score = ctx.get("best_score")
-            metric = ctx.get("primary_metric", "")
-            text = f"The best model is **{best}**"
-            if score is not None:
-                text += f" with a {metric} score of **{score:.4f}**"
-            text += "."
-            return f"{text}\n\n_Note: Running in Fallback Mode._"
+            if any(k in msg for k in ["what is rmse", "explain rmse"]):
+                return (
+                    "### Root Mean Squared Error (RMSE)\n\n"
+                    "**RMSE** measures the standard deviation of prediction residuals in continuous regression:\n\n"
+                    "$$\\text{RMSE} = \\sqrt{\\frac{1}{n} \\sum_{i=1}^n (y_i - \\hat{y}_i)^2}$$\n\n"
+                    "- Because errors are squared before averaging, RMSE penalizes large outlier errors more heavily than MAE (Mean Absolute Error).\n"
+                    "- Lower values indicate better fit, with 0 representing perfect prediction."
+                )
 
-        # Confusion matrix
-        if "confusion" in msg and "matrix" in msg:
-            return (
-                "A **confusion matrix** shows how predictions compare to actual values for each class. "
-                "Rows represent actual classes, columns represent predicted classes. The diagonal shows "
-                "correct predictions, while off-diagonal elements show misclassifications. This helps "
-                "identify which classes the model confuses most often.\n\n_Note: Running in Fallback Mode._"
-            )
+            if any(k in msg for k in ["what is r2", "explain r2", "r-squared", "r squared"]):
+                return (
+                    "### Coefficient of Determination (R² Score)\n\n"
+                    "**R²** measures the proportion of variance in the dependent variable explained by the model:\n\n"
+                    "- **$R^2 = 1.0$**: Perfect prediction.\n"
+                    "- **$R^2 = 0.0$**: Model performs identically to constantly predicting the empirical mean.\n"
+                    "- **$R^2 < 0.0$**: Model performs worse than the mean baseline (severe overfitting or model mismatch)."
+                )
 
-        # Hyperparameters
-        if "hyperparameter" in msg or "hyperparam" in msg:
-            return (
-                "**Hyperparameter optimization** was performed using Optuna, which intelligently "
-                "searches the parameter space to find the configuration that maximizes model performance. "
-                "Parameters like learning rate, tree depth, and regularization strength were tuned "
-                "using cross-validation.\n\n_Note: Running in Fallback Mode._"
-            )
+            if "feature" in msg and ("important" in msg or "importance" in msg):
+                top = ctx.get("top_features", [])
+                if top:
+                    feat_list = "\n".join(f"{i+1}. `{f}`" for i, f in enumerate(top[:10]))
+                    return f"### Top Informative Features (SHAP Importance)\n\n{feat_list}\n\n*(Computed via TreeSHAP/KernelSHAP)*"
+                return "Feature importance data is not yet computed. Complete training to view SHAP rankings."
 
-        # Why specific model
-        if "why" in msg and any(m in msg for m in ["random forest", "logistic", "gradient", "ridge", "lasso", "svm", "knn"]):
-            return (
-                "Models are selected based on dataset characteristics including size, number of features, "
-                "feature types, and problem complexity. Tree-based models (Random Forest, Gradient Boosting) "
-                "often perform well on tabular data due to their ability to capture non-linear relationships "
-                "and handle mixed feature types.\n\n_Note: Running in Fallback Mode._"
-            )
+            if "preprocessing" in msg or "preprocess" in msg:
+                preproc = ctx.get("preprocessing_summary", "No preprocessing information recorded yet.")
+                if isinstance(preproc, dict):
+                    parts = [f"- **{k}**: `{v}`" for k, v in preproc.items()]
+                    preproc = "\n".join(parts)
+                return f"### Fold-Safe Preprocessing Directives\n\n{preproc}"
 
-        # Default response
+            if any(k in msg for k in ["what is automl", "explain automl"]):
+                return (
+                    "### Automated Machine Learning (AutoML)\n\n"
+                    "**AutoML** automates the end-to-end lifecycle of machine learning:\n\n"
+                    "1. **Data Profiling**: Inferred types, cardinality, missingness audit.\n"
+                    "2. **Structured Planning**: Registry-constrained pipeline generation.\n"
+                    "3. **Fold-Safe Preprocessing**: Imputers and scalers fit strictly on training folds.\n"
+                    "4. **Bayesian HPO**: Optuna Tree-structured Parzen Estimator (TPE) parameter search.\n"
+                    "5. **Model Fusion**: Out-of-fold greedy weighted ensemble and stacking.\n"
+                    "6. **Explainability**: SHAP value feature importance analysis."
+                )
+
+        # 2. General Knowledge / Coding / Conceptual queries (honest fallback + answer if known)
+        general_intents = {
+            "quantum computing": (
+                "### Quantum Computing Overview\n\n"
+                "**Quantum computing** is a multidisciplinary field comprising aspects of computer science, physics, and mathematics that utilizes quantum mechanics to solve complex problems faster than classical computers.\n\n"
+                "- **Qubits**: Unlike classical bits (0 or 1), quantum bits can exist in a **superposition** of states.\n"
+                "- **Entanglement**: Qubits can be linked such that the state of one instantaneously affects another, regardless of distance.\n"
+                "- **Applications**: Quantum chemistry, drug discovery, integer factorization (Shor's algorithm), and combinatorial optimization."
+            ),
+            "reverse a string": (
+                "### Python: Reverse a String\n\n"
+                "In Python, the most idiomatic and efficient approach is using **slice notation**:\n\n"
+                "```python\ndef reverse_string(s: str) -> str:\n    return s[::-1]\n\n# Example:\ntext = 'AutoML-Lens'\nprint(reverse_string(text))  # sneL-LMotuA\n```\n\n"
+                "Alternatively, using `reversed()` and `''.join()`:\n"
+                "```python\ndef reverse_string_alt(s: str) -> str:\n    return ''.join(reversed(s))\n```"
+            ),
+            "capital of france": "The capital of France is **Paris**.",
+            "difference between ai and ml": (
+                "### Difference Between AI and ML\n\n"
+                "- **Artificial Intelligence (AI)**: The broad discipline of building computational systems capable of performing tasks that typically require human cognition (reasoning, perception, language understanding, problem solving).\n"
+                "- **Machine Learning (ML)**: A primary subset of AI focused on training statistical models on empirical data so they learn patterns and generalize to unseen instances without hardcoded rules."
+            ),
+            "pasta": (
+                "### Classic Italian Pasta Aglio e Olio\n\n"
+                "**Ingredients**:\n"
+                "- 200g Spaghetti\n"
+                "- 4 cloves Garlic (thinly sliced)\n"
+                "- 4 tbsp Extra Virgin Olive Oil\n"
+                "- 1/2 tsp Red pepper chili flakes\n"
+                "- Fresh parsley (chopped) & Salt\n\n"
+                "**Instructions**:\n"
+                "1. Boil pasta in salted water until 1 minute before al dente.\n"
+                "2. In a skillet, warm olive oil over medium-low heat; gently sauté sliced garlic and red pepper flakes until golden (do not burn).\n"
+                "3. Transfer pasta directly into the skillet with 1/4 cup starchy pasta cooking water.\n"
+                "4. Toss vigorously for 1 minute to emulsify the sauce into a glossy coating.\n"
+                "5. Garnish with chopped fresh parsley and serve immediately."
+            ),
+            "python": (
+                "### Python Programming Language\n\n"
+                "**Python** is a high-level, interpreted, dynamically typed programming language known for its clean syntax, readability, and extensive scientific computing ecosystem (`numpy`, `pandas`, `scikit-learn`, `fastapi`)."
+            ),
+        }
+
+        for key, ans in general_intents.items():
+            if key in msg:
+                return (
+                    f"{ans}\n\n"
+                    f"---\n"
+                    f"*Notice: Provided via Local Fallback Engine. For open-ended general dialogue, configure `GEMINI_API_KEY` in `backend/.env`.*"
+                )
+
+        # Standard informative fallback message
         return (
-            "I'm the AutoML-Lens assistant. I can help you understand your experiment results. "
-            "Try asking about:\n"
-            "- Your target column and problem type\n"
-            "- What specific metrics mean (F1, accuracy, RMSE, R²)\n"
-            "- What preprocessing was applied\n"
-            "- Which features are most important\n"
-            "- Which model performed best and why\n"
-            "- What a confusion matrix shows\n"
-            "- How hyperparameter optimization works\n\n"
-            "_Note: Running in Fallback Mode (no LLM API configured). "
-            "Configure a Gemini or OpenAI API key for richer responses._"
+            f"### AutoML-Lens AI Assistant (Fallback Mode)\n\n"
+            f"I received your question: *\"{message}\"*\n\n"
+            f"The backend is currently operating in **Deterministic Fallback Mode** (no external LLM API key configured). "
+            f"In this mode, all AutoML pipeline planning, model training, cross-validation, and Optuna HPO execute locally with 100% functionality.\n\n"
+            f"**To enable full general-purpose AI chat (like ChatGPT)**:\n"
+            f"1. Open `backend/.env`\n"
+            f"2. Set `LLM_PROVIDER=gemini` (or `openai`)\n"
+            f"3. Add your `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/apikey))\n"
+            f"4. Restart the backend server\n\n"
+            f"*(For questions about this experiment's metrics, dataset, or models, switch to **Project Mode** above or ask about 'target', 'best model', or 'metrics'.)*"
         )

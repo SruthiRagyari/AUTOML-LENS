@@ -190,11 +190,15 @@ class BatchPredictResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     experiment_id: Optional[int] = None
+    context_mode: Optional[str] = "general"  # "general" | "project"
+    history: Optional[list[dict]] = None
 
 
 class ChatResponse(BaseModel):
     response: str
     provider: str
+    is_fallback: bool = False
+    context_mode: str = "general"
 
 
 # ─── Report ───────────────────────────────────────────────

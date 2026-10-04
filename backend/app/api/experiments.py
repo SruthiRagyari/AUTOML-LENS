@@ -410,6 +410,23 @@ async def get_benchmarks_report():
     raise HTTPException(status_code=404, detail="Benchmark report not found. Please run benchmarks first.")
 
 
+@router.get("/models/catalog")
+async def get_models_catalog():
+    """Return catalog of all supported models in the registry."""
+    registry = ModelRegistry()
+    models = []
+    for name, m in registry._models.items():
+        models.append({
+            "name": m.name,
+            "display_name": m.display_name,
+            "task": m.task,
+            "has_search_space": m.search_space is not None,
+            "default_params": {k: str(v) for k, v in m.default_params.items()},
+            "explainability_method": m.explainability_method,
+        })
+    return {"models": models, "total": len(models)}
+
+
 @router.get("/{exp_id}")
 async def get_experiment(exp_id: int, db: Session = Depends(get_db)):
     """Get experiment details."""
@@ -417,6 +434,38 @@ async def get_experiment(exp_id: int, db: Session = Depends(get_db)):
     if not exp:
         raise HTTPException(404, "Experiment not found")
     return _exp_to_dict(exp)
+
+
+@router.delete("/{exp_id}")
+async def delete_experiment(exp_id: int, db: Session = Depends(get_db)):
+    """Delete an experiment and its associated runs/predictions."""
+    exp = db.query(Experiment).filter(Experiment.id == exp_id).first()
+    if not exp:
+        raise HTTPException(404, "Experiment not found")
+
+    # Delete dependent predictions and training runs
+    db.query(Prediction).filter(Prediction.experiment_id == exp_id).delete()
+    db.query(TrainingRun).filter(TrainingRun.experiment_id == exp_id).delete()
+
+    # Clean up artifacts if files exist
+    if exp.model_path:
+        try:
+            mp = Path(exp.model_path)
+            if mp.exists():
+                mp.unlink()
+        except Exception as e:
+            logger.warning(f"Could not delete model file {exp.model_path}: {e}")
+    if exp.preprocessor_path:
+        try:
+            pp = Path(exp.preprocessor_path)
+            if pp.exists():
+                pp.unlink()
+        except Exception as e:
+            logger.warning(f"Could not delete preprocessor file {exp.preprocessor_path}: {e}")
+
+    db.delete(exp)
+    db.commit()
+    return {"message": f"Experiment {exp_id} deleted successfully", "id": exp_id}
 
 
 # Statuses whose stored analysis is already the answer for this experiment.

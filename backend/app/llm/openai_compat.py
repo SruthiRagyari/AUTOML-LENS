@@ -175,10 +175,24 @@ class OpenAICompatProvider(LLMProvider):
         ]
         return await self._call(messages, temperature=0.3)
 
-    async def chat(self, message: str, experiment_context: Optional[dict] = None) -> str:
-        ctx = json.dumps(experiment_context, default=str) if experiment_context else "No experiment context."
-        messages = [
-            {"role": "system", "content": f"You are AutoML-Lens assistant. Context: {ctx}"},
-            {"role": "user", "content": message},
-        ]
-        return await self._call(messages, temperature=0.3)
+    async def chat(self, message: str, experiment_context: Optional[dict] = None,
+                   history: Optional[list] = None, context_mode: str = "general", **kwargs) -> str:
+        system = (
+            "You are AutoML-Lens AI, an intelligent, helpful, and versatile general-purpose AI assistant. "
+            "You can answer general knowledge questions, write and debug code, explain concepts across science, "
+            "engineering, mathematics, philosophy, literature, and everyday life, as well as assist with machine learning and data science. "
+            "When specific AutoML-Lens project/experiment context is provided, use it accurately to explain the user's models, "
+            "datasets, metrics, and results. When no project context is provided, answer helpfully as a general-purpose AI. "
+            "Format your responses cleanly in Markdown with bold headers, bullet lists, and syntax-highlighted code blocks."
+        )
+        if context_mode == "project" and experiment_context:
+            system += f"\n\n[Active AutoML-Lens Project Context]:\n{json.dumps(experiment_context, indent=2, default=str)}"
+
+        messages = [{"role": "system", "content": system}]
+        if history:
+            for item in history[-10:]:
+                role = "user" if item.get("role") == "user" else "assistant"
+                messages.append({"role": role, "content": item.get("content", "")})
+
+        messages.append({"role": "user", "content": message})
+        return await self._call(messages, temperature=0.7)

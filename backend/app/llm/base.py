@@ -219,8 +219,8 @@ class LLMProvider(ABC):
         ...
 
     @abstractmethod
-    async def chat(self, message: str, experiment_context: Optional[dict] = None) -> str:
-        """Answer a user question about the experiment."""
+    async def chat(self, message: str, experiment_context: Optional[dict] = None, **kwargs) -> str:
+        """Answer a user question in general mode or using experiment context."""
         ...
 
     @abstractmethod

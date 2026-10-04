@@ -137,22 +137,32 @@ class LLMManager:
         payload["text"] = text
         return payload
 
-    async def chat(self, message: str, experiment_context: Optional[dict] = None) -> str:
+    async def chat(self, message: str, experiment_context: Optional[dict] = None,
+                   history: Optional[list] = None, context_mode: str = "general", **kwargs) -> str:
         """Chat text only (backwards-compatible helper)."""
-        detail = await self.chat_detail(message, experiment_context)
+        detail = await self.chat_detail(
+            message, experiment_context, history=history, context_mode=context_mode, **kwargs
+        )
         return detail["text"]
 
     async def chat_detail(self, message: str,
-                          experiment_context: Optional[dict] = None) -> dict[str, Any]:
+                          experiment_context: Optional[dict] = None,
+                          history: Optional[list] = None,
+                          context_mode: str = "general",
+                          **kwargs) -> dict[str, Any]:
         provider = self.active_provider
         fallback_reason: Optional[str] = None
         try:
-            text = await self.active_provider.chat(message, experiment_context)
+            text = await self.active_provider.chat(
+                message, experiment_context, history=history, context_mode=context_mode, **kwargs
+            )
         except Exception as e:
             logger.warning(f"Provider failed chat: {e}. Using fallback.")
             provider = self._fallback
             fallback_reason = str(e)
-            text = await self._fallback.chat(message, experiment_context)
+            text = await self._fallback.chat(
+                message, experiment_context, history=history, context_mode=context_mode, **kwargs
+            )
 
         payload = self._payload(provider, fallback_reason)
         payload["text"] = text

@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
-import { FiPlus, FiZap } from 'react-icons/fi'
+import {
+  FiPlus,
+  FiZap,
+  FiTrash2,
+  FiPlay,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiArrowRight,
+  FiDatabase,
+  FiFilter,
+  FiSearch,
+  FiFileText,
+  FiSliders,
+  FiX
+} from 'react-icons/fi'
 import { api } from '../services/api'
 import StatusBadge from '../components/Common/StatusBadge'
 import LoadingSpinner from '../components/Common/LoadingSpinner'
-import EmptyState from '../components/Common/EmptyState'
-import ScrollRow, { ExperimentTile, DatasetTile } from '../components/Common/ScrollRow'
 
 const DEFAULT_METRICS = {
   classification: ['accuracy', 'f1_weighted', 'precision_weighted', 'recall_weighted', 'balanced_accuracy', 'roc_auc'],
@@ -17,15 +29,7 @@ function pctText(n) {
   return n == null ? '—' : `${Number(n).toFixed(1)}%`
 }
 
-/**
- * Real suitability report for the uploaded file.
- *
- * Every value here comes straight from GET /api/datasets/{id}/suitability.
- * Blocking issues mean the dataset cannot drive a meaningful experiment, so
- * the Create button is disabled and the reasons are listed. Nothing is
- * inferred client-side and nothing is invented when a field is null.
- */
-function SuitabilityReport({ suit, form }) {
+function SuitabilityReport({ suit }) {
   if (!suit) return null
   const t = suit.target || {}
   const blocking = suit.blocking_issues || []
@@ -33,83 +37,52 @@ function SuitabilityReport({ suit, form }) {
   const types = suit.column_type_summary || {}
 
   return (
-    <div className="card" style={{ marginTop: 16 }}>
-      <h2>Dataset Readiness</h2>
+    <div className="netflix-card" style={{ marginTop: 16, border: suit.suitable ? '1px solid var(--success)' : '1px solid var(--danger)' }}>
+      <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '12px' }}>Dataset Readiness</h3>
 
-      <div className={`alert ${suit.suitable ? 'alert-success' : 'alert-danger'}`} style={{ marginBottom: 16 }}>
-        {suit.suitable
-          ? <>✅ This dataset can be used for AutoML{suit.task_type ? <> — detected task: <strong>{suit.task_type}</strong></> : null}.</>
-          : <>⛔ This dataset cannot be used for AutoML yet. Fix the issues below and re-upload or change the target.</>}
+      <div style={{ padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', background: suit.suitable ? 'var(--success-bg)' : 'var(--danger-bg)', border: `1px solid ${suit.suitable ? 'var(--success)' : 'var(--danger)'}` }}>
+        <div style={{ fontWeight: '800', fontSize: '14px', color: suit.suitable ? 'var(--success)' : 'var(--danger)' }}>
+          {suit.suitable
+            ? `✅ Suitable for AutoML (Detected task: ${suit.task_type || 'Classification/Regression'})`
+            : '⛔ Dataset cannot be used yet. Resolve blocking issues below.'}
+        </div>
         {suit.task_reason && (
-          <div style={{ fontSize: 12, marginTop: 6, opacity: 0.85 }}>{suit.task_reason}</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#e0e0e0' }}>{suit.task_reason}</div>
         )}
       </div>
 
-      <div className="metrics-grid" style={{ marginBottom: 16 }}>
-        <div className="metric-card"><div className="metric-value">{suit.rows}</div><div className="metric-label">Rows</div></div>
-        <div className="metric-card"><div className="metric-value">{suit.columns}</div><div className="metric-label">Columns</div></div>
-        <div className="metric-card"><div className="metric-value">{suit.usable_feature_count}</div><div className="metric-label">Usable features</div></div>
-        <div className="metric-card"><div className="metric-value">{pctText(suit.total_missing_percentage)}</div><div className="metric-label">Missing cells</div></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ background: '#111', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Rows</div>
+          <div style={{ fontSize: '16px', fontWeight: '800' }}>{suit.rows?.toLocaleString()}</div>
+        </div>
+        <div style={{ background: '#111', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Columns</div>
+          <div style={{ fontSize: '16px', fontWeight: '800' }}>{suit.columns}</div>
+        </div>
+        <div style={{ background: '#111', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Usable Features</div>
+          <div style={{ fontSize: '16px', fontWeight: '800' }}>{suit.usable_feature_count}</div>
+        </div>
+        <div style={{ background: '#111', padding: '10px', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Missing Cells</div>
+          <div style={{ fontSize: '16px', fontWeight: '800' }}>{pctText(suit.total_missing_percentage)}</div>
+        </div>
       </div>
 
-      {Object.keys(types).length > 0 && (
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
-          Column types:{' '}
-          {Object.entries(types).map(([k, v]) => <span key={k} className="tag" style={{ marginRight: 6 }}>{k}: {v}</span>)}
-          {suit.duplicate_rows > 0 && (
-            <span className="tag" style={{ marginLeft: 6 }}>duplicate rows: {suit.duplicate_rows} ({suit.duplicate_percentage}%)</span>
-          )}
-        </div>
-      )}
-
       {blocking.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div className="section-title">Blocking issues</div>
-          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: 'var(--danger)' }}>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--danger)', marginBottom: '4px' }}>Blocking Issues:</div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, lineHeight: 1.6, color: 'var(--danger)' }}>
             {blocking.map((b, i) => <li key={i}>{b}</li>)}
           </ul>
         </div>
       )}
 
-      {t.found && (
-        <div style={{ marginBottom: 16 }}>
-          <div className="section-title">Target &ldquo;{t.name}&rdquo;</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            inferred type <code>{t.inferred_type ?? 'unknown'}</code>
-            {' '}· {t.unique_count} distinct value(s)
-            {' '}· {pctText(t.missing_percentage)} missing
-            {t.summary ? <> · {t.summary}</> : null}
-          </div>
-          {t.distribution_kind === 'classes' && t.distribution && (
-            <>
-              <div className="table-container" style={{ maxHeight: 260, overflowY: 'auto' }}>
-                <table>
-                  <thead><tr><th>Class</th><th>Rows</th><th>Share</th></tr></thead>
-                  <tbody>
-                    {Object.entries(t.distribution).map(([k, v]) => (
-                      <tr key={k}>
-                        <td><code>{k}</code></td>
-                        <td>{v}</td>
-                        <td>{pctText((v / suit.rows) * 100)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {t.distribution_truncated && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                  Showing the 20 most frequent values; the rest are not listed.
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
       {warnings.length > 0 && (
         <div>
-          <div className="section-title">Warnings</div>
-          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.8, color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--warning)', marginBottom: '4px' }}>Warnings:</div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
             {warnings.map((w, i) => <li key={i}>{w}</li>)}
           </ul>
         </div>
@@ -119,356 +92,570 @@ function SuitabilityReport({ suit, form }) {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate()
   const [experiments, setExperiments] = useState([])
   const [datasetsById, setDatasetsById] = useState({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [filterType, setFilterType] = useState('all')
+  const [search, setSearch] = useState('')
+
+  // New Experiment Form State
   const [showForm, setShowForm] = useState(false)
-  const [step, setStep] = useState(1) // 1=upload, 2=configure, 3=creating
-  const [uploadedDataset, setUploadedDataset] = useState(null)
-  const [columns, setColumns] = useState([])
-  const [profileData, setProfileData] = useState(null)
-  const [form, setForm] = useState({
-    name: '', target_column: '', problem_type: 'auto', mode: 'automl',
-    primary_metric: '', n_folds: 5, n_trials: 10, task_description: ''
-  })
+  const [step, setStep] = useState(1)
   const [uploading, setUploading] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState('')
+  const [uploadedDataset, setUploadedDataset] = useState(null)
+  const [profileData, setProfileData] = useState(null)
+  const [columns, setColumns] = useState([])
   const [suitability, setSuitability] = useState(null)
   const [suitLoading, setSuitLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({
+    name: '',
+    target_column: '',
+    problem_type: 'auto',
+    primary_metric: '',
+    mode: 'automl',
+    n_folds: '5',
+    n_trials: '10',
+    task_description: '',
+  })
 
-  // The backend stays the source of truth for whether this dataset can be
-  // used: re-ask it whenever the target or task choice changes.
-  const refreshSuitability = useCallback(async (datasetId, target, ptype) => {
-    if (!datasetId) return
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    loadData()
+    const params = new URLSearchParams(location.search)
+    if (params.get('new') === '1') {
+      setShowForm(true)
+    }
+  }, [location.search])
+
+  const loadData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [expRes, dsRes] = await Promise.allSettled([
+        api.listExperiments(),
+        api.listDatasets(),
+      ])
+
+      if (expRes.status === 'fulfilled') {
+        setExperiments(expRes.value.data?.experiments || expRes.value.data || [])
+      } else {
+        setError('Failed to load experiments')
+      }
+
+      if (dsRes.status === 'fulfilled') {
+        const map = {}
+        ;(dsRes.value.data || []).forEach((d) => {
+          map[d.id] = d
+        })
+        setDatasetsById(map)
+      }
+    } catch (err) {
+      setError(err.message || 'Error loading dashboard data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (expId, e) => {
+    e.stopPropagation()
+    if (!window.confirm(`Are you sure you want to delete experiment #${expId}?`)) return
+    try {
+      await api.deleteExperiment(expId)
+      await loadData()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete experiment')
+    }
+  }
+
+  // Upload handling
+  const onDrop = useCallback(async (acceptedFiles) => {
+    if (!acceptedFiles || acceptedFiles.length === 0) return
+    const file = acceptedFiles[0]
+    setUploading(true)
+    setError(null)
+
+    try {
+      const upRes = await api.uploadDataset(file)
+      const ds = upRes.data
+      setUploadedDataset(ds)
+
+      const profRes = await api.profileDataset(ds.id)
+      setProfileData(profRes.data)
+      setColumns(profRes.data.column_names || [])
+
+      const initialTarget = profRes.data.suggested_target || ''
+      const initialType = profRes.data.suggested_problem_type || 'auto'
+
+      setForm((prev) => ({
+        ...prev,
+        name: `${file.name.replace(/\.[^/.]+$/, '')} AutoML`,
+        target_column: initialTarget,
+        problem_type: initialType,
+      }))
+
+      setStep(2)
+      checkSuitability(ds.id, initialTarget, initialType)
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Dataset upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }, [])
+
+  const checkSuitability = async (dsId, target, type) => {
+    if (!dsId) return
     setSuitLoading(true)
     try {
-      const r = await api.getSuitability(datasetId, target, ptype)
-      setSuitability(r.data)
-    } catch {
-      setSuitability(null)
+      const res = await api.getSuitability(dsId, target, type)
+      setSuitability(res.data)
+    } catch (err) {
+      console.error('Suitability error:', err)
     } finally {
       setSuitLoading(false)
     }
-  }, [])
+  }
 
-  useEffect(() => {
-    if (uploadedDataset?.id) {
-      refreshSuitability(uploadedDataset.id, form.target_column, form.problem_type)
-    } else {
-      setSuitability(null)
+  const handleTargetChange = (target) => {
+    setForm((prev) => ({ ...prev, target_column: target }))
+    if (uploadedDataset) {
+      checkSuitability(uploadedDataset.id, target, form.problem_type)
     }
-  }, [uploadedDataset?.id, form.target_column, form.problem_type, refreshSuitability])
-
-  const fetchExperiments = async () => {
-    try {
-      setLoading(true)
-      const r = await api.listExperiments()
-      const list = r.data.experiments || []
-      setExperiments(list)
-      // Dataset names are not part of the experiment payload, so ask the
-      // dataset endpoint for the ids we actually see. Failures are skipped.
-      const ids = [...new Set(list.map(e => e.dataset_id).filter(Boolean))]
-      const pairs = await Promise.all(ids.map(async id => {
-        try { const d = await api.getDataset(id); return [id, d.data] } catch { return null }
-      }))
-      setDatasetsById(Object.fromEntries(pairs.filter(Boolean)))
-    } catch { setError('Failed to load experiments') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { fetchExperiments() }, [])
-
-  const stats = {
-    total: experiments.length,
-    completed: experiments.filter(e => e.status === 'completed').length,
-    running: experiments.filter(e => ['training', 'analyzing', 'preprocessing'].includes(e.status)).length,
-    bestScore: experiments.filter(e => e.best_score != null).reduce((best, e) => {
-      return e.best_score > (best?.best_score ?? -Infinity) ? e : best
-    }, null)?.best_score?.toFixed(4) ?? '—',
-  }
-
-  const onDrop = useCallback(async (files) => {
-    if (!files.length) return
-    setUploading(true); setError('')
-    try {
-      const r = await api.uploadDataset(files[0])
-      setUploadedDataset(r.data)
-      setColumns(r.data.column_names || [])
-      setForm(f => ({ ...f, name: `Experiment on ${r.data.original_filename}` }))
-      // Auto-profile to get suggested target
-      try {
-        const pr = await api.profileDataset(r.data.id)
-        setProfileData(pr.data)
-        if (pr.data.suggested_target) {
-          setForm(f => ({
-            ...f,
-            target_column: pr.data.suggested_target,
-            problem_type: pr.data.suggested_problem_type || 'auto',
-          }))
-        }
-      } catch {}
-      setStep(2)
-    } catch (e) {
-      setError(`Upload failed: ${e.response?.data?.detail || e.message}`)
-    } finally { setUploading(false) }
-  }, [])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop, accept: { 'text/csv': ['.csv'], 'application/vnd.ms-excel': ['.xls'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-    maxFiles: 1,
-  })
-
-  const handleMetricChange = (ptype) => {
-    const pt = ptype || form.problem_type
-    // "Auto-detect" must leave the metric unset so the backend resolves it
-    // from the detected task; injecting a concrete metric here scored
-    // classification experiments with neg_RMSE.
-    const defaultMetric =
-      pt === 'classification' ? 'f1_weighted'
-        : pt === 'regression' ? 'neg_root_mean_squared_error'
-          : ''
-    setForm(f => ({ ...f, problem_type: pt, primary_metric: defaultMetric }))
   }
 
   const handleCreate = async (e) => {
     e.preventDefault()
-    if (!uploadedDataset) { setError('Please upload a dataset first'); return }
-    if (!form.target_column) { setError('Target column is required'); return }
-    setCreating(true); setStep(3)
+    if (!uploadedDataset) return
+    setCreating(true)
+    setError(null)
+
     try {
       const payload = {
+        name: form.name,
         dataset_id: uploadedDataset.id,
-        name: form.name || `Experiment on ${uploadedDataset.original_filename}`,
         target_column: form.target_column,
-        // "auto" and "Auto (based on problem type)" are real values the
-        // backend understands; sending null for them fails validation (422).
-        problem_type: form.problem_type,
+        problem_type: form.problem_type === 'auto' ? null : form.problem_type,
         primary_metric: form.primary_metric || null,
         mode: form.mode,
-        n_folds: parseInt(form.n_folds),
-        n_trials: parseInt(form.n_trials),
-        task_description: form.task_description,
+        n_folds: Number(form.n_folds),
+        n_trials: Number(form.n_trials),
+        task_description: form.task_description || null,
       }
-      const r = await api.createExperiment(payload)
-      navigate(`/experiment/${r.data.id}`)
-    } catch (e) {
-      setError(`Failed to create experiment: ${e.response?.data?.detail || e.message}`)
-      setCreating(false); setStep(2)
+      const res = await api.createExperiment(payload)
+      navigate(`/experiment/${res.data.id}`)
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Failed to create experiment')
+      setCreating(false)
     }
   }
 
-  const availableMetrics = DEFAULT_METRICS[form.problem_type] || [...DEFAULT_METRICS.classification, ...DEFAULT_METRICS.regression]
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/csv': ['.csv'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    },
+    maxFiles: 1,
+    disabled: uploading,
+  })
+
+  // Filtered experiments
+  const filteredExps = experiments.filter((e) => {
+    const matchesFilter =
+      filterType === 'all' ||
+      (filterType === 'classification' && e.problem_type === 'classification') ||
+      (filterType === 'regression' && e.problem_type === 'regression') ||
+      (filterType === 'completed' && e.status === 'completed')
+
+    const matchesSearch =
+      e.name?.toLowerCase().includes(search.toLowerCase()) ||
+      e.target_column?.toLowerCase().includes(search.toLowerCase()) ||
+      String(e.id).includes(search)
+
+    return matchesFilter && matchesSearch
+  })
+
+  const latestCompleted = experiments.find((e) => e.status === 'completed')
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Manage your AutoML experiments</p>
+    <div className="page-container">
+      {/* Featured Netflix Hero Banner */}
+      {latestCompleted ? (
+        <div className="netflix-hero-banner" style={{ marginBottom: '36px' }}>
+          <div className="hero-pill-badge">
+            <FiCheckCircle /> Top Performing Experiment
+          </div>
+          <h1 className="hero-title">{latestCompleted.name || `Experiment #${latestCompleted.id}`}</h1>
+          <p className="hero-desc">
+            Evaluated on <strong>{datasetsById[latestCompleted.dataset_id]?.original_filename || 'Tabular Data'}</strong> · Target: <strong>{latestCompleted.target_column}</strong> ({latestCompleted.problem_type})
+            {latestCompleted.best_score && ` · Best Score: ${latestCompleted.best_score.toFixed(4)} (${latestCompleted.best_model_name || 'Ensemble'})`}
+          </p>
+          <div className="hero-actions">
+            <button
+              className="btn-netflix-primary"
+              onClick={() => navigate(`/experiment/${latestCompleted.id}`)}
+            >
+              <FiPlay /> View Experiment & Results
+            </button>
+            <button
+              className="btn-netflix-secondary"
+              onClick={() => setShowForm(true)}
+            >
+              <FiPlus /> New Experiment
+            </button>
+          </div>
         </div>
-        <button className="btn btn-primary" onClick={() => { setShowForm(v => !v); setStep(1); setUploadedDataset(null); setError('') }}>
-          <FiPlus /> New Experiment
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="stats-grid">
-        <div className="card stat-card"><div className="stat-icon">🧪</div><div className="stat-value">{stats.total}</div><div className="stat-label">Total Experiments</div></div>
-        <div className="card stat-card"><div className="stat-icon">✅</div><div className="stat-value">{stats.completed}</div><div className="stat-label">Completed</div></div>
-        <div className="card stat-card"><div className="stat-icon">⚡</div><div className="stat-value">{stats.running}</div><div className="stat-label">Running</div></div>
-        <div className="card stat-card"><div className="stat-icon">🏆</div><div className="stat-value" style={{ fontSize: 24 }}>{stats.bestScore}</div><div className="stat-label">Best Score</div></div>
-      </div>
-
-      {/* Scrollable rows - every card is built from API data */}
-      <ScrollRow
-        title="Recent experiments"
-        items={experiments.slice(0, 12)}
-        loading={loading}
-        error={showForm ? '' : error}
-        emptyTitle="No experiments yet"
-        emptyDescription="Upload a dataset and start your first AutoML experiment."
-        renderItem={e => <ExperimentTile experiment={e} datasetName={datasetsById[e.dataset_id]?.original_filename} />}
-      />
-      <ScrollRow
-        title="Completed"
-        items={experiments.filter(e => e.status === 'completed').slice(0, 12)}
-        loading={loading}
-        emptyTitle="Nothing completed yet"
-        emptyDescription="Experiments appear here once training finishes successfully."
-        renderItem={e => <ExperimentTile experiment={e} datasetName={datasetsById[e.dataset_id]?.original_filename} />}
-      />
-      <ScrollRow
-        title="Datasets"
-        items={Object.values(datasetsById)}
-        loading={loading}
-        emptyTitle="No datasets yet"
-        emptyDescription="Datasets you upload appear here."
-        emptyIcon="📁"
-        renderItem={d => <DatasetTile dataset={d} />}
-      />
-
-      {/* New Experiment Form */}
-      {showForm && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <h2>New Experiment</h2>
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          {step === 1 && (
-            <div>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>Upload a CSV or Excel dataset to begin.</p>
-              <div {...getRootProps()} className={`dropzone${isDragActive ? ' active' : ''}`}>
-                <input {...getInputProps()} />
-                <div className="dropzone-icon">📁</div>
-                {uploading ? <p>Uploading & profiling...</p> : isDragActive ? <p>Drop it here...</p> : (
-                  <p>Drag & drop your CSV/XLSX file here, or click to browse</p>
-                )}
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>Max 100MB · CSV or Excel</p>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && uploadedDataset && (
-            <form onSubmit={handleCreate}>
-              <div className="alert alert-success" style={{ marginBottom: 20 }}>
-                ✅ Uploaded: <strong>{uploadedDataset.original_filename}</strong> — {uploadedDataset.rows.toLocaleString()} rows × {uploadedDataset.columns} columns
-                {profileData?.suggested_target && ` · Suggested target: ${profileData.suggested_target}`}
-              </div>
-
-              <SuitabilityReport suit={suitability} />
-              {suitLoading && !suitability && (
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Checking dataset readiness...</p>
-              )}
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Experiment Name</label>
-                  <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Target Column *</label>
-                  <select className="form-select" value={form.target_column} onChange={e => setForm({ ...form, target_column: e.target.value })} required>
-                    <option value="">— Select target —</option>
-                    {columns.map(c => <option key={c} value={c}>{c}{c === profileData?.suggested_target ? ' (suggested)' : ''}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Problem Type</label>
-                  <select className="form-select" value={form.problem_type} onChange={e => handleMetricChange(e.target.value)}>
-                    <option value="auto">Auto-detect</option>
-                    <option value="classification">Classification</option>
-                    <option value="regression">Regression</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Primary Metric</label>
-                  <select className="form-select" value={form.primary_metric} onChange={e => setForm({ ...form, primary_metric: e.target.value })}>
-                    <option value="">Auto (based on problem type)</option>
-                    {availableMetrics.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Mode</label>
-                  <select className="form-select" value={form.mode} onChange={e => setForm({ ...form, mode: e.target.value })}>
-                    <option value="baseline">Baseline (default params only)</option>
-                    <option value="automl">AutoML (with Optuna optimization)</option>
-                    <option value="llm_assisted">LLM Assisted (LLM model selection)</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">CV Folds</label>
-                  <select className="form-select" value={form.n_folds} onChange={e => setForm({ ...form, n_folds: e.target.value })}>
-                    <option value="3">3-Fold (Fast)</option>
-                    <option value="5">5-Fold (Default)</option>
-                    <option value="10">10-Fold (Rigorous)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Optuna Trials per Model</label>
-                  <select className="form-select" value={form.n_trials} onChange={e => setForm({ ...form, n_trials: e.target.value })}>
-                    <option value="5">5 (Fast demo)</option>
-                    <option value="10">10 (Default)</option>
-                    <option value="20">20 (Thorough)</option>
-                    <option value="50">50 (Extensive)</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Task Description (optional)</label>
-                  <input className="form-input" value={form.task_description} onChange={e => setForm({ ...form, task_description: e.target.value })}
-                    placeholder="e.g., Predict customer churn for telecom..." />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <button type="submit" className="btn btn-primary"
-                  disabled={creating || (suitability && !suitability.suitable) || !form.target_column}
-                  title={
-                    suitability && !suitability.suitable
-                      ? 'Fix the blocking issues above before creating an experiment.'
-                      : ''
-                  }>
-                  ▶ Create Experiment
-                </button>
-                <button type="button" className="btn" onClick={() => { setStep(1); setUploadedDataset(null); setSuitability(null) }}>
-                  ← Change File
-                </button>
-                {suitability && !suitability.suitable && (
-                  <span style={{ fontSize: 13, color: 'var(--danger)' }}>
-                    Creation blocked: {suitability.blocking_issues[0]}
-                  </span>
-                )}
-              </div>
-            </form>
-          )}
-
-          {step === 3 && (
-            <div className="loading-container">
-              <div className="spinner" />
-              <p>Creating experiment and redirecting...</p>
-            </div>
-          )}
+      ) : (
+        <div className="netflix-hero-banner" style={{ marginBottom: '36px' }}>
+          <div className="hero-pill-badge">AutoML-Lens Studio</div>
+          <h1 className="hero-title">Start Machine Learning</h1>
+          <p className="hero-desc">
+            Launch end-to-end automated machine learning with LLM-guided pipeline planning,
+            hyperparameter optimization, and explainable AI.
+          </p>
+          <div className="hero-actions">
+            <button
+              className="btn-netflix-primary"
+              onClick={() => setShowForm(true)}
+            >
+              <FiPlus /> Create Experiment
+            </button>
+            <button
+              className="btn-netflix-secondary"
+              onClick={() => navigate('/datasets')}
+            >
+              <FiDatabase /> Browse Datasets
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Recent Experiments */}
-      <div className="card">
-        <h2>Recent Experiments</h2>
-        {loading ? <LoadingSpinner message="Loading experiments..." /> :
-          error && !showForm ? <div className="alert alert-danger">{error}</div> :
-            experiments.length === 0 ? (
-            <EmptyState icon="🧪" title="No experiments yet" description="Upload a dataset and start your first AutoML experiment."
-              action={<button className="btn btn-primary" onClick={() => setShowForm(true)}><FiPlus /> New Experiment</button>} />
-          ) : (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr><th>Name</th><th>Target</th><th>Type</th><th>Mode</th><th>Best Model</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {experiments.map(e => (
-                    <tr key={e.id}>
-                      <td><strong>{e.name}</strong></td>
-                      <td>{e.target_column}</td>
-                      <td>{e.problem_type || 'auto'}</td>
-                      <td>{e.mode}</td>
-                      <td>{e.best_model_name || '—'}</td>
-                      <td>{e.best_score?.toFixed(4) ?? '—'}</td>
-                      <td><StatusBadge status={e.status} /></td>
-                      <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString()}</td>
-                      <td><button className="btn btn-sm btn-outline" onClick={() => navigate(`/experiment/${e.id}`)}>View →</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Filter and Search Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className={`btn-netflix-secondary ${filterType === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterType('all')}
+            style={filterType === 'all' ? { borderColor: 'var(--netflix-red)', background: 'var(--netflix-red-subtle)', color: '#fff' } : {}}
+          >
+            All Experiments ({experiments.length})
+          </button>
+          <button
+            className={`btn-netflix-secondary ${filterType === 'completed' ? 'active' : ''}`}
+            onClick={() => setFilterType('completed')}
+            style={filterType === 'completed' ? { borderColor: 'var(--netflix-red)', background: 'var(--netflix-red-subtle)', color: '#fff' } : {}}
+          >
+            Completed ({experiments.filter((e) => e.status === 'completed').length})
+          </button>
+          <button
+            className={`btn-netflix-secondary ${filterType === 'classification' ? 'active' : ''}`}
+            onClick={() => setFilterType('classification')}
+            style={filterType === 'classification' ? { borderColor: 'var(--netflix-red)', background: 'var(--netflix-red-subtle)', color: '#fff' } : {}}
+          >
+            Classification
+          </button>
+          <button
+            className={`btn-netflix-secondary ${filterType === 'regression' ? 'active' : ''}`}
+            onClick={() => setFilterType('regression')}
+            style={filterType === 'regression' ? { borderColor: 'var(--netflix-red)', background: 'var(--netflix-red-subtle)', color: '#fff' } : {}}
+          >
+            Regression
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: '240px' }}>
+            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input
+              type="text"
+              className="netflix-input"
+              placeholder="Search experiments..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ paddingLeft: '36px', fontSize: '13px' }}
+            />
+          </div>
+
+          <button
+            className="btn-netflix-primary"
+            onClick={() => setShowForm(true)}
+            title="Create New Experiment"
+          >
+            <FiPlus /> New
+          </button>
+        </div>
       </div>
+
+      {/* Experiments Grid */}
+      {loading ? (
+        <div style={{ padding: '60px', textAlign: 'center' }}><LoadingSpinner /></div>
+      ) : filteredExps.length === 0 ? (
+        <div className="netflix-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <FiZap style={{ fontSize: '42px', color: 'var(--netflix-red)', marginBottom: '16px' }} />
+          <h3>No experiments found</h3>
+          <p style={{ marginTop: '8px', marginBottom: '20px' }}>Upload a dataset to train your first model!</p>
+          <button className="btn-netflix-primary" onClick={() => setShowForm(true)}>
+            <FiPlus /> Create Experiment
+          </button>
+        </div>
+      ) : (
+        <div className="netflix-grid" style={{ marginBottom: '40px' }}>
+          {filteredExps.map((exp) => (
+            <div
+              key={exp.id}
+              className="netflix-card netflix-card-featured"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer' }}
+              onClick={() => navigate(`/experiment/${exp.id}`)}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--netflix-red)' }}>
+                    #{exp.id}
+                  </span>
+                  <StatusBadge status={exp.status} />
+                </div>
+
+                <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '6px', color: '#ffffff' }}>
+                  {exp.name || `Experiment ${exp.id}`}
+                </h3>
+
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                  Dataset: {datasetsById[exp.dataset_id]?.original_filename || `Dataset #${exp.dataset_id}`}
+                </p>
+
+                <div style={{ background: '#111111', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Target:</span>
+                    <strong style={{ color: '#fff' }}>{exp.target_column}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Task Type:</span>
+                    <span style={{ textTransform: 'capitalize' }}>{exp.problem_type || 'Auto'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Best Score:</span>
+                    <strong style={{ color: 'var(--success)' }}>
+                      {exp.best_score ? exp.best_score.toFixed(4) : '—'}
+                    </strong>
+                  </div>
+                  {exp.best_model_name && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Best Model:</span>
+                      <span style={{ color: '#fff' }}>{exp.best_model_name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {exp.created_at ? new Date(exp.created_at).toLocaleDateString() : ''}
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className="btn-netflix-secondary"
+                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/experiment/${exp.id}`)
+                    }}
+                  >
+                    View →
+                  </button>
+                  <button
+                    className="btn-netflix-danger"
+                    style={{ padding: '6px 10px' }}
+                    onClick={(e) => handleDelete(exp.id, e)}
+                    title="Delete Experiment"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* New Experiment Modal */}
+      {showForm && (
+        <div className="netflix-modal-backdrop" onClick={() => setShowForm(false)}>
+          <div className="netflix-modal" style={{ maxWidth: '720px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="netflix-modal-header">
+              <h2 className="netflix-modal-title">Create New AutoML Experiment</h2>
+              <button className="btn-netflix-ghost" onClick={() => setShowForm(false)}>
+                <FiX />
+              </button>
+            </div>
+
+            <div className="netflix-modal-body">
+              {error && (
+                <div style={{ padding: '12px', background: 'var(--danger-bg)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-sm)', color: '#ff6b72', fontSize: '13px', marginBottom: '16px' }}>
+                  <FiAlertTriangle style={{ marginRight: '6px' }} />
+                  {error}
+                </div>
+              )}
+
+              {step === 1 && (
+                <div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
+                    Upload a CSV or Excel dataset to begin the automated machine learning workflow.
+                  </p>
+                  <div
+                    {...getRootProps()}
+                    className={`netflix-dropzone ${isDragActive ? 'active' : ''}`}
+                  >
+                    <input {...getInputProps()} />
+                    <FiDatabase style={{ fontSize: '42px', color: isDragActive ? 'var(--netflix-red)' : 'var(--text-secondary)', marginBottom: '12px' }} />
+                    {uploading ? (
+                      <div>
+                        <LoadingSpinner />
+                        <p style={{ marginTop: '12px', color: 'var(--text-secondary)' }}>Uploading and profiling dataset...</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p style={{ fontSize: '16px', fontWeight: '600', marginBottom: '6px' }}>
+                          Drag & drop your CSV or Excel file here
+                        </p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          Supports CSV, XLSX up to 100MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && uploadedDataset && (
+                <form onSubmit={handleCreate}>
+                  <div style={{ padding: '14px', background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--radius-sm)', color: '#e0e0e0', fontSize: '13px', marginBottom: '16px' }}>
+                    <strong>✅ {uploadedDataset.original_filename}</strong> ({uploadedDataset.rows?.toLocaleString()} rows × {uploadedDataset.columns} cols)
+                  </div>
+
+                  <SuitabilityReport suit={suitability} />
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        Experiment Name *
+                      </label>
+                      <input
+                        type="text"
+                        className="netflix-input"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        Target Column *
+                      </label>
+                      <select
+                        className="netflix-select"
+                        value={form.target_column}
+                        onChange={(e) => handleTargetChange(e.target.value)}
+                        required
+                      >
+                        <option value="">— Select Target Column —</option>
+                        {columns.map((c) => (
+                          <option key={c} value={c}>
+                            {c} {c === profileData?.suggested_target ? ' (Suggested)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        Problem Type
+                      </label>
+                      <select
+                        className="netflix-select"
+                        value={form.problem_type}
+                        onChange={(e) => {
+                          setForm({ ...form, problem_type: e.target.value })
+                          if (uploadedDataset) checkSuitability(uploadedDataset.id, form.target_column, e.target.value)
+                        }}
+                      >
+                        <option value="auto">Auto-detect</option>
+                        <option value="classification">Classification</option>
+                        <option value="regression">Regression</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        Mode
+                      </label>
+                      <select
+                        className="netflix-select"
+                        value={form.mode}
+                        onChange={(e) => setForm({ ...form, mode: e.target.value })}
+                      >
+                        <option value="automl">AutoML (Optuna Bayesian HPO)</option>
+                        <option value="llm_assisted">LLM-Guided Pipeline Planning</option>
+                        <option value="baseline">Baseline (Canonical Defaults)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        CV Folds
+                      </label>
+                      <select
+                        className="netflix-select"
+                        value={form.n_folds}
+                        onChange={(e) => setForm({ ...form, n_folds: e.target.value })}
+                      >
+                        <option value="3">3 Folds (Fast)</option>
+                        <option value="5">5 Folds (Standard)</option>
+                        <option value="10">10 Folds (Rigorous)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
+                        Optuna Trials per Model
+                      </label>
+                      <select
+                        className="netflix-select"
+                        value={form.n_trials}
+                        onChange={(e) => setForm({ ...form, n_trials: e.target.value })}
+                      >
+                        <option value="5">5 Trials (Fast demo)</option>
+                        <option value="10">10 Trials (Balanced)</option>
+                        <option value="20">20 Trials (Thorough)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                    <button
+                      type="button"
+                      className="btn-netflix-secondary"
+                      onClick={() => setStep(1)}
+                    >
+                      ← Change Dataset
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creating || !form.target_column || (suitability && !suitability.suitable)}
+                      className="btn-netflix-primary"
+                    >
+                      {creating ? <LoadingSpinner size="sm" /> : <><FiPlay /> Launch Experiment</>}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

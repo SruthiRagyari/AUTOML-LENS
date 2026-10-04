@@ -98,6 +98,24 @@ async def upload_dataset(file: UploadFile = File(...), db: Session = Depends(get
         "column_names": list(df.columns),
     }
 
+@router.get("")
+async def list_datasets(db: Session = Depends(get_db)):
+    """List all uploaded datasets with metadata."""
+    datasets = db.query(Dataset).order_by(Dataset.id.desc()).all()
+    return [
+        {
+            "id": ds.id,
+            "filename": ds.filename,
+            "original_filename": ds.original_filename,
+            "rows": ds.rows,
+            "columns": ds.columns,
+            "file_size": ds.file_size,
+            "uploaded_at": str(ds.uploaded_at),
+            "has_profile": ds.profile_json is not None,
+        }
+        for ds in datasets
+    ]
+
 
 @router.get("/{dataset_id}")
 async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
@@ -115,6 +133,31 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
         "uploaded_at": str(ds.uploaded_at),
         "has_profile": ds.profile_json is not None,
     }
+
+
+@router.delete("/{dataset_id}")
+async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
+    """Delete a dataset and its backing file if safe."""
+    ds = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+    if not ds:
+        raise HTTPException(404, "Dataset not found")
+
+    from app.core.database import Experiment
+    exps = db.query(Experiment).filter(Experiment.dataset_id == dataset_id).count()
+    if exps > 0:
+        raise HTTPException(400, f"Cannot delete dataset: referenced by {exps} experiment(s). Delete those experiments first.")
+
+    if ds.file_path:
+        try:
+            p = Path(ds.file_path)
+            if p.exists():
+                p.unlink()
+        except Exception as e:
+            logger.warning(f"Could not delete dataset file {ds.file_path}: {e}")
+
+    db.delete(ds)
+    db.commit()
+    return {"message": f"Dataset {dataset_id} deleted successfully", "id": dataset_id}
 
 
 @router.get("/{dataset_id}/profile")

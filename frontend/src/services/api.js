@@ -21,7 +21,9 @@ export const api = {
     fd.append('file', file)
     return API.post('/datasets/upload', fd)
   },
+  listDatasets: () => API.get('/datasets'),
   getDataset: (id) => API.get(`/datasets/${id}`),
+  deleteDataset: (id) => API.delete(`/datasets/${id}`),
   profileDataset: (id) => API.get(`/datasets/${id}/profile`),
   getColumns: (id) => API.get(`/datasets/${id}/columns`),
 
@@ -29,11 +31,13 @@ export const api = {
   createExperiment: (data) => API.post('/experiments', data),
   listExperiments: () => API.get('/experiments'),
   getExperiment: (id) => API.get(`/experiments/${id}`),
+  deleteExperiment: (id) => API.delete(`/experiments/${id}`),
   analyzeExperiment: (id) => API.post(`/experiments/${id}/analyze`),
   trainExperiment: (id, fastDemo = false) => API.post(`/experiments/${id}/train?fast_demo=${fastDemo}`),
   getExperimentStatus: (id) => API.get(`/experiments/${id}/status`),
   getResults: (id) => API.get(`/experiments/${id}/results`),
   getModels: (id) => API.get(`/experiments/${id}/models`),
+  getModelsCatalog: () => API.get('/experiments/models/catalog'),
   getExplainability: (id) => API.get(`/experiments/${id}/explainability`),
   predict: (id, features) => API.post(`/experiments/${id}/predict`, features),
   batchPredict: (id, file) => {
@@ -43,7 +47,9 @@ export const api = {
   },
   getReport: (id) => API.get(`/experiments/${id}/report`),
   getInputSchema: (id) => API.get(`/experiments/${id}/input-schema`),
-// Suitability: blocking issues vs warnings, target distribution, task type.
+  getBenchmarksSummary: () => API.get('/experiments/benchmarks/summary'),
+  downloadBenchmarkReportUrl: () => '/api/experiments/benchmarks/report',
+  // Suitability: blocking issues vs warnings, target distribution, task type.
   getSuitability: (id, targetColumn, problemType) => {
     const params = {}
     if (targetColumn) params.target_column = targetColumn
@@ -56,7 +62,13 @@ export const api = {
   downloadMetaUrl: (id) => `/api/experiments/${id}/download-metadata`,
 
   // Chat
-  chat: (message, experimentId) => API.post('/chat', { message, experiment_id: experimentId }),
+  chat: (message, experimentId = null, contextMode = 'general', history = []) =>
+    API.post('/chat', {
+      message,
+      experiment_id: experimentId,
+      context_mode: contextMode,
+      history,
+    }),
 }
 
 export default API

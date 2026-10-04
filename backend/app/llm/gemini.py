@@ -239,23 +239,35 @@ Keep it concise (3-5 paragraphs)."""
         response = await self.client.generate_content_async(prompt)
         return response.text
 
-    async def chat(self, message: str, experiment_context: Optional[dict] = None) -> str:
+    async def chat(self, message: str, experiment_context: Optional[dict] = None,
+                   history: Optional[list] = None, context_mode: str = "general", **kwargs) -> str:
         if not self.client:
             raise RuntimeError("Gemini client not initialized")
 
+        system_instruction = (
+            "You are AutoML-Lens AI, an intelligent, helpful, and versatile general-purpose AI assistant. "
+            "You can answer general knowledge questions, write and debug code, explain concepts across science, "
+            "engineering, mathematics, philosophy, literature, and everyday life, as well as assist with machine learning and data science. "
+            "When specific AutoML-Lens project/experiment context is provided, use it accurately to explain the user's models, "
+            "datasets, metrics, and results. When no project context is provided, answer helpfully as a general-purpose AI. "
+            "Format your responses cleanly in Markdown with bold headers, bullet lists, and syntax-highlighted code blocks."
+        )
+
         ctx_str = ""
-        if experiment_context:
-            ctx_str = f"\nExperiment Context:\n{json.dumps(experiment_context, indent=2, default=str)}"
+        if context_mode == "project" and experiment_context:
+            ctx_str = f"\n\n[Active AutoML-Lens Project Context]:\n{json.dumps(experiment_context, indent=2, default=str)}"
 
-        prompt = f"""You are the AutoML-Lens AI assistant. Help users understand their ML experiments.
-Rules:
-- Answer based on the experiment data provided
-- If data is not available, explain concepts in general ML terms
-- Never invent metrics or results
-- Be concise and helpful
-{ctx_str}
+        convo_lines = []
+        if history:
+            for item in history[-10:]:
+                role = "User" if item.get("role") == "user" else "Assistant"
+                convo_lines.append(f"{role}: {item.get('content', '')}")
 
-User Question: {message}"""
+        history_str = ""
+        if convo_lines:
+            history_str = "\n\nConversation History:\n" + "\n".join(convo_lines)
+
+        prompt = f"{system_instruction}{ctx_str}{history_str}\n\nUser Question: {message}"
 
         response = await self.client.generate_content_async(prompt)
         return response.text

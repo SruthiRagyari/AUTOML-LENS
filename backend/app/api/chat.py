@@ -43,11 +43,16 @@ async def chat(req: ChatRequest, db: Session = Depends(get_db)):
                 results = json.loads(exp.results_json)
                 experiment_context["models_trained"] = len(results)
                 experiment_context["models_completed"] = sum(1 for r in results if r.get("status") == "COMPLETED")
-
-    response = await llm.chat(req.message, experiment_context)
-    provider = llm.get_provider_info()
+    detail = await llm.chat_detail(
+        req.message,
+        experiment_context,
+        history=req.history,
+        context_mode=req.context_mode or "general",
+    )
 
     return {
-        "response": response,
-        "provider": provider["name"],
+        "response": detail["text"],
+        "provider": detail["provider_used"],
+        "is_fallback": detail["is_fallback"],
+        "context_mode": req.context_mode or "general",
     }
