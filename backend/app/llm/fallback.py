@@ -234,37 +234,121 @@ class FallbackLLMProvider(LLMProvider):
 
     async def chat(self, message: str, experiment_context: Optional[dict] = None,
                    history: Optional[list] = None, context_mode: str = "general", **kwargs) -> str:
-        """Answer questions using pattern matching and experiment data with honest fallback notices."""
+        """Answer questions without fabricating metrics or exposing secrets."""
+        import re
+
         msg = message.lower().strip()
         ctx = experiment_context or {}
+        history = history or []
+
+        def _has_phrase(text: str, phrase: str) -> bool:
+            return re.search(r"\b" + re.escape(phrase) + r"\b", text) is not None
+
+        # 0. Greetings first (word boundaries so "machine" never matches "hi").
+        conversational_triggers = [
+            "hii", "hi", "hello", "hey", "howdy", "greetings",
+            "good morning", "good afternoon", "good evening",
+            "how are you", "what's up", "sup", "wassup",
+        ]
+        msg_stripped = msg.strip().rstrip("!?.,:;")
+        is_greeting = any(_has_phrase(msg_stripped, t) for t in conversational_triggers)
+        if not is_greeting and len(msg_stripped.split()) <= 6:
+            first = re.findall(r"[a-z]+", msg_stripped)[:1]
+            is_greeting = bool(first and first[0] in {"hii", "hi", "hello", "hey", "howdy"})
+        if is_greeting:
+            return (
+                "Hi there! \U0001f44b I'm the AutoML-Lens AI assistant.\n\n"
+                "I'm currently running in **local fallback mode**, so my general-purpose chat is limited. "
+                "You can still ask me questions about your AutoML experiment — things like:\n\n"
+                "- *\"What is my target column?\"*\n"
+                "- *\"Which model performed best?\"*\n"
+                "- *\"What are my evaluation metrics?\"*\n"
+                "- *\"Explain feature importance\"*\n\n"
+                "How can I help you today?"
+            )
 
         # 1. Project / AutoML queries
         if context_mode == "project" or any(k in msg for k in [
             "target", "metric", "f1", "accuracy", "rmse", "r2", "r-squared",
             "model", "best model", "winner", "feature", "preprocessing",
-            "confusion matrix", "hyperparameter", "optuna", "experiment", "automl"
+            "confusion matrix", "hyperparameter", "optuna", "experiment", "automl",
+            "evaluate", "evaluation", "select", "selected", "ensemble", "fusion",
+            "roc", "auc", "precision", "recall", "current experiment", "my experiment",
         ]):
-            if "target" in msg and ("what" in msg or "which" in msg or "name" in msg):
-                target = ctx.get("target_column", "not set")
-                ptype = ctx.get("problem_type", "not determined")
+            if "target" in msg and ("what" in msg or "which" in msg or "name" in msg or "my" in msg):
+                target = ctx.get("target_column") or "not set"
+                ptype = ctx.get("problem_type") or "not determined"
                 return (
-                    f"### Target Column & Problem Type\n\n"
+                    "### Target Column & Problem Type\n\n"
                     f"- **Target Column**: `{target}`\n"
-                    f"- **Problem Type**: `{ptype}`\n\n"
-                    f"*(Answered via Deterministic Rule Engine. For general AI queries, configure a Gemini or OpenAI API key.)*"
+                    f"- **Problem Type**: `{ptype}`\n"
                 )
 
-            if any(k in msg for k in ["best", "winner", "winning model"]) and ("model" in msg or "winner" in msg):
-                best = ctx.get("best_model_name", "Pending training completion")
+            if (any(k in msg for k in ["best", "winner", "winning model", "selected", "selection", "select", "chose", "chosen"])
+                    and ("model" in msg or "winner" in msg or "select" in msg or "chose" in msg or "chosen" in msg)):
+                best = ctx.get("best_model_name")
                 score = ctx.get("best_score")
                 metric = ctx.get("primary_metric", "primary metric")
-                score_str = f"{score:.4f}" if isinstance(score, (int, float)) else "N/A"
+                if not best:
+                    return (
+                        "I don't have a selected model for this experiment yet — "
+                        "training may not have completed. Run training first, then ask again."
+                    )
+                score_str = f"{score:.4f}" if isinstance(score, (int, float)) else "not reported"
                 return (
-                    f"### Winning Pipeline Overview\n\n"
-                    f"- **Best Model**: `{best}`\n"
-                    f"- **Validation Score ({metric})**: `{score_str}`\n\n"
-                    f"*(Answered via Deterministic Rule Engine.)*"
+                    "### Best Model\n\n"
+                    f"- **Model**: `{best}`\n"
+                    f"- **Score ({metric})**: `{score_str}`\n\n"
+                    "The winner was chosen by ranking cross-validated scores on the training split only; "
+                    "holdout metrics were computed once, after selection."
                 )
+
+            if "evaluation metric" in msg or ("metric" in msg and ("what" in msg or "which" in msg or "my" in msg or "list" in msg)):
+                metric = ctx.get("primary_metric")
+                if not metric:
+                    return (
+                        "No evaluation metric is recorded for this experiment yet. "
+                        "Run AI analysis or training first, then ask again."
+                    )
+                return (
+                    "### Evaluation Metrics\n\n"
+                    f"- **Primary Metric**: `{metric}`\n\n"
+                    "This is the metric the experiment selected on (cross-validation) "
+                    "and reported on the holdout set."
+                )
+
+            if ("explain" in msg or "describe" in msg or "summar" in msg) and ("experiment" in msg or "current" in msg or "my" in msg):
+                target = ctx.get("target_column") or "not set"
+                ptype = ctx.get("problem_type") or "not determined"
+                metric = ctx.get("primary_metric") or "not set"
+                status = ctx.get("status") or "unknown"
+                best = ctx.get("best_model_name") or "none selected yet"
+                return (
+                    "### Current Experiment\n\n"
+                    f"- **Target**: `{target}`\n"
+                    f"- **Problem Type**: `{ptype}`\n"
+                    f"- **Primary Metric**: `{metric}`\n"
+                    f"- **Status**: `{status}`\n"
+                    f"- **Best Model**: `{best}`\n"
+                )
+
+            if "ensemble" in msg or "fusion" in msg or ("why" in msg and "win" in msg):
+                best = ctx.get("best_model_name") or ""
+                if "ensemble" in best.lower():
+                    return (
+                        "### Why the Ensemble Won\n\n"
+                        f"The ensemble (`{best}`) won because its out-of-fold cross-validated score "
+                        "ranked highest among all candidates. Weights were learned strictly "
+                        "on out-of-fold training predictions, so the holdout set stayed untouched."
+                    )
+                if best:
+                    return (
+                        "### Why This Model Won\n\n"
+                        f"`{best}` had the highest cross-validated score on the training split. "
+                        "No holdout data was used for selection."
+                    )
+                return "I don't have winner information for this experiment yet."
+
 
             if any(k in msg for k in ["what is f1", "explain f1", "f1 score"]):
                 return (
@@ -328,8 +412,57 @@ class FallbackLLMProvider(LLMProvider):
                     "6. **Explainability**: SHAP value feature importance analysis."
                 )
 
+            if _has_phrase(msg, "roc") or "roc-auc" in msg or "roc auc" in msg or "auc" in msg:
+                return (
+                    "### ROC-AUC\n\n"
+                    "**ROC-AUC** (Area Under the Receiver Operating Characteristic curve) measures how well "
+                    "a classifier separates classes across all thresholds: 1.0 is perfect, 0.5 is random. "
+                    "It is threshold-independent, so it reflects ranking quality rather than one cutoff."
+                )
+
+            if "confusion matrix" in msg:
+                return (
+                    "### Confusion Matrix\n\n"
+                    "A **confusion matrix** tabulates actual vs. predicted class labels. "
+                    "You can view the best model's matrix on the experiment page under **Evaluation** "
+                    "after training completes."
+                )
+
+            if "hyperparameter" in msg or "optuna" in msg:
+                return (
+                    "### Hyperparameters & Optuna\n\n"
+                    "**Optuna** searches each model's hyperparameter space with Bayesian optimization "
+                    "under cross-validation, then refits the best configuration on the full training split."
+                )
+
+            if not ctx:
+                return (
+                    "No experiment context is available — select or create an experiment first, "
+                    "then ask about its target, models, metrics, or results."
+                )
+
         # 2. General Knowledge / Coding / Conceptual queries (honest fallback + answer if known)
         general_intents = {
+            "what is machine learning": (
+                "### Machine Learning (ML)\n\n"
+                "**Machine learning** is the subset of AI in which statistical models learn patterns "
+                "from data and generalize to unseen examples, instead of following hardcoded rules."
+            ),
+            "machine learning": (
+                "### Machine Learning (ML)\n\n"
+                "**Machine learning** is the subset of AI in which statistical models learn patterns "
+                "from data and generalize to unseen examples, instead of following hardcoded rules."
+            ),
+            "photosynthesis": (
+                "### Photosynthesis\n\n"
+                "**Photosynthesis** is the process by which green plants, algae, and cyanobacteria convert "
+                "light energy into chemical energy, producing sugars and oxygen."
+            ),
+            "decorator": (
+                "### Python Decorators\n\n"
+                "A **decorator** is a function that wraps another function to extend its behavior without "
+                "modifying it. See the reverse-string example for runnable code style."
+            ),
             "quantum computing": (
                 "### Quantum Computing Overview\n\n"
                 "**Quantum computing** is a multidisciplinary field comprising aspects of computer science, physics, and mathematics that utilizes quantum mechanics to solve complex problems faster than classical computers.\n\n"
@@ -373,22 +506,35 @@ class FallbackLLMProvider(LLMProvider):
 
         for key, ans in general_intents.items():
             if key in msg:
+                # "python decorators" must resolve to decorators, not generic Python.
+                if key == "python" and "decorator" in msg:
+                    continue
                 return (
                     f"{ans}\n\n"
                     f"---\n"
-                    f"*Notice: Provided via Local Fallback Engine. For open-ended general dialogue, configure `GEMINI_API_KEY` in `backend/.env`.*"
+                    f"*Note: Answer provided by the local fallback engine. For full open-ended AI conversation, an external LLM provider is needed.*"
                 )
 
-        # Standard informative fallback message
+        # History-aware follow-ups ("give me an example") resolve to prior topic.
+        prev_user_text = ""
+        for item in reversed(history):
+            if isinstance(item, dict) and item.get("role") == "user" and item.get("content"):
+                prev_user_text = str(item["content"]).lower()
+                break
+        prev_topic = next((k for k in ("machine learning", "photosynthesis", "decorator", "pasta", "quantum") if k in prev_user_text), "")
+        followup = len(msg.split()) <= 8 and any(t in msg for t in ("example", "more", "explain", "elaborate", "why", "how"))
+        if followup and prev_topic:
+            ans = general_intents.get(prev_topic) or general_intents.get("machine learning")
+            return (
+                f"{ans}\n\n"
+                f"---\n"
+                f"*Note: Answer provided by the local fallback engine. For full open-ended AI conversation, an external LLM provider is needed.*"
+            )
+
+        # Generic unhandled general question — honest but brief
         return (
-            f"### AutoML-Lens AI Assistant (Fallback Mode)\n\n"
-            f"I received your question: *\"{message}\"*\n\n"
-            f"The backend is currently operating in **Deterministic Fallback Mode** (no external LLM API key configured). "
-            f"In this mode, all AutoML pipeline planning, model training, cross-validation, and Optuna HPO execute locally with 100% functionality.\n\n"
-            f"**To enable full general-purpose AI chat (like ChatGPT)**:\n"
-            f"1. Open `backend/.env`\n"
-            f"2. Set `LLM_PROVIDER=gemini` (or `openai`)\n"
-            f"3. Add your `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/apikey))\n"
-            f"4. Restart the backend server\n\n"
-            f"*(For questions about this experiment's metrics, dataset, or models, switch to **Project Mode** above or ask about 'target', 'best model', or 'metrics'.)*"
+            "I'm currently running in local fallback mode, so I can't answer open-ended general questions right now. "
+            "However, I can still help you with questions about your AutoML experiment — such as your target column, "
+            "best model, evaluation metrics, feature importance, and preprocessing steps.\n\n"
+            "Try switching to **Project Mode** and asking about your experiment, or ask a specific AutoML question!"
         )

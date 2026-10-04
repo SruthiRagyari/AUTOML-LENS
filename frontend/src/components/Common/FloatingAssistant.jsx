@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { FiMessageSquare, FiX, FiSend, FiCpu, FiExternalLink } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { api } from '../../services/api'
+import CodeBlock from './CodeBlock'
 
 export default function FloatingAssistant() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,6 +15,13 @@ export default function FloatingAssistant() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const messagesEndRef = useRef(null)
+
+  useEffect(() => {
+    if (isOpen && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, isOpen])
 
   const handleSend = async (e) => {
     if (e) e.preventDefault()
@@ -26,7 +35,7 @@ export default function FloatingAssistant() {
 
     try {
       const history = newMessages
-        .slice(-6)
+        .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }))
 
       const res = await api.chat(userText, null, 'general', history)
@@ -98,11 +107,26 @@ export default function FloatingAssistant() {
                   {m.role === 'user' ? 'U' : 'AI'}
                 </div>
                 <div className={`message-bubble ${m.role}`}>
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
-                  {m.is_fallback && (
-                    <div style={{ fontSize: '10px', color: 'var(--warning)', marginTop: '4px' }}>
-                      (Deterministic Fallback)
-                    </div>
+                  {m.role === 'assistant' ? (
+                    <ReactMarkdown
+                      components={{
+                        code({ node, inline, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || '')
+                          return !inline ? (
+                            <CodeBlock
+                              code={String(children).replace(/\n$/, '')}
+                              language={match ? match[1] : ''}
+                            />
+                          ) : (
+                            <code className="inline-code" {...props}>{children}</code>
+                          )
+                        },
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <span>{m.content}</span>
                   )}
                 </div>
               </div>
@@ -115,6 +139,7 @@ export default function FloatingAssistant() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           <form onSubmit={handleSend} className="floating-chat-input">

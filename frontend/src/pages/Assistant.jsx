@@ -72,7 +72,7 @@ export default function Assistant() {
 
     try {
       const history = newMessages
-        .slice(-8)
+        .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }))
 
       const expId = contextMode === 'project' && selectedExpId ? Number(selectedExpId) : null

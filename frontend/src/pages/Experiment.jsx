@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { api } from '../services/api'
 import { FiMessageCircle, FiX, FiSend, FiDownload, FiRefreshCw, FiZap } from 'react-icons/fi'
 import ModelComparison from '../components/Charts/ModelComparison'
@@ -8,6 +9,7 @@ import ConfusionMatrix from '../components/Charts/ConfusionMatrix'
 import StatusBadge from '../components/Common/StatusBadge'
 import LoadingSpinner from '../components/Common/LoadingSpinner'
 import TrainingProgressPanel from '../components/Common/TrainingProgressPanel'
+import CodeBlock from '../components/Common/CodeBlock'
 
 /** Human label for a metric key the backend actually reported. */
 const METRIC_LABELS = {
@@ -820,14 +822,19 @@ export default function Experiment() {
 
   const sendChat = async (msg) => {
     if (!msg.trim()) return
-    setChatMsgs(prev => [...prev, { role: 'user', text: msg }])
+    const newMsgs = [...chatMsgs, { role: 'user', text: msg }]
+    setChatMsgs(newMsgs)
     setChatInput('')
     setChatLoading(true)
     try {
-      const r = await api.chat(msg, parseInt(id))
+      const history = newMsgs.slice(-10).map(m => ({ role: m.role, content: m.text }))
+      const r = await api.chat(msg, parseInt(id), 'project', history)
       setChatMsgs(prev => [...prev, { role: 'assistant', text: r.data.response }])
-    } catch { setChatMsgs(prev => [...prev, { role: 'assistant', text: 'Sorry, something went wrong.' }]) }
-    finally { setChatLoading(false) }
+    } catch {
+      setChatMsgs(prev => [...prev, { role: 'assistant', text: 'Sorry, something went wrong.' }])
+    } finally {
+      setChatLoading(false)
+    }
   }
 
   const statusToStep = (status) => {
@@ -1416,7 +1423,31 @@ export default function Experiment() {
           </div>
           <div className="chat-messages">
             {chatMsgs.map((m, i) => (
-              <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
+              <div key={i} className={`chat-msg ${m.role}`}>
+                {m.role === 'assistant' ? (
+                  <ReactMarkdown
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !inline ? (
+                          <CodeBlock
+                            code={String(children).replace(/\n$/, '')}
+                            language={match ? match[1] : ''}
+                          />
+                        ) : (
+                          <code className="inline-code" {...props}>
+                            {children}
+                          </code>
+                        )
+                      },
+                    }}
+                  >
+                    {m.text}
+                  </ReactMarkdown>
+                ) : (
+                  m.text
+                )}
+              </div>
             ))}
             {chatLoading && <div className="chat-msg assistant">Thinking...</div>}
             <div ref={chatBottom} />
