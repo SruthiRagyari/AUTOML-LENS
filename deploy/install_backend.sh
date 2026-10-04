@@ -19,6 +19,9 @@ REPO_URL="${2:-https://github.com/SruthiRagyari/AUTOML-LENS.git}"
 APP_DIR=/opt/automl-lens
 SERVICE_USER=automl-lens
 ENV_FILE=/etc/automl-lens.env
+# Used by certbot for the ACME account and expiry notices. Override if wanted:
+#   LETSENCRYPT_EMAIL=you@example.com sudo ./deploy/install_backend.sh <domain>
+LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-admin@example.com}"
 
 if [[ -z "$DOMAIN" ]]; then
   echo "usage: $0 <domain> [repo-url]" >&2
@@ -31,7 +34,7 @@ echo "==> Domain: $DOMAIN"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y --no-install-recommends \
-  git nginx software-properties-common ca-certificates curl
+  git nginx software-properties-common ca-certificates curl certbot
 
 # Python 3.11 to match the wheels verified for this project (Ubuntu 22.04 ships 3.10).
 if ! command -v python3.11 >/dev/null 2>&1; then
@@ -89,33 +92,66 @@ systemctl restart automl-lens
 sleep 5
 systemctl --no-pager --full status automl-lens || true
 
-# ── 8. nginx reverse proxy ────────────────────────────────────────────────────
-echo "==> Configuring nginx for $DOMAIN"
-sed -e "s/DOMAIN/$DOMAIN/g" "$APP_DIR/deploy/nginx/automl-lens.conf" > /etc/nginx/sites-available/automl-lens
+# ── 8. nginx + TLS ───────────────────────────────────────────────────────────
+# The committed site config references certificates that do not exist yet, so
+# nginx must be bootstrapped on plain HTTP first (for the ACME challenge),
+# then the certificate is issued, then the real TLS config is installed.
+echo "==> Bootstrapping nginx on HTTP for ACME validation"
+cat > /etc/nginx/sites-available/automl-lens <<NGINX
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ { root /var/www/html; }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              \$host;
+        proxy_set_header X-Real-IP         \$remote_addr;
+        proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout    3600s;
+        proxy_read_timeout    3600s;
+    }
+}
+NGINX
+
+mkdir -p /var/www/html
 ln -sf /etc/nginx/sites-available/automl-lens /etc/nginx/sites-enabled/automl-lens
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
-
-echo "==> Starting nginx (HTTP only; TLS is added by certbot in the next step)"
 systemctl enable --now nginx
 systemctl reload nginx
 
+echo "==> Requesting TLS certificate for $DOMAIN"
+certbot certonly --webroot -w /var/www/html -d "$DOMAIN" \
+  --agree-tos -m "${LETSENCRYPT_EMAIL:-admin@example.com}" --non-interactive || \
+  echo "WARNING: certbot failed - HTTP still works, HTTPS will not be enabled."
+
+if [[ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]]; then
+  echo "==> Installing TLS site config"
+  sed -e "s/DOMAIN/$DOMAIN/g" "$APP_DIR/deploy/nginx/automl-lens.conf" \
+    > /etc/nginx/sites-available/automl-lens
+  systemctl enable certbot.timer >/dev/null 2>&1 || true
+  nginx -t
+  systemctl reload nginx
+  echo "==> HTTPS enabled"
+else
+  echo "==> No certificate yet; site is available over HTTP only."
+fi
+
 cat <<EOF
 
-Next steps (run as root):
+AutoML-Lens backend provisioned.
 
-  1. Point your DNS A record for $DOMAIN at this server's public IP.
-  2. Issue the TLS certificate:
-       apt-get install -y certbot python3-certbot-nginx
-       certbot --nginx -d $DOMAIN --agree-tos -m you@example.com --redirect
-  3. Edit secrets (NOT in git):
-       $ENV_FILE
-     Set at minimum:
-       LLM_PROVIDER=gemini   (or 'fallback' for the deterministic offline provider)
-       GEMINI_API_KEY=<your key>
-       CORS_ORIGINS=<the frontend origin, e.g. https://your-app.vercel.app>
-  4. Apply and check:
-       systemctl restart automl-lens
-       curl https://$DOMAIN/api/health
+  Public URL : https://$DOMAIN  (or http://$DOMAIN if TLS failed)
+  Health     : https://$DOMAIN/api/health
+  App dir    : $APP_DIR
+  Env file   : $ENV_FILE   (edit for CORS_ORIGINS / LLM_PROVIDER / GEMINI_API_KEY)
+  Service    : systemctl status automl-lens
 
 EOF
