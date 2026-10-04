@@ -71,7 +71,7 @@ export default function Reports() {
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <a
-              href="/api/experiments/benchmarks/report"
+              href={api.downloadBenchmarkReportUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-netflix-primary"
@@ -79,7 +79,7 @@ export default function Reports() {
               <FiExternalLink /> View HTML Report
             </a>
             <a
-              href="/api/experiments/benchmarks/report"
+              href={api.downloadBenchmarkReportUrl()}
               download="BENCHMARK_REPORT.html"
               className="btn-netflix-secondary"
             >

@@ -1,6 +1,19 @@
 import axios from 'axios'
 
-const API = axios.create({ baseURL: '/api' })
+// Production API origin.
+//
+// Set VITE_API_BASE_URL (e.g. https://api.automl-lens.example) when the frontend is
+// hosted on a different origin than the FastAPI backend. When it is empty the app
+// calls its own origin ('/api'), which is the default used in development and when the
+// backend serves the built frontend from the same domain.
+//
+// Only the public backend URL belongs here - never an API key.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+
+/** Absolute (or root-relative) URL for an API path, honouring VITE_API_BASE_URL. */
+export const apiUrl = (path) => `${API_BASE}/api${path}`
+
+const API = axios.create({ baseURL: `${API_BASE}/api` })
 
 // Response interceptor for error handling
 API.interceptors.response.use(
@@ -48,7 +61,7 @@ export const api = {
   getReport: (id) => API.get(`/experiments/${id}/report`),
   getInputSchema: (id) => API.get(`/experiments/${id}/input-schema`),
   getBenchmarksSummary: () => API.get('/experiments/benchmarks/summary'),
-  downloadBenchmarkReportUrl: () => '/api/experiments/benchmarks/report',
+  downloadBenchmarkReportUrl: () => apiUrl('/experiments/benchmarks/report'),
   // Suitability: blocking issues vs warnings, target distribution, task type.
   getSuitability: (id, targetColumn, problemType) => {
     const params = {}
@@ -58,8 +71,8 @@ export const api = {
   },
   // Real observed training state (live, or the persisted final snapshot).
   getProgress: (id) => API.get(`/experiments/${id}/progress`),
-  downloadModelUrl: (id) => `/api/experiments/${id}/download-model`,
-  downloadMetaUrl: (id) => `/api/experiments/${id}/download-metadata`,
+  downloadModelUrl: (id) => apiUrl(`/experiments/${id}/download-model`),
+  downloadMetaUrl: (id) => apiUrl(`/experiments/${id}/download-metadata`),
 
   // Chat
   chat: (message, experimentId = null, contextMode = 'general', history = []) =>

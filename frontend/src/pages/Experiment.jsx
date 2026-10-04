@@ -269,8 +269,8 @@ function MultiSeedBenchmarkSection() {
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
-    fetch('/api/experiments/benchmarks/summary')
-      .then((r) => r.json())
+    api.getBenchmarksSummary()
+      .then((r) => r.data)
       .then((data) => {
         if (data && data.datasets) {
           setSummary(data)
@@ -306,7 +306,7 @@ function MultiSeedBenchmarkSection() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <a
-            href="/api/experiments/benchmarks/report"
+            href={api.downloadBenchmarkReportUrl()}
             target="_blank"
             rel="noreferrer"
             className="btn btn-secondary btn-sm"
