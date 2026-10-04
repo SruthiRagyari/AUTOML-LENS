@@ -236,7 +236,7 @@ def test_no_fabricated_metrics(sample_classification_csv):
     assert isinstance(rec.total_time, float) and rec.total_time > 0.0
 
 
-def test_benchmark_isolation_and_no_production_contamination(sample_classification_csv):
+def test_benchmark_isolation_and_no_production_contamination(sample_classification_csv, production_baseline):
     """Verify running benchmarks causes ZERO modifications to backend/automl_lens.db or storage."""
     db_path = "backend/automl_lens.db"
     storage_path = "backend/storage"
@@ -275,6 +275,6 @@ def test_benchmark_isolation_and_no_production_contamination(sample_classificati
 
     storage_after = [os.path.join(r, f) for r, _, files in os.walk(storage_path) for f in files]
 
-    assert exp_before == exp_after == 7
-    assert ds_before == ds_after == 5
-    assert len(storage_before) == len(storage_after) == 23
+    assert exp_before == exp_after == production_baseline["counts"]["experiments"]
+    assert ds_before == ds_after == production_baseline["counts"]["datasets"]
+    assert len(storage_before) == len(storage_after) == len(production_baseline["files"])

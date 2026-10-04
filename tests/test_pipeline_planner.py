@@ -525,8 +525,11 @@ def test_pipeline_plan_api_end_to_end(isolated_client):
 # =========================================================================
 # 18. Database and Storage Isolation Verification
 # =========================================================================
-def test_db_and_storage_isolation():
-    # Verify the live database and live storage were not modified by any test
+def test_db_and_storage_isolation(production_baseline):
+    # Verify the live database and live storage were not modified by any test.
+    # Expected counts come from the baseline captured before the suite ran: the
+    # live store is user-mutable (a user can upload a dataset from the UI between
+    # runs), so hard-coded totals would flag legitimate activity as contamination.
     con = sqlite3.connect("backend/automl_lens.db")
     cur = con.cursor()
     cur.execute("SELECT COUNT(*) FROM experiments")
@@ -535,8 +538,20 @@ def test_db_and_storage_isolation():
     ds_count = cur.fetchone()[0]
     con.close()
 
-    storage_file_count = sum(len(files) for _, _, files in os.walk("backend/storage"))
+    storage_files = sorted(
+        os.path.join(root, name)
+        for root, _, names in os.walk("backend/storage")
+        for name in names
+    )
 
-    assert exp_count == 7, f"Live DB experiments modified: expected 7, got {exp_count}"
-    assert ds_count == 5, f"Live DB datasets modified: expected 5, got {ds_count}"
-    assert storage_file_count == 23, f"Live storage modified: expected 23 files, got {storage_file_count}"
+    expected = production_baseline["counts"]
+    assert exp_count == expected["experiments"], (
+        f"Live DB experiments modified: expected {expected['experiments']}, got {exp_count}"
+    )
+    assert ds_count == expected["datasets"], (
+        f"Live DB datasets modified: expected {expected['datasets']}, got {ds_count}"
+    )
+    assert storage_files == production_baseline["files"], (
+        "Live storage modified: expected "
+        f"{len(production_baseline['files'])} files, got {len(storage_files)}"
+    )

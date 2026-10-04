@@ -289,7 +289,7 @@ def test_provenance_fields_present_and_valid(small_clf_dataset):
     assert rec.holdout_used_for_selection is False
 
 
-def test_zero_contamination_of_production_db_and_storage(small_clf_dataset):
+def test_zero_contamination_of_production_db_and_storage(small_clf_dataset, production_baseline):
     """Ensure running scientific hardening tests modifies neither production DB nor storage."""
     db_path = "backend/automl_lens.db"
     storage_path = "backend/storage"
@@ -324,6 +324,6 @@ def test_zero_contamination_of_production_db_and_storage(small_clf_dataset):
 
     storage_after = [os.path.join(r, f) for r, _, fs in os.walk(storage_path) for f in fs]
 
-    assert exp_before == exp_after == 7
-    assert ds_before == ds_after == 5
-    assert len(storage_before) == len(storage_after) == 23
+    assert exp_before == exp_after == production_baseline['counts']['experiments']
+    assert ds_before == ds_after == production_baseline['counts']['datasets']
+    assert len(storage_before) == len(storage_after) == len(production_baseline['files'])
