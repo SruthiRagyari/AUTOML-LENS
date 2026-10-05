@@ -722,7 +722,7 @@ export default function Experiment() {
           try { const sc = await api.getInputSchema(id); setInputSchema(sc.data?.fields || []) } catch {}
           try { const pg = await api.getProgress(id); setProgress(pg.data) } catch {}
         }
-        if (r.data.report_path) setReportUrl(`/reports/report_${id}.html`)
+        if (r.data.report_path) setReportUrl(`/api/reports/report_${id}.html`)
       }
     } catch { setError('Failed to load experiment') }
     finally { setLoading(false) }
@@ -1349,7 +1349,7 @@ export default function Experiment() {
                   <div className="alert alert-success" style={{ marginTop: 16 }}>
                     ✅ {batchResult.num_predictions} predictions generated.
                     {batchResult.predictions_path && (
-                      <a href={`/predictions/${batchResult.predictions_path.split('/').pop()}`} download className="btn btn-sm btn-primary" style={{ marginLeft: 12 }}>
+                      <a href={`/api/predictions/${batchResult.predictions_path.split('/').pop()}`} download className="btn btn-sm btn-primary" style={{ marginLeft: 12 }}>
                         <FiDownload /> Download
                       </a>
                     )}

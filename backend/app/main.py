@@ -91,14 +91,17 @@ def create_app() -> FastAPI:
         }
 
     # Serve reports as static files
+    # Mounted under /api so these paths cannot collide with the SPA client routes:
+    # /reports and /predictions are React Router pages, so a hard reload on those
+    # URLs would otherwise reach the backend and return 404.
     reports_dir = settings.reports_path
     if reports_dir.exists():
-        app.mount("/reports", StaticFiles(directory=str(reports_dir)), name="reports")
+        app.mount("/api/reports", StaticFiles(directory=str(reports_dir)), name="reports")
 
     # Serve predictions
     preds_dir = settings.predictions_path
     if preds_dir.exists():
-        app.mount("/predictions", StaticFiles(directory=str(preds_dir)), name="predictions")
+        app.mount("/api/predictions", StaticFiles(directory=str(preds_dir)), name="predictions")
 
     return app
 

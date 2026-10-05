@@ -1794,7 +1794,7 @@ async def generate_report(exp_id: int, db: Session = Depends(get_db)):
     exp.report_path = path
     db.commit()
 
-    return {"report_path": path, "report_url": f"/reports/report_{exp_id}.html"}
+    return {"report_path": path, "report_url": f"/api/reports/report_{exp_id}.html"}
 
 
 @router.get("/{exp_id}/download-model")
