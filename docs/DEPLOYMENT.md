@@ -184,15 +184,35 @@ az vm deallocate -g automl-lens-rg -n automl-lens   # stops compute billing
 az vm start     -g automl-lens-rg -n automl-lens   # brings it back
 ```
 
-Auto-shutdown at 23:30 IST is configured with:
+**Nightly auto-shutdown is not available on this VM.** Azure implements the
+schedule as a `Microsoft.DevTestLab/schedules` resource, and that resource type
+cannot be deployed in `indiasouthcentral`:
 
-```bash
-az vm auto-shutdown -g automl-lens-rg -n automl-lens \
-  --time 2330 --timezone "India Standard Time" --status Enabled
+```
+ERROR: (LocationNotAvailableForResourceType) The provided location
+'indiasouthcentral' is not available for resource type
+'Microsoft.DevTestLab/schedules'.
 ```
 
-**The site is offline from 23:30 until it is next started.** Disabling the rule
-costs more but keeps the site always reachable.
+So deallocate it yourself when you are done, or schedule it from your own
+machine/another always-on host:
+
+```bash
+az vm deallocate -g automl-lens-rg -n automl-lens   # stops compute billing
+az vm start     -g automl-lens-rg -n automl-lens   # brings it back
+```
+
+Deallocate does **not** delete anything: SQLite, reports, predictions and
+trained models all live on the persistent managed disk and survive.
+
+To restore the automatic rule from a host in a supported region (for example
+`centralus`), schedule it there instead — a DevTest Labs schedule can target a
+VM in another region:
+
+```bash
+az vm auto-shutdown -g automl-lens-rg -n automl-lens --location centralus \
+  --time 1800 --on          # 1800 UTC = 23:30 IST
+```
 
 Cost while running is **estimated at roughly $38/month** (VM + static IPv4 +
 30 GiB managed disk). Treat that as an estimate — it was not measured from an
