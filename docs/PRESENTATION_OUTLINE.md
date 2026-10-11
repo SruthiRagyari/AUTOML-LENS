@@ -176,9 +176,9 @@
   1. Decoupled, safe LLM pipeline planning without code generation hazards.
   2. Registry-constrained validation air-gap.
   3. Strict fold-safe preprocessing and untouched holdout discipline.
-  4. Full-stack open-source platform with 285 passing tests and production frontend.
+  4. Full-stack open-source platform with 314 tests (313 passed, 1 real-LLM test skipped without an API key) and production frontend.
 - **Future Directions**: Multi-table relational AutoML, GPU-accelerated gradient boosting backends, multi-objective Pareto optimization.
 - **Questions & Discussion**: Thank you! We welcome your questions.
-- **Key Visual**: Concluding slide with GitHub repository link, test badge (285 passed), and open Q&A prompt.
+- **Key Visual**: Concluding slide with GitHub repository link, test badge (313 passed, 1 skipped), and open Q&A prompt.
 - **Presenter Speech**:
   > "AutoML-Lens bridges the gap between generative AI and empirical machine learning engineering. Thank you for your time, and we look forward to your questions."

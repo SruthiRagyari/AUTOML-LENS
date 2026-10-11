@@ -16,6 +16,7 @@ eggs/
 venv/
 env/
 .venv/
+.venv-submit/
 
 # Node
 node_modules/
