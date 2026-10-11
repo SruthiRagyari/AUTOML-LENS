@@ -1,5 +1,8 @@
 # AutoML-Lens: Comprehensive Viva Examination Question Bank (50+ Questions & Answers)
 
+> **Archived.** Moved from `docs/` to `docs/archive/`; retained for historical
+> reference only and not part of the active documentation index.
+
 This document provides technical, rigorous answers to questions anticipated during thesis defense, viva voce examinations, and technical presentations.
 
 ---

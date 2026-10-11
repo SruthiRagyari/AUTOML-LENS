@@ -1,5 +1,8 @@
 # AutoML-Lens — Repo Audit Report
 
+> **Archived.** Moved from `docs/` to `docs/archive/`; retained for historical
+> reference only and not part of the active documentation index.
+
 **Date:** 2026-09-30 · **Commit:** `e4025e9` (main, 5 modified files uncommitted) · **Auditor:** Independent Technical Audit
 **Goal:** find what blocks *real user-uploaded data* from working end-to-end, and separate "real computation" from anything simulated.
 

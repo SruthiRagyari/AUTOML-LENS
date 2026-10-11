@@ -204,6 +204,8 @@ npm run build
 - [Presentation Outline](docs/PRESENTATION_OUTLINE.md)
 - [Demo Script](docs/DEMO_SCRIPT.md)
 - [Standalone HTML Research Report](docs/BENCHMARK_REPORT.html)
+- [Repo Audit Report (archived)](docs/archive/AUDIT_REPORT.md)
+- [Viva Question Bank (archived)](docs/archive/VIVA_QUESTIONS.md)
 
 ---
 

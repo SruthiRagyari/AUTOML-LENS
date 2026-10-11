@@ -1,4 +1,4 @@
-"""Regression tests for the C1-C10 findings in ``docs/AUDIT_REPORT.md``.
+"""Regression tests for the C1-C10 findings in ``docs/archive/AUDIT_REPORT.md``.
 
 Every test names the audit issue it guards and asserts the *fixed* behaviour, so
 the suite fails while an issue is still open and passes once it is closed.
