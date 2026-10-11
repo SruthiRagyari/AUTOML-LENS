@@ -1,6 +1,6 @@
 # AutoML-Lens: Final Project Presentation Outline
 
-**Target Audience**: Academic Examiners, Viva Committee, Industry ML Practitioners.  
+**Target Audience**: ML practitioners and technical reviewers.  
 **Format**: 14 Slides (~12–15 Minutes).
 
 ---
@@ -11,7 +11,7 @@
 - **Presenter**: Engineering Research Team
 - **Key Visual**: High-level visual banner showing React UI, FastAPI logo, and pipeline flow.
 - **Presenter Speech**:
-  > "Good morning, respected examiners. Today we present AutoML-Lens, an automated machine learning framework that introduces structured Large Language Model planning into tabular data pipelines while enforcing strict safety air-gaps, fold-safe execution, and zero data leakage."
+  > "Good morning, technical reviewers. Today we present AutoML-Lens, an automated machine learning framework that introduces structured Large Language Model planning into tabular data pipelines while enforcing strict safety air-gaps, fold-safe execution, and zero data leakage."
 
 ---
 
@@ -147,16 +147,16 @@
 
 ### Slide 12: Empirical Results & Key Findings
 - **Adult Census Classification (`f1_weighted` $\uparrow$)**:
-  - Deterministic Baseline: $0.8148 \pm 0.0187$
-  - Full LLM-Guided: $0.8220 \pm 0.0101$
-  - **$\Delta = +0.0072$** (LLM improvement driven by `svm_clf` on seed 456).
+  - Deterministic Baseline: $0.8148 \pm 0.0181$
+  - Full LLM-Guided: $0.8220 \pm 0.0173$
+  - **$\Delta = +0.0072$** (difference within seed variability; `svm_clf` selected on seed 456).
 - **Wine Quality Regression (`rmse` $\downarrow$)**:
-  - Deterministic Baseline: $0.5544 \pm 0.0307$
-  - Full LLM-Guided: $0.5556 \pm 0.0298$
-  - **$\Delta = -0.0012$** (Deterministic baseline advantage driven by `knn_reg` in ensemble).
+  - Deterministic Baseline: $0.5544 \pm 0.0249$
+  - Full LLM-Guided: $0.5556 \pm 0.0268$
+  - **$\Delta = -0.0012$** (difference within seed variability; deterministic set included `knn_reg` in ensemble).
 - **Key Visual**: Bar charts comparing Deterministic vs LLM holdout scores across both datasets.
 - **Presenter Speech**:
-  > "Here are our measured results: On Adult Census, LLM planning improved mean F1 by +0.0072 because it smartly included an SVM classifier. On Wine Quality, the deterministic baseline had a slight 0.0012 RMSE advantage because its default heuristic included KNN. This proves LLM guidance is an adaptive heuristic, not an infallible magic bullet."
+  > "Here are our measured results: On Adult Census, the observed mean F1 difference was +0.0072, which is smaller than the across-seed standard deviation and is not evidence that LLM planning is better. On Wine Quality, the deterministic baseline had a slight 0.0012 RMSE difference. This benchmark ran with n_trials=0, so it measures candidate and pipeline selection, not hyperparameter optimization."
 
 ---
 
@@ -176,9 +176,9 @@
   1. Decoupled, safe LLM pipeline planning without code generation hazards.
   2. Registry-constrained validation air-gap.
   3. Strict fold-safe preprocessing and untouched holdout discipline.
-  4. Full-stack open-source platform with 285 passing tests and production frontend.
+  4. Full-stack open-source platform with 314 tests (313 passed, 1 real-LLM test skipped without an API key) and production frontend.
 - **Future Directions**: Multi-table relational AutoML, GPU-accelerated gradient boosting backends, multi-objective Pareto optimization.
 - **Questions & Discussion**: Thank you! We welcome your questions.
-- **Key Visual**: Concluding slide with GitHub repository link, test badge (285 passed), and open Q&A prompt.
+- **Key Visual**: Concluding slide with GitHub repository link, test badge (313 passed, 1 skipped), and open Q&A prompt.
 - **Presenter Speech**:
   > "AutoML-Lens bridges the gap between generative AI and empirical machine learning engineering. Thank you for your time, and we look forward to your questions."

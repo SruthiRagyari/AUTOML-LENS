@@ -112,7 +112,7 @@ Feature engineering is managed by `FeatureEngineer` and `OPERATION_REGISTRY`:
 ---
 
 ## 11. Fold-Safe Preprocessing
-A primary cause of optimistic evaluation bias in academic ML is data snooping. AutoML-Lens enforces **fold-safe execution**:
+A primary cause of optimistic evaluation bias is data snooping. AutoML-Lens enforces **fold-safe execution**:
 - Preprocessing pipelines (`ColumnTransformer`) and feature transformers are instantiated per fold.
 - Statistics (mean, median, variance, category vocabularies) are fit **exclusively** on the $K-1$ training folds.
 - Validation folds and the holdout split are transformed using parameters learned solely on the training partition.
@@ -178,21 +178,21 @@ The benchmark suite (`scripts/run_benchmarks.py`, `backend/app/services/benchmar
 1. `deterministic`: Rule-based baseline.
 2. `llm_model_only`: LLM model selection ablation (no feature operations).
 3. `llm_guided`: Full LLM pipeline planning.
-Each condition is evaluated over identical seeds (`[42, 123, 456]`) on UCI Adult Census and UCI Wine Quality Red datasets under identical 3-fold CV and Optuna trial budgets.
+Each condition is evaluated over identical seeds (`[42, 123, 456]`) on UCI Adult Census and UCI Wine Quality Red datasets under identical 3-fold CV with `n_trials=0` (model/pipeline selection only; no Optuna HPO search).
 
 ---
 
 ## 19. Experimental Results Summary
 - **UCI Adult Census (`f1_weighted` $\uparrow$)**:
-  - Deterministic: $0.8148 \pm 0.0187$
-  - LLM Model-Only: $0.8220 \pm 0.0101$
-  - Full LLM-Guided: $0.8220 \pm 0.0101$
-  - Delta: $+0.0072$ (LLM advantage driven by `svm_clf` selection on seed 456).
+  - Deterministic: $0.8148 \pm 0.0181$
+  - LLM Model-Only: $0.8220 \pm 0.0173$
+  - Full LLM-Guided: $0.8220 \pm 0.0173$
+  - Delta: $+0.0072$ (difference within seed variability; `svm_clf` selected on seed 456).
 - **UCI Wine Quality Red (`rmse` $\downarrow$)**:
-  - Deterministic: $0.5544 \pm 0.0307$
-  - LLM Model-Only: $0.5556 \pm 0.0298$
-  - Full LLM-Guided: $0.5556 \pm 0.0298$
-  - Delta: $-0.0012$ (Deterministic advantage driven by `knn_reg` in ensemble on seed 456).
+  - Deterministic: $0.5544 \pm 0.0249$
+  - LLM Model-Only: $0.5556 \pm 0.0268$
+  - Full LLM-Guided: $0.5556 \pm 0.0268$
+  - Delta: $-0.0012$ (difference within seed variability; deterministic set included `knn_reg` on seed 456).
 - **Ablation Finding**: Identical holdout means between Model-Only and Full LLM conditions demonstrate that model candidate selection, not feature transforms, drove performance variation under the evaluated budget.
 
 ---

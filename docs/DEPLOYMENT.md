@@ -29,7 +29,7 @@ cross-origin request, CORS does not apply, and `VITE_API_BASE_URL` stays empty
 
 | Item | Value |
 |---|---|
-| Subscription | Azure for Students |
+| Subscription | Azure subscription |
 | Resource group | `automl-lens-rg` |
 | Region | `indiasouthcentral` (Hyderabad) |
 | VM | `automl-lens`, Ubuntu 22.04, `Standard_B2s` (2 vCPU, 4 GiB RAM) |
@@ -41,7 +41,7 @@ cross-origin request, CORS does not apply, and `VITE_API_BASE_URL` stays empty
 | App directory | `/opt/automl-lens` (git clone of `main`) |
 | Secrets | `/etc/automl-lens.env` (root-owned, never in git) |
 
-> **Region restriction.** Azure for Students enforces the subscription-level
+> **Region restriction.** The subscription used for this deployment enforces the
 > `sys.regionrestriction` policy (`deny`) that permits only
 > `koreacentral`, `uaenorth`, `indiasouthcentral`, `eastasia`, and
 > `malaysiawest`. Deploying anywhere else fails with HTTP 400 while the az CLI
@@ -90,6 +90,8 @@ systemd unit, and then:
 3. installs the real TLS config only once the certificate exists.
 
 If issuance fails the site still comes up over HTTP, so provisioning never
+aborts mid-way.
+
 ## TLS renewal
 
 `certbot.timer` is enabled and renews automatically:
@@ -144,6 +146,12 @@ already carries the SPA rewrite.
 The AI Assistant works **without any API key** by falling back to the
 deterministic local engine, which labels its own answers honestly. Adding a
 provider key is optional and is entered only on the server.
+
+After editing `/etc/automl-lens.env`, restart the service:
+
+```bash
+sudo systemctl restart automl-lens
+```
 
 ## Operations
 
@@ -234,9 +242,3 @@ trials each, 5 folds, 64 s) → model selection (Gradient Boosting, f1_weighted)
 report, model (306,717 B) and metadata downloads → AI Assistant in both
 general and project context. All 10 SPA routes returned HTTP 200 with zero
 console errors and zero `localhost` requests.
-After editing:
-
-```bash
-sudo systemctl restart automl-lens
-```
-aborts mid-way.

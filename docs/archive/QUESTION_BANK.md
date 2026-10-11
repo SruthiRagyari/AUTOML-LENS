@@ -1,5 +1,8 @@
 # AutoML-Lens: Comprehensive Viva Examination Question Bank (50+ Questions & Answers)
 
+> **Archived.** Moved from `docs/` to `docs/archive/`; retained for historical
+> reference only and not part of the active documentation index.
+
 This document provides technical, rigorous answers to questions anticipated during thesis defense, viva voce examinations, and technical presentations.
 
 ---
@@ -153,11 +156,11 @@ AutoML-Lens restricts the LLM to outputting a declarative JSON specification tha
 ### Q32. What datasets and seeds were used in the benchmark?
 **Answer**: Evaluated on UCI Adult Census Income (binary classification) and UCI Wine Quality Red (regression) across 3 reproducible seeds (`[42, 123, 456]`), yielding 18 total experimental benchmark runs.
 
-### Q33. Did the LLM improve performance on Adult Census?
-**Answer**: Yes. On Adult Census, LLM-guided planning achieved a mean holdout F1 of $0.8220 \pm 0.0101$ compared to $0.8148 \pm 0.0187$ for the deterministic baseline ($+0.0072$ improvement). On seed 456, the LLM included `svm_clf`, which scored $0.8176$ on holdout, outperforming tree models on that partition.
+### Q33. What was the observed Adult Census difference?
+**Answer**: On Adult Census, LLM-guided planning scored a mean holdout F1 of $0.8220 \pm 0.0173$ compared to $0.8148 \pm 0.0181$ for the deterministic baseline (observed difference $+0.0072$). This difference is smaller than the across-seed standard deviation, so with N=3 seeds it is not evidence that LLM planning is better. On seed 456, the LLM included `svm_clf`, which scored $0.8300$ on holdout on that partition. This benchmark ran with n_trials=0 (no Optuna tuning), so it measures candidate and pipeline selection, not hyperparameter optimization.
 
-### Q34. What happened on Wine Quality Red? Why did the deterministic baseline win?
-**Answer**: On Wine Quality Red, the deterministic baseline achieved lower holdout RMSE ($0.5544 \pm 0.0307$ vs. $0.5556 \pm 0.0298$). The deterministic rule set included `knn_reg`, which received $0.30$ weight in the winning ensemble on seed 456. The LLM did not suggest KNN. This demonstrates that LLMs are not universally superior and can omit effective classical heuristics.
+### Q34. What happened on Wine Quality Red? Why did the deterministic baseline score lower RMSE?
+**Answer**: On Wine Quality Red, the deterministic baseline scored lower holdout RMSE ($0.5544 \pm 0.0249$ vs. $0.5556 \pm 0.0268$). The deterministic rule set included `knn_reg`, which received $0.34$ weight in the selected `ensemble_weighted` on seed 456. The LLM did not suggest KNN. This demonstrates that LLMs are not universally superior and can omit effective classical heuristics.
 
 ### Q35. What was the outcome of your ablation study?
 **Answer**: Conditions B (Model-Only) and C (Full LLM) yielded identical holdout means on both datasets ($0.8220$ on Adult, $0.5556$ on Wine). This demonstrates that under the evaluated experimental budget, performance gains were driven predominantly by **model candidate space selection** rather than automated feature engineering.
@@ -205,7 +208,7 @@ AutoML-Lens restricts the LLM to outputting a declarative JSON specification tha
 **Answer**: No. The ablation demonstrates that for tree-based models and normalized estimators under an Optuna tuning budget, simple monotonic transforms do not provide additive margin on these specific datasets. However, the feature engineering engine is mathematically proven to be fold-safe, leak-free, and operational for datasets that require explicit non-linear expansions.
 
 ### Q46. Could an examiner claim you 'cherry-picked' results?
-**Answer**: No, precisely because we openly report that the deterministic baseline beat the LLM on Wine Quality Red, and that feature operations produced identical holdout means in ablation. Cherry-picked work would conceal negative results; our work reports honest empirical measurements.
+**Answer**: No, precisely because we openly report that the deterministic baseline scored lower holdout RMSE than the LLM-guided condition on Wine Quality Red, and that feature operations produced identical holdout means in ablation. Cherry-picked work would conceal negative results; our work reports honest empirical measurements.
 
 ### Q47. How do you know SHAP explanations are mathematically sound?
 **Answer**: We use the official `shap` library developed by Lundberg & Lee. For tree ensembles, TreeSHAP computes exact Shapley values in polynomial time based on cooperative game theory axioms (efficiency, symmetry, dummy, additivity).

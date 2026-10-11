@@ -7,7 +7,7 @@
 [![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev)
 [![scikit--learn](https://img.shields.io/badge/scikit--learn-1.6.1-orange.svg)](https://scikit-learn.org)
 [![Optuna](https://img.shields.io/badge/Optuna-4.2.0-purple.svg)](https://optuna.org)
-[![Pytest](https://img.shields.io/badge/Tests-285%20Passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-see%20docs%2FTEST__RUN__OUTPUT.txt-blue.svg)](docs/TEST_RUN_OUTPUT.txt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -74,33 +74,60 @@ flowchart TD
 
 ---
 
-## 5. Research Evaluation & Empirical Findings
+## 5. Empirical Evaluation
 
-AutoML-Lens was subjected to a rigorous multi-seed empirical benchmark comparing three experimental conditions across an identical seed sequence (`[42, 123, 456]`):
+AutoML-Lens was evaluated under a rigorous multi-seed benchmark comparing three experimental conditions across an identical seed sequence (`[42, 123, 456]`):
 1. **Condition A (`deterministic`)**: Deterministic heuristic AutoML baseline.
 2. **Condition B (`llm_model_only` ablation)**: LLM candidate model selection only; default preprocessing and zero feature operations.
 3. **Condition C (`llm_guided`)**: Full LLM pipeline planning (candidate models, feature operations, HPO focus, ensemble configuration).
 
-### Measured Multi-Seed Results Matrix
+### Benchmark Protocol
 
-| Dataset | Task | Primary Metric | Deterministic Baseline | LLM Model-Only (Ablation) | Full LLM-Guided Plan | Direction-Adjusted $\Delta$ |
+| Parameter | Value |
+| :--- | :--- |
+| Seeds | `[42, 123, 456]` |
+| Cross-validation folds | 3 |
+| Optuna trials (`n_trials`) | **0** (model/pipeline selection only; no HPO search) |
+| Adult Census — total rows used | 1,000 (800 train / 200 holdout) |
+| Wine Quality Red — total rows used | 800 (640 train / 160 holdout) |
+| Holdout policy | Isolated post-ingestion; evaluated exactly once post-selection |
+| Statistical statement | Descriptive multi-seed comparison only (N=3 seeds per condition). No inferential p-values claimed. |
+| Std convention | Population std (ddof=0) |
+
+> **Note**: `n_trials=0` means this benchmark measures LLM-guided model and pipeline selection, **not** Optuna hyperparameter search. HPO is a separately implemented capability. For a separate fast-mode comparison between Gemini and the deterministic fallback, see [`docs/LLM_EVALUATION.md`](docs/LLM_EVALUATION.md): the mean paired F1 difference (Gemini − Fallback) was −0.017412 on classification and +0.001753 on winequality-red (seeds 42/43/44, n=3, fast mode with 5 Optuna trials).
+
+### Measured Multi-Seed Results
+
+All values from `benchmarks/results/benchmark_summary.json`. Std = population std (ddof=0, N=3).
+
+| Dataset | Task | Primary Metric | Deterministic Baseline | LLM Model-Only (Ablation) | Full LLM-Guided Plan | Difference (within seed variability) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **UCI Adult Census** | Classification | `f1_weighted` $\uparrow$ | $0.8148 \pm 0.0187$ | $0.8220 \pm 0.0101$ | $0.8220 \pm 0.0101$ | **$+0.0072$** (LLM advantage) |
-| **UCI Wine Quality Red** | Regression | `rmse` $\downarrow$ | $0.5544 \pm 0.0307$ | $0.5556 \pm 0.0298$ | $0.5556 \pm 0.0298$ | **$-0.0012$** (Deterministic advantage) |
+| **UCI Adult Census** | Classification | `f1_weighted` ↑ | $0.8148 \pm 0.0181$ | $0.8220 \pm 0.0173$ | $0.8220 \pm 0.0173$ | $+0.0072$ |
+| **UCI Wine Quality Red** | Regression | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $0.5556 \pm 0.0268$ | $-0.0012$ (within seed variability) |
 
-### Key Scientific Takeaways
-1. **Classification Improvement on Adult Census**: LLM-guided planning achieved a mean holdout F1 improvement of $+0.0072$. On seed 456, the LLM proposed `svm_clf`, which achieved holdout F1 of $0.8176$, winning over tree models.
-2. **Deterministic Baseline Advantage on Wine Quality**: The deterministic baseline achieved slightly lower holdout RMSE ($-0.0012$) because its heuristic candidate set included `knn_reg`, which received weight ($w=0.30$) in the winning ensemble on seed 456.
-3. **Ablation Findings**: Conditions B and C achieved identical aggregate holdout scores ($0.8220$ on Adult, $0.5556$ on Wine), demonstrating that under this experimental budget, performance deltas were governed primarily by **model candidate space selection** rather than automated feature engineering.
-4. **Empirical Honesty**: The experimental data demonstrates that LLM-guided AutoML is **not** universally superior to deterministic AutoML. Rather, LLMs act as an adaptive heuristic that can identify competitive non-standard candidates while occasionally omitting useful heuristics.
+**Per-seed holdout scores (source: `benchmark_summary.json`):**
 
-For full research details, see [`docs/FINAL_RESULTS.md`](docs/FINAL_RESULTS.md) and [`docs/BENCHMARK_REPORT.md`](docs/BENCHMARK_REPORT.md).
+| Dataset | Condition | Seed 42 | Seed 123 | Seed 456 | Mean ± Std |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Adult Census | Deterministic | 0.7937 | 0.8379 | 0.8127 | 0.8148 ± 0.0181 |
+| Adult Census | LLM-Guided | 0.7980 | 0.8379 | 0.8300 | 0.8220 ± 0.0173 |
+| Wine Quality | Deterministic | 0.5461 | 0.5289 | 0.5881 | 0.5544 ± 0.0249 |
+| Wine Quality | LLM-Guided | 0.5461 | 0.5285 | 0.5921 | 0.5556 ± 0.0268 |
+
+### Key Takeaways
+
+1. **Observed difference on Adult Census**: The difference (+0.0072 F1) is smaller than the across-seed standard deviation (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should **not** be interpreted as significant evidence that LLM-guided planning is better given N=3 seeds and a 200-row holdout set.
+2. **Deterministic baseline is competitive on Wine Quality**: The deterministic baseline achieved slightly lower holdout RMSE (−0.0012). On seed 456 the deterministic run scored 0.5881 vs 0.5921 for the LLM-guided run (a 0.004 difference on one seed); the deterministic candidate set included `knn_reg`, which received weight in the winning `ensemble_weighted`, while the LLM-guided candidate set did not include `knn_reg`.
+3. **Ablation Findings**: Conditions B and C achieved identical aggregate holdout scores ($0.8220$ on Adult, $0.5556$ on Wine), showing that under this budget, performance deltas were governed primarily by **model candidate selection** rather than automated feature engineering.
+4. **Empirical Honesty**: LLM-guided AutoML is **not** universally superior to deterministic AutoML. LLMs act as an adaptive heuristic that can identify competitive non-standard candidates while occasionally omitting useful heuristics. With N=3 seeds and no p-values, these are descriptive observations only.
+
+For full details, see [`docs/FINAL_RESULTS.md`](docs/FINAL_RESULTS.md) and [`docs/BENCHMARK_REPORT.md`](docs/BENCHMARK_REPORT.md).
 
 ---
 
 ## 6. Limitations & Scope Boundaries
 
-- **Benchmark Scope**: Evaluated on 2 representative benchmark datasets across $N=3$ reproducible seeds; findings represent descriptive empirical evidence rather than asymptotic universality.
+- **Benchmark Scope**: Evaluated on 2 datasets across N=3 seeds; findings are descriptive empirical evidence, not asymptotically universal claims.
 - **Model Registry Boundaries**: Constrained strictly to algorithms supported in `ModelRegistry` (scikit-learn linear models, tree ensembles, SVMs, KNN, Naive Bayes).
 - **Safety Boundaries**: The system executes zero arbitrary Python code. All transformations are predefined declarative functions.
 - **Explicit Exclusions**: This framework does **not** implement reinforcement learning (RL), automated neural architecture search (NAS), multimodal AutoML, or autonomous code generation.
@@ -154,10 +181,11 @@ The application is available at:
 
 ## 8. Verification & Test Suite
 
-The system includes a test suite covering holdout isolation, provenance, schema validation, metric direction contracts, Optuna HPO, ensembles, and API routes:
+The system includes a test suite covering holdout isolation, provenance, schema validation, metric direction contracts, Optuna HPO, ensembles, and API routes.
+See [`docs/TEST_RUN_OUTPUT.txt`](docs/TEST_RUN_OUTPUT.txt) for the latest verified run result.
 
 ```bash
-# Run backend test suite (285 tests):
+# Run backend test suite:
 python -m pytest tests -q
 
 # Run frontend production build:
@@ -167,16 +195,17 @@ npm run build
 
 ---
 
-## 9. Project Documentation Index
+## 9. Documentation Index
 
 - [System Architecture & Flow Diagram](docs/ARCHITECTURE_DIAGRAM.md)
-- [Comprehensive Project Technical Documentation](docs/PROJECT_DOCUMENTATION.md)
-- [Academic Research Paper Draft](docs/RESEARCH_PAPER_DRAFT.md)
+- [Comprehensive Project Documentation](docs/PROJECT_DOCUMENTATION.md)
+- [Research Write-up](docs/RESEARCH_PAPER_DRAFT.md)
 - [Final Multi-Seed Empirical Results](docs/FINAL_RESULTS.md)
-- [Viva Examination Question Bank (50+ Questions)](docs/VIVA_QUESTIONS.md)
-- [Presentation Slide Outline (14 Slides)](docs/PRESENTATION_OUTLINE.md)
-- [Live Demonstration Script (7-10 Minutes)](docs/DEMO_SCRIPT.md)
+- [Presentation Outline](docs/PRESENTATION_OUTLINE.md)
+- [Demo Script](docs/DEMO_SCRIPT.md)
 - [Standalone HTML Research Report](docs/BENCHMARK_REPORT.html)
+- [Repo Audit Report (archived)](docs/archive/AUDIT_REPORT.md)
+- [Question Bank (archived)](docs/archive/QUESTION_BANK.md)
 
 ---
 

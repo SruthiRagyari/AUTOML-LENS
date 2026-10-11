@@ -1,0 +1,125 @@
+﻿AutoML-Lens test-suite run (fresh venv: .venv-submit, built from backend/requirements.txt)
+
+Environment for the run:
+  LLM_PROVIDER=fallback
+  GEMINI_API_KEY=(forced empty in-process - real-LLM tests skip)
+  OPENAI_API_KEY=(forced empty in-process)
+  DATABASE_URL=sqlite:///C:/Users/sruth/AppData/Local/Temp/automl_lens_submit_test.db
+  STORAGE_PATH=C:\Users\sruth\AppData\Local\Temp\automl_lens_submit_storage
+
+Interpreter:
+  Python 3.11.9
+  pytest 8.3.4
+
+Command: python scripts/run_tests_keyless.py tests -q
+  (scripts/run_tests_keyless.py pins GEMINI_API_KEY/OPENAI_API_KEY to empty strings
+   before the application settings are imported, reproducing the keyless path)
+
+----- pytest output -----
+
+C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\pytest_asyncio\plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+........................................................................ [ 22%]
+........................................................................ [ 45%]
+............................................................s........... [ 68%]
+........................................................................ [ 91%]
+..........................                                               [100%]
+============================== warnings summary ===============================
+.venv-submit\Lib\site-packages\starlette\testclient.py:40
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\joblib\externals\loky\backend\context.py:136: UserWarning: Could not find the number of physical cores for the following reason:
+  [WinError 2] The system cannot find the file specified
+  Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+    warnings.warn(
+
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\matplotlib\_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+tests/test_audit_regressions.py::test_c6_health_responds_while_training_is_in_flight
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\matplotlib\_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audit_regressions.py: 909 warnings
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\shap\plots\colors\_colorconv.py:819: DeprecationWarning: Converting `np.inexact` or `np.floating` to a dtype is deprecated. The current result is `float64` which is not strictly correct.
+    if np.issubdtype(dtype_in, np.dtype(dtype).type):
+
+tests/test_training_progress_api.py: 12 warnings
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\model_selection\_validation.py:978: UserWarning: Scoring failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+  Traceback (most recent call last):
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 140, in __call__
+      score = scorer._score(
+              ^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 380, in _score
+      y_pred = method_caller(
+               ^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 90, in _cached_call
+      result, _ = _get_response_values(
+                  ^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\utils\_response.py", line 214, in _get_response_values
+      y_pred = prediction_method(X)
+               ^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_classification.py", line 262, in predict
+      probabilities = self.predict_proba(X)
+                      ^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_classification.py", line 371, in predict_proba
+      neigh_ind = self.kneighbors(X, return_distance=False)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_base.py", line 854, in kneighbors
+      raise ValueError(
+  ValueError: Expected n_neighbors <= n_samples_fit, but n_neighbors = 11, n_samples_fit = 10, n_samples = 10
+  
+    warnings.warn(
+
+tests/test_training_progress_api.py: 12 warnings
+  C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\model_selection\_validation.py:978: UserWarning: Scoring failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+  Traceback (most recent call last):
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 140, in __call__
+      score = scorer._score(
+              ^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 380, in _score
+      y_pred = method_caller(
+               ^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\metrics\_scorer.py", line 90, in _cached_call
+      result, _ = _get_response_values(
+                  ^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\utils\_response.py", line 214, in _get_response_values
+      y_pred = prediction_method(X)
+               ^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_classification.py", line 262, in predict
+      probabilities = self.predict_proba(X)
+                      ^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_classification.py", line 371, in predict_proba
+      neigh_ind = self.kneighbors(X, return_distance=False)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\sklearn\neighbors\_base.py", line 854, in kneighbors
+      raise ValueError(
+  ValueError: Expected n_neighbors <= n_samples_fit, but n_neighbors = 16, n_samples_fit = 10, n_samples = 10
+  
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+313 passed, 1 skipped, 949 warnings in 746.56s (0:12:26)

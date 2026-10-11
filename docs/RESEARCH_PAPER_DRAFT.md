@@ -1,11 +1,11 @@
 # Structured LLM-Guided AutoML: Registry-Constrained Pipeline Planning with Fold-Safe Verification
 
-**Draft Manuscript for Academic & Conference Submission**
+**Draft Manuscript for Conference Submission**
 
 ---
 
 ## Abstract
-Automated Machine Learning (AutoML) traditionally relies on heuristic searches or Bayesian optimization across high-dimensional pipeline spaces. While Large Language Models (LLMs) possess vast domain knowledge regarding machine learning workflows, directly employing LLMs to write executable ML scripts frequently induces syntax errors, silent data snooping, and severe code execution vulnerabilities. In this paper, we propose **AutoML-Lens**, a framework that decouples intelligent LLM pipeline planning from deterministic execution. Under our architecture, the LLM outputs a declarative JSON pipeline specification containing candidate model choices, mathematical feature operations, and hyperparameter priorities. A deterministic `PipelinePlanValidator` enforces strict registry constraints, disallowing unsupported models, repairing malformed parameters, and filtering out target-leakage operations. The sanitized plan is then executed by a fold-safe AutoML engine with Bayesian hyperparameter optimization and out-of-fold model fusion. We evaluate the framework through an empirical multi-seed study across three conditions (deterministic baseline, LLM model-only ablation, and full LLM-guided planning) on standard UCI benchmarks. On the UCI Adult Census classification task, LLM-guided planning achieved a mean holdout F1 improvement of $+0.0072$ ($0.8220 \pm 0.0101$ vs. $0.8148 \pm 0.0187$), driven by the adaptive inclusion of support vector classifiers. Conversely, on UCI Wine Quality regression, the deterministic heuristic baseline retained a slight $+0.0012$ RMSE advantage ($0.5544 \pm 0.0307$ vs. $0.5556 \pm 0.0298$). An ablation study reveals that under constrained computational budgets, performance deltas are driven predominantly by candidate model space pruning rather than automated feature engineering. Our findings demonstrate that structured LLM planning offers a safe, competitive alternative to rigid heuristics, while underscoring that LLMs do not achieve universal superiority over classical AutoML baselines.
+Automated Machine Learning (AutoML) traditionally relies on heuristic searches or Bayesian optimization across high-dimensional pipeline spaces. While Large Language Models (LLMs) possess vast domain knowledge regarding machine learning workflows, directly employing LLMs to write executable ML scripts frequently induces syntax errors, silent data snooping, and severe code execution vulnerabilities. In this paper, we propose **AutoML-Lens**, a framework that decouples intelligent LLM pipeline planning from deterministic execution. Under our architecture, the LLM outputs a declarative JSON pipeline specification containing candidate model choices, mathematical feature operations, and hyperparameter priorities. A deterministic `PipelinePlanValidator` enforces strict registry constraints, disallowing unsupported models, repairing malformed parameters, and filtering out target-leakage operations. The sanitized plan is then executed by a fold-safe AutoML engine with Bayesian hyperparameter optimization and out-of-fold model fusion. We evaluate the framework through an empirical multi-seed study across three conditions (deterministic baseline, LLM model-only ablation, and full LLM-guided planning) on standard UCI benchmarks with N=3 seeds (`[42, 123, 456]`) and `n_trials=0` (no Optuna tuning in this benchmark, so it measures LLM-guided candidate and pipeline selection, not hyperparameter optimization). On the UCI Adult Census classification task, LLM-guided planning scored a mean holdout F1 of $0.8220 \pm 0.0173$ vs. $0.8148 \pm 0.0181$ for the deterministic baseline, an observed difference of $+0.0072$ that is smaller than the across-seed standard deviation and is therefore not evidence that LLM planning is better. Conversely, on UCI Wine Quality regression, the deterministic heuristic baseline retained a slightly lower holdout RMSE ($0.5544 \pm 0.0249$ vs. $0.5556 \pm 0.0268$; difference $+0.0012$). An ablation study reveals that under constrained computational budgets, performance deltas are driven predominantly by candidate model space pruning rather than automated feature engineering. Our findings demonstrate that structured LLM planning offers a safe, competitive alternative to rigid heuristics, while underscoring that LLMs do not achieve universal superiority over classical AutoML baselines.
 
 **Keywords**: Automated Machine Learning (AutoML), Large Language Models, Pipeline Synthesis, Model Fusion, Safe Execution, Hyperparameter Optimization, Data Leakage.
 
@@ -69,9 +69,10 @@ We conducted a multi-seed benchmark across three conditions:
 3. **Condition C (`llm_guided`)**: Full LLM pipeline planning with model selection, feature engineering, and HPO directives.
 
 ### Experimental Controls:
-- **Benchmark Datasets**: UCI Adult Census Income ($N=2,000$ stratified subset, 14 features, binary classification) and UCI Wine Quality Red ($N=1,599$, 11 features, regression).
+- **Benchmark Datasets**: UCI Adult Census Income (1,000 rows total: 800 train / 200 holdout; 14 features, binary classification) and UCI Wine Quality Red (800 rows total: 640 train / 160 holdout; 11 features, regression).
 - **Seed Protocol**: Identical seed sequence: `[42, 123, 456]` across all conditions ($N=3$ seeds per condition, 18 total experimental runs).
 - **Cross-Validation**: 3-fold stratified cross-validation on the 80% training partition.
+- **Optuna Trials**: `n_trials=0` — this benchmark measures model/pipeline selection, not HPO search.
 - **Holdout Discipline**: 20% test partition held completely unseen until final post-selection evaluation.
 
 ---
@@ -81,19 +82,19 @@ We conducted a multi-seed benchmark across three conditions:
 ### Table 1: Multi-Seed Holdout Evaluation Results (Mean $\pm$ Std)
 | Dataset | Problem Type | Primary Metric | Condition A (Deterministic) | Condition B (Model-Only) | Condition C (Full LLM) | Direction-Adjusted $\Delta$ |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Adult Census** | Classification | `f1_weighted` $\uparrow$ | $0.8148 \pm 0.0187$ | $0.8220 \pm 0.0101$ | $0.8220 \pm 0.0101$ | **$+0.0072$** (LLM win) |
-| **Wine Quality** | Regression | `rmse` $\downarrow$ | $0.5544 \pm 0.0307$ | $0.5556 \pm 0.0298$ | $0.5556 \pm 0.0298$ | **$-0.0012$** (Det win) |
+| **Adult Census** | Classification | `f1_weighted` $\uparrow$ | $0.8148 \pm 0.0181$ | $0.8220 \pm 0.0173$ | $0.8220 \pm 0.0173$ | **$+0.0072$** (difference within seed variability) |
+| **Wine Quality** | Regression | `rmse` $\downarrow$ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $0.5556 \pm 0.0268$ | **$-0.0012$** (difference within seed variability) |
 
-On Adult Census Income, full LLM-guided planning achieved a mean holdout F1 of $0.8220 \pm 0.0101$, representing a $+0.0072$ improvement over the deterministic baseline ($0.8148 \pm 0.0187$). On seed 456, the LLM proposed `svm_clf`, which attained holdout F1 of $0.8176$, winning over tree ensembles.
+On Adult Census Income, full LLM-guided planning scored a mean holdout F1 of $0.8220 \pm 0.0173$ versus $0.8148 \pm 0.0181$ for the deterministic baseline, an observed difference of $+0.0072$ that is smaller than the across-seed standard deviation and is not evidence that LLM planning is better. This benchmark used 3 seeds with `n_trials=0` (no Optuna tuning), so it measures candidate and pipeline selection, not hyperparameter optimization. On seed 456, the LLM proposed `svm_clf`, which attained holdout F1 of $0.8300$ on that partition.
 
-On Wine Quality Red, the deterministic baseline achieved a slight advantage in holdout RMSE ($0.5544 \pm 0.0307$ vs. $0.5556 \pm 0.0298$). The deterministic candidate pool included `knn_reg`, which contributed significantly to the winning ensemble on seed 456.
+On Wine Quality Red, the deterministic baseline achieved a slightly lower holdout RMSE ($0.5544 \pm 0.0249$ vs. $0.5556 \pm 0.0268$). The deterministic candidate pool included `knn_reg`, which received weight 0.34 in the selected `ensemble_weighted` on seed 456.
 
 ---
 
 ## 8. Ablation Study
 To isolate whether performance gains stemmed from algorithm selection or automated feature transformations, we compared Condition B (`llm_model_only`) against Condition C (`llm_guided`).
 - Across both datasets, **Holdout Means were identical** ($0.8220$ vs. $0.8220$ on Adult; $0.5556$ vs. $0.5556$ on Wine).
-- While the LLM successfully proposed valid operations (`Age_zscore`, `CapitalGain_log`), tree ensembles and regularized estimators inherently absorb monotonic transforms and scale variations under the evaluated Optuna budget.
+- While the LLM successfully proposed valid operations (`Age_zscore`, `CapitalGain_log`), tree ensembles and regularized estimators inherently absorb monotonic transforms and scale variations under the evaluated budget (`n_trials=0`; model/pipeline selection only).
 - We conclude that **model candidate selection is the primary driver of performance variation** in structured LLM pipeline planning under bounded computational budgets.
 
 ---
@@ -114,7 +115,7 @@ Our empirical results illuminate the real-world utility of LLMs in AutoML:
 ---
 
 ## 11. Conclusion
-AutoML-Lens demonstrates that Large Language Models can be safely and effectively integrated into Automated Machine Learning without arbitrary code generation or data leakage risks. By constraining LLMs to declarative pipeline planning and enforcing strict fold-safe execution, the system achieves competitive, reproducible results while maintaining rigorous scientific integrity.
+AutoML-Lens demonstrates that Large Language Models can be safely and effectively integrated into Automated Machine Learning without arbitrary code generation or data leakage risks. By constraining LLMs to declarative pipeline planning and enforcing strict fold-safe execution, the system achieves competitive, reproducible results while maintaining rigorous scientific integrity. This benchmark ran with `n_trials=0` (no Optuna tuning) across 3 seeds, so it measures LLM-guided candidate and pipeline selection rather than hyperparameter optimization; the observed Adult Census difference (+0.0072 F1) is smaller than the across-seed standard deviation and is not evidence that LLM planning is better.
 
 ---
 

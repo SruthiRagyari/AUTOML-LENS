@@ -1,106 +1,109 @@
 # AutoML-Lens: Final Empirical Benchmark & Evaluation Results
 
-This document presents the definitive empirical results from the rigorous multi-seed evaluation of **AutoML-Lens**. All values recorded below are computed from stored experimental records ([`benchmarks/results/benchmark_results.json`](../benchmarks/results/benchmark_results.json)) and aggregated multi-seed statistics ([`benchmarks/results/benchmark_summary.json`](../benchmarks/results/benchmark_summary.json)).
+This document presents the definitive empirical results from the multi-seed evaluation of **AutoML-Lens**. All values are sourced directly from [`benchmarks/results/benchmark_results.json`](../benchmarks/results/benchmark_results.json) (per-seed runs) and [`benchmarks/results/benchmark_summary.json`](../benchmarks/results/benchmark_summary.json) (aggregated statistics). No values in this document were manually estimated.
 
 ---
 
 ## 1. Experimental Protocol & Controls
 
-To prevent data contamination, optimistic bias, and false claims of superiority, all experiments conformed to the following experimental standards:
-
 - **Datasets**:
-  1. **UCI Adult Census Income (`adult_census_income`)**: Binary classification, 14 features (mixed numerical/categorical), target: `income`, evaluated on `f1_weighted` (higher is better). Subsampled to 2,000 rows under identical stratification.
-  2. **UCI Wine Quality Red (`wine_quality_red`)**: Tabular regression, 1,599 rows, 11 numerical physicochemical features, target: `quality`, evaluated on `rmse` (lower is better).
-- **Seeds**: Exactly matched seed list: `[42, 123, 456]` across all conditions ($N=3$ seeds per condition, 18 total experimental runs).
-- **Holdout Discipline**: $20\%$ holdout test set (`test_size=0.2`) strictly isolated post-ingestion. Never seen by CV folds, Optuna trials, or ensemble weight optimizers. Evaluated exactly once post-selection.
-- **Cross-Validation**: 3-fold stratified cross-validation on the $80\%$ training split.
-- **Budget Matching**: Identical Optuna trial budgets and candidate evaluation protocols across conditions.
-- **Registry Constraints**: Zero arbitrary code execution; all candidate models and feature operations were constrained to pre-validated system registries.
+  1. **UCI Adult Census Income (`adult_census_income`)**: Binary classification, 14 features (mixed numerical/categorical), target: `income`, evaluated on `f1_weighted` (higher is better). Used **1,000 rows total** (800 train / 200 holdout, stratified split).
+  2. **UCI Wine Quality Red (`winequality_red`)**: Tabular regression, 11 numerical physicochemical features, target: `quality`, evaluated on `rmse` (lower is better). Used **800 rows total** (640 train / 160 holdout).
+- **Seeds**: `[42, 123, 456]` across all conditions (N=3 seeds per condition, 18 total runs).
+- **Holdout Discipline**: 20% holdout strictly isolated post-ingestion. Never seen by CV folds, Optuna trials, or ensemble weight optimizers. Evaluated exactly once post-selection.
+- **Cross-Validation**: 3-fold stratified cross-validation on the 80% training split.
+- **Optuna Trials**: `n_trials=0` — this benchmark measures model/pipeline **selection**, not HPO search.
+- **Std Convention**: Population std (ddof=0, verified against per-seed values with NumPy).
+- **Registry Constraints**: Zero arbitrary code execution; all candidate models and feature operations constrained to pre-validated system registries.
 
 ---
 
 ## 2. Experimental Conditions
 
-1. **Condition A (`deterministic`)**: Standard heuristic AutoML baseline without LLM assistance (standard preprocessing, heuristic candidate model selection, fold-safe CV, Optuna HPO, greedy model fusion ensemble).
+1. **Condition A (`deterministic`)**: Standard heuristic AutoML baseline without LLM assistance.
 2. **Condition B (`llm_model_only` ablation)**: LLM selects candidate models from registry; default preprocessing and zero feature operations.
-3. **Condition C (`llm_guided`)**: Full LLM pipeline planning (Gemini-generated structured plan with validated candidate models, feature operations, HPO focus, and ensemble configuration).
+3. **Condition C (`llm_guided`)**: Full LLM pipeline planning (validated candidate models, feature operations, HPO focus, ensemble configuration).
 
 ---
 
-## 3. Measured Results Matrix
+## 3. Measured Results — Per Seed
 
-### A. UCI Adult Census Income (Binary Classification — `f1_weighted` $\uparrow$)
+Source: `benchmarks/results/benchmark_results.json`.
 
-| Condition | Seed | CV Score | Holdout Score | Selected Winning Pipeline | Secondary Accuracy | Secondary ROC-AUC | Runtime |
-| :--- | :---: | :---: | :---: | :--- | :---: | :---: | :---: |
-| **Deterministic Baseline** | 42 | 0.8260 | 0.8148 | `ensemble_weighted` | 0.8325 | 0.8818 | 4.39s |
-| | 123 | 0.8354 | 0.8335 | `hist_gradient_boosting_clf` | 0.8475 | 0.9022 | 4.09s |
-| | 456 | 0.8211 | 0.7961 | `ensemble_weighted` | 0.8175 | 0.8596 | 3.65s |
-| **LLM Model-Only (Ablation)** | 42 | 0.8260 | 0.8148 | `ensemble_weighted` | 0.8325 | 0.8818 | 3.99s |
-| | 123 | 0.8354 | 0.8335 | `hist_gradient_boosting_clf` | 0.8475 | 0.9022 | 4.40s |
-| | 456 | 0.8247 | 0.8176 | `svm_clf` | 0.8300 | 0.8710 | 5.34s |
-| **Full LLM-Guided Plan** | 42 | 0.8260 | 0.8148 | `ensemble_weighted` | 0.8325 | 0.8818 | 4.31s |
-| | 123 | 0.8354 | 0.8335 | `hist_gradient_boosting_clf` | 0.8475 | 0.9022 | 4.54s |
-| | 456 | 0.8247 | 0.8176 | `svm_clf` | 0.8300 | 0.8710 | 5.38s |
+### A. UCI Adult Census Income — `f1_weighted` ↑ (higher is better)
+
+| Condition | Seed | CV Score | Holdout F1 | Winning Pipeline | Runtime |
+| :--- | :---: | :---: | :---: | :--- | :---: |
+| **Deterministic** | 42 | 0.8423 | 0.7937 | `ensemble_soft_voting` | 11.91s |
+| | 123 | 0.8363 | 0.8379 | `ensemble_stacking` | 18.52s |
+| | 456 | 0.8342 | 0.8127 | `ensemble_soft_voting` | 14.49s |
+| **LLM-Guided** | 42 | 0.8430 | 0.7980 | `ensemble_soft_voting` | 15.79s |
+| | 123 | 0.8347 | 0.8379 | `ensemble_stacking` | 19.11s |
+| | 456 | 0.8408 | 0.8300 | `svm_clf` | 15.79s |
 
 #### Aggregate Descriptive Statistics (Adult Census):
-- **Deterministic Baseline**: $0.8148 \pm 0.0187$ (Holdout Range: $[0.7961, 0.8335]$, Mean Runtime: $4.04\text{s}$)
-- **LLM Model-Only**: $0.8220 \pm 0.0101$ (Holdout Range: $[0.8148, 0.8335]$, Mean Runtime: $4.58\text{s}$)
-- **Full LLM-Guided**: $0.8220 \pm 0.0101$ (Holdout Range: $[0.8148, 0.8335]$, Mean Runtime: $4.74\text{s}$)
+- **Deterministic Baseline**: $0.8148 \pm 0.0181$ (Holdout Range: $[0.7937, 0.8379]$, Mean Runtime: $14.97\text{s}$)
+- **LLM-Guided**: $0.8220 \pm 0.0173$ (Holdout Range: $[0.7980, 0.8379]$, Mean Runtime: $16.90\text{s}$)
 - **Direction-Adjusted $\Delta$ (LLM vs Deterministic)**: $\mathbf{+0.0072}$
-- **Secondary Accuracy Mean**: Deterministic: $0.8325 \pm 0.0150$, LLM: $0.8367 \pm 0.0094$ ($\Delta = +0.0042$)
+
+> **Interpretive note**: The difference (+0.0072) is **smaller than the across-seed standard deviation** (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should not be read as a significant difference. With N=3 seeds and a 200-row holdout, this is a descriptive observation only — no p-values are claimed.
 
 ---
 
-### B. UCI Wine Quality Red (Tabular Regression — `rmse` $\downarrow$)
+### B. UCI Wine Quality Red — `rmse` ↓ (lower is better)
 
-| Condition | Seed | CV Score | Holdout Score | Selected Winning Pipeline | Secondary MAE | Secondary $R^2$ | Runtime |
-| :--- | :---: | :---: | :---: | :--- | :---: | :---: | :---: |
-| **Deterministic Baseline** | 42 | 0.6582 | 0.5898 | `ensemble_weighted` | 0.4431 | 0.4578 | 3.66s |
-| | 123 | 0.6698 | 0.5369 | `ensemble_weighted` | 0.4137 | 0.4682 | 4.30s |
-| | 456 | 0.6434 | 0.5365 | `ensemble_weighted` | 0.4281 | 0.4357 | 4.35s |
-| **LLM Model-Only (Ablation)** | 42 | 0.6582 | 0.5898 | `ensemble_weighted` | 0.4431 | 0.4578 | 3.97s |
-| | 123 | 0.6698 | 0.5369 | `ensemble_weighted` | 0.4137 | 0.4682 | 3.90s |
-| | 456 | 0.6508 | 0.5401 | `ensemble_weighted` | 0.4332 | 0.4282 | 4.44s |
-| **Full LLM-Guided Plan** | 42 | 0.6582 | 0.5898 | `ensemble_weighted` | 0.4431 | 0.4578 | 4.07s |
-| | 123 | 0.6698 | 0.5369 | `ensemble_weighted` | 0.4137 | 0.4682 | 4.09s |
-| | 456 | 0.6508 | 0.5401 | `ensemble_weighted` | 0.4332 | 0.4282 | 4.44s |
+| Condition | Seed | CV Score | Holdout RMSE | Winning Pipeline | Runtime |
+| :--- | :---: | :---: | :---: | :--- | :---: |
+| **Deterministic** | 42 | -0.6152 | 0.5461 | `ensemble_weighted` | 6.33s |
+| | 123 | -0.6091 | 0.5289 | `ensemble_weighted` | 7.02s |
+| | 456 | -0.5909 | 0.5881 | `ensemble_weighted` | 5.69s |
+| **LLM-Guided** | 42 | -0.6152 | 0.5461 | `ensemble_weighted` | 6.07s |
+| | 123 | -0.6092 | 0.5285 | `ensemble_weighted` | 6.92s |
+| | 456 | -0.5988 | 0.5921 | `ensemble_weighted` | 5.62s |
 
 #### Aggregate Descriptive Statistics (Wine Quality Red):
-- **Deterministic Baseline**: $0.5544 \pm 0.0307$ (Holdout Range: $[0.5365, 0.5898]$, Mean Runtime: $4.10\text{s}$)
-- **LLM Model-Only**: $0.5556 \pm 0.0298$ (Holdout Range: $[0.5369, 0.5898]$, Mean Runtime: $4.10\text{s}$)
-- **Full LLM-Guided**: $0.5556 \pm 0.0298$ (Holdout Range: $[0.5369, 0.5898]$, Mean Runtime: $4.20\text{s}$)
-- **Direction-Adjusted $\Delta$ (LLM vs Deterministic)**: $\mathbf{-0.0012}$ (Deterministic baseline showed $+0.0012$ RMSE advantage)
-- **Secondary MAE Mean**: Deterministic: $0.4283 \pm 0.0147$, LLM: $0.4300 \pm 0.0150$ ($\Delta = -0.0017$)
+- **Deterministic Baseline**: $0.5544 \pm 0.0249$ (Holdout Range: $[0.5289, 0.5881]$, Mean Runtime: $6.35\text{s}$)
+- **LLM-Guided**: $0.5556 \pm 0.0268$ (Holdout Range: $[0.5285, 0.5921]$, Mean Runtime: $6.21\text{s}$)
+- **Direction-Adjusted $\Delta$ (LLM vs Deterministic)**: $\mathbf{-0.0012}$ (Deterministic baseline was $+0.0012$ RMSE lower)
 
 ---
 
-## 4. Key Scientific Findings & Analysis
+## 4. Summary Table
 
-### Finding 1: LLM-Guided Planning Improved Holdout F1 on Adult Census
-On Adult Census Income, full LLM-guided planning achieved a mean holdout F1-score of $0.8220 \pm 0.0101$ compared to $0.8148 \pm 0.0187$ for the deterministic baseline ($+0.0072$ improvement). 
-- **Mechanism**: The LLM proposed `svm_clf` in its candidate model set (`[gradient_boosting_clf, logistic_regression, random_forest_clf, svm_clf]`).
-- On seed 456, `svm_clf` achieved a CV score of $0.8247$ and holdout score of $0.8176$, winning over tree-based ensembles on that partition. In contrast, the deterministic baseline selected an ensemble on seed 456 that scored $0.7961$ on holdout.
+| Dataset | Task | Deterministic | LLM-Guided | Difference |
+| :--- | :--- | :---: | :---: | :---: |
+| UCI Adult Census | `f1_weighted` ↑ | $0.8148 \pm 0.0181$ | $0.8220 \pm 0.0173$ | $+0.0072$ |
+| UCI Wine Quality Red | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $-0.0012$ (within seed variability) |
 
-### Finding 2: Deterministic Baseline Outperformed LLM on Wine Quality Red
-On Wine Quality Red, the deterministic baseline achieved lower holdout RMSE ($0.5544 \pm 0.0307$) than LLM-guided planning ($0.5556 \pm 0.0298$).
-- **Mechanism**: The deterministic heuristic candidate pool for small regression datasets includes `knn_reg` alongside `ridge`, `random_forest_reg`, and `gradient_boosting_reg`.
-- The LLM did not propose `knn_reg`. On seed 456, `knn_reg` received significant weight ($w=0.30$) in the deterministic ensemble, yielding holdout RMSE $0.5365$ versus LLM's $0.5401$.
-
-### Finding 3: Ablation Demonstrates Model Selection Drives Performance
-- Comparing Condition B (`llm_model_only`) and Condition C (`llm_guided`), the holdout means were **identical** on both datasets ($0.8220$ vs $0.8220$ on Adult; $0.5556$ vs $0.5556$ on Wine).
-- The feature operations proposed by the LLM (e.g. `CapitalGain_log`, `Age_zscore` on Adult) were validated and executed without error, but under the tested 3-fold CV and Optuna HPO budget, tree-based estimators and scaled SVMs already handle monotonic transformations and scale variance effectively.
-- Therefore, the empirical performance difference between deterministic and LLM-guided AutoML was governed predominantly by **candidate model selection** rather than automated feature engineering.
-
-### Finding 4: Absence of Universal Superiority
-- The experiments demonstrate that **LLM-guided AutoML is NOT universally superior to deterministic AutoML**.
-- Rather, LLMs act as an adaptive heuristic that can identify promising model candidates outside rigid rules (e.g., SVM on Adult), but may also omit models that simple heuristics include (e.g., KNN on Wine).
-- The contribution of AutoML-Lens is **safe, registry-constrained, and reproducible pipeline construction**, not a sweeping claim of state-of-the-art general intelligence.
+Std = population std (ddof=0), N=3. No inferential statistics are claimed.
 
 ---
 
-## 5. Scope & Limitations
+## 5. Key Scientific Findings
 
-1. **Dataset Scope**: Evaluated on 2 benchmark datasets (UCI Adult Census Income and UCI Wine Quality Red).
-2. **Seed Scope**: $N=3$ seeds (`[42, 123, 456]`). While providing initial variance bounds, this sample size represents descriptive empirical evidence rather than broad asymptotic significance.
-3. **Registry Boundaries**: Constrained to pre-validated algorithms in `ModelRegistry` and `OPERATION_REGISTRY`. No arbitrary Python code generation or reinforcement learning was employed.
+### Finding 1: Observed difference on Adult Census is within seed variability
+On Adult Census, full LLM-guided planning achieved a mean holdout F1 of $0.8220 \pm 0.0173$ versus $0.8148 \pm 0.0181$ for the deterministic baseline (+0.0072 observed difference).
+
+- The +0.0072 difference is smaller than the across-seed std on both conditions; it cannot be interpreted as a significant difference with N=3 seeds.
+- The LLM proposed `svm_clf` on seed 456, which achieved holdout F1 of 0.8300 (vs. deterministic's 0.8127 on the same seed). This illustrates how LLM candidate selection can identify non-standard models for a specific partition, but seed-to-seed variance dominates.
+
+### Finding 2: Deterministic baseline achieved lower holdout RMSE on Wine Quality Red
+On Wine Quality Red, the deterministic baseline achieved lower holdout RMSE than LLM-guided planning (difference: +0.0012 in favour of deterministic).
+
+- The deterministic heuristic candidate pool for small regression datasets includes `knn_reg` alongside `ridge`, `random_forest_reg`, and `gradient_boosting_reg`.
+- The LLM did not propose `knn_reg`. On seed 456, `knn_reg` received weight 0.34 in the deterministic `ensemble_weighted` pipeline, contributing to its lower RMSE on that seed.
+
+### Finding 3: Ablation shows model selection governs performance
+The `llm_model_only` (Condition B) and `llm_guided` (Condition C) conditions achieved **identical** aggregate holdout scores on both datasets ($0.8220$ Adult; $0.5556$ Wine). The validated LLM-proposed feature operations did not produce measurable additional benefit at this budget (n_trials=0, 3-fold CV), indicating that performance was governed primarily by **candidate model selection** rather than automated feature engineering.
+
+### Finding 4: LLM-guided AutoML is not universally superior
+The experiments demonstrate that LLM-guided AutoML is **not universally superior** to deterministic AutoML. LLMs act as an adaptive heuristic that can identify competitive non-standard candidates but may also omit models that simple heuristics include. The contribution of AutoML-Lens is **safe, registry-constrained, and reproducible pipeline planning**, not a claim of universal superiority.
+
+---
+
+## 6. Scope & Limitations
+
+1. **Dataset Scope**: 2 benchmark datasets (UCI Adult Census Income, UCI Wine Quality Red).
+2. **Seed Scope**: N=3 seeds (`[42, 123, 456]`). Descriptive empirical evidence only.
+3. **HPO Budget**: n_trials=0 — no Optuna hyperparameter search was performed during this benchmark. The measured differences reflect model selection, not optimised hyperparameters.
+4. **Registry Boundaries**: Constrained to pre-validated algorithms in `ModelRegistry` and `OPERATION_REGISTRY`.

@@ -1,6 +1,6 @@
 # AutoML-Lens: Live Demonstration Script (7–10 Minutes)
 
-This runbook guides a seamless, professional live demonstration of **AutoML-Lens** for examiners, project evaluators, or conference attendees.
+This runbook guides a seamless, professional live demonstration of **AutoML-Lens** for technical reviewers, project evaluators, or conference attendees.
 
 ---
 
@@ -122,7 +122,7 @@ This runbook guides a seamless, professional live demonstration of **AutoML-Lens
 - **What to Click**: Return to the Results page and highlight the **"Scientific Reproducibility & Provenance"** card.
 - **What to Show**: Master seed, SHA-256 dataset hash, and Git commit revision.
 - **What to Say**:
-  > *"For academic and audit compliance, every experiment captures its full cryptographic provenance: the raw dataset's SHA-256 hash, the exact Git commit SHA, the random seed, and the metric contract. Any researcher can reproduce these exact results."*
+  > *"For audit compliance, every experiment captures its full cryptographic provenance: the raw dataset's SHA-256 hash, the exact Git commit SHA, the random seed, and the metric contract. Any researcher can reproduce these exact results."*
 - **Expected Result**: Provenance panel shows verified hash and git revision.
 
 ---
@@ -131,5 +131,5 @@ This runbook guides a seamless, professional live demonstration of **AutoML-Lens
 - **What to Click**: Scroll to the **"Multi-Seed Empirical Benchmark Evaluation"** section -> Click **"Open Research Report (HTML)"**.
 - **What to Show**: The standalone interactive HTML research report opening in a new tab, displaying the 18 multi-seed runs across Adult Census and Wine Quality.
 - **What to Say**:
-  > *"Finally, we evaluated our system across 18 benchmark runs on UCI Adult Census and Wine Quality Red over three seeds. On Adult Census, LLM-guided planning improved holdout F1 by +0.0072. On Wine Quality, the deterministic baseline had a slight 0.0012 RMSE advantage. We report both positive and negative results honestly, providing a sound, reproducible contribution to AutoML research. Thank you!"*
+  > *"Finally, we evaluated our system across 18 benchmark runs on UCI Adult Census and Wine Quality Red over three seeds. On Adult Census, the observed mean holdout F1 difference was +0.0072 — smaller than the across-seed standard deviation. On Wine Quality, the deterministic baseline's mean holdout RMSE was 0.0012 lower. We report both positive and negative results honestly, providing a sound, reproducible contribution to AutoML research. Thank you!"*
 - **Expected Result**: Standalone HTML report opens and displays complete empirical tables and charts.
