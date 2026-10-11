@@ -94,7 +94,7 @@ AutoML-Lens was evaluated under a rigorous multi-seed benchmark comparing three 
 | Statistical statement | Descriptive multi-seed comparison only (N=3 seeds per condition). No inferential p-values claimed. |
 | Std convention | Population std (ddof=0) |
 
-> **Note**: `n_trials=0` means this benchmark measures LLM-guided model and pipeline selection, **not** Optuna hyperparameter search. HPO is a separately implemented capability. For a separate fast-mode comparison between Gemini and the deterministic fallback, see [`docs/LLM_EVALUATION.md`](docs/LLM_EVALUATION.md), where Gemini did not outperform the fallback on average.
+> **Note**: `n_trials=0` means this benchmark measures LLM-guided model and pipeline selection, **not** Optuna hyperparameter search. HPO is a separately implemented capability. For a separate fast-mode comparison between Gemini and the deterministic fallback, see [`docs/LLM_EVALUATION.md`](docs/LLM_EVALUATION.md): the mean paired F1 difference (Gemini − Fallback) was −0.017412 on classification and +0.001753 on winequality-red (seeds 42/43/44, n=3, fast mode with 5 Optuna trials).
 
 ### Measured Multi-Seed Results
 
@@ -103,7 +103,7 @@ All values from `benchmarks/results/benchmark_summary.json`. Std = population st
 | Dataset | Task | Primary Metric | Deterministic Baseline | LLM Model-Only (Ablation) | Full LLM-Guided Plan | Difference (within seed variability) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **UCI Adult Census** | Classification | `f1_weighted` ↑ | $0.8148 \pm 0.0181$ | $0.8220 \pm 0.0173$ | $0.8220 \pm 0.0173$ | $+0.0072$ |
-| **UCI Wine Quality Red** | Regression | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $0.5556 \pm 0.0268$ | $-0.0012$ (det. better) |
+| **UCI Wine Quality Red** | Regression | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $0.5556 \pm 0.0268$ | $-0.0012$ (within seed variability) |
 
 **Per-seed holdout scores (source: `benchmark_summary.json`):**
 

@@ -178,7 +178,7 @@ The benchmark suite (`scripts/run_benchmarks.py`, `backend/app/services/benchmar
 1. `deterministic`: Rule-based baseline.
 2. `llm_model_only`: LLM model selection ablation (no feature operations).
 3. `llm_guided`: Full LLM pipeline planning.
-Each condition is evaluated over identical seeds (`[42, 123, 456]`) on UCI Adult Census and UCI Wine Quality Red datasets under identical 3-fold CV and Optuna trial budgets.
+Each condition is evaluated over identical seeds (`[42, 123, 456]`) on UCI Adult Census and UCI Wine Quality Red datasets under identical 3-fold CV with `n_trials=0` (model/pipeline selection only; no Optuna HPO search).
 
 ---
 

@@ -46,7 +46,7 @@ Source: `benchmarks/results/benchmark_results.json`.
 - **LLM-Guided**: $0.8220 \pm 0.0173$ (Holdout Range: $[0.7980, 0.8379]$, Mean Runtime: $16.90\text{s}$)
 - **Direction-Adjusted $\Delta$ (LLM vs Deterministic)**: $\mathbf{+0.0072}$
 
-> **Interpretive note**: The difference (+0.0072) is **smaller than the across-seed standard deviation** (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should not be read as a significant improvement. With N=3 seeds and a 200-row holdout, this is a descriptive observation only — no p-values are claimed.
+> **Interpretive note**: The difference (+0.0072) is **smaller than the across-seed standard deviation** (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should not be read as a significant difference. With N=3 seeds and a 200-row holdout, this is a descriptive observation only — no p-values are claimed.
 
 ---
 
@@ -73,7 +73,7 @@ Source: `benchmarks/results/benchmark_results.json`.
 | Dataset | Task | Deterministic | LLM-Guided | Difference |
 | :--- | :--- | :---: | :---: | :---: |
 | UCI Adult Census | `f1_weighted` ↑ | $0.8148 \pm 0.0181$ | $0.8220 \pm 0.0173$ | $+0.0072$ |
-| UCI Wine Quality Red | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $-0.0012$ (det. better) |
+| UCI Wine Quality Red | `rmse` ↓ | $0.5544 \pm 0.0249$ | $0.5556 \pm 0.0268$ | $-0.0012$ (within seed variability) |
 
 Std = population std (ddof=0), N=3. No inferential statistics are claimed.
 
@@ -84,14 +84,14 @@ Std = population std (ddof=0), N=3. No inferential statistics are claimed.
 ### Finding 1: Observed difference on Adult Census is within seed variability
 On Adult Census, full LLM-guided planning achieved a mean holdout F1 of $0.8220 \pm 0.0173$ versus $0.8148 \pm 0.0181$ for the deterministic baseline (+0.0072 observed difference).
 
-- The +0.0072 difference is smaller than the across-seed std on both conditions; it cannot be interpreted as a significant improvement with N=3 seeds.
+- The +0.0072 difference is smaller than the across-seed std on both conditions; it cannot be interpreted as a significant difference with N=3 seeds.
 - The LLM proposed `svm_clf` on seed 456, which achieved holdout F1 of 0.8300 (vs. deterministic's 0.8127 on the same seed). This illustrates how LLM candidate selection can identify non-standard models for a specific partition, but seed-to-seed variance dominates.
 
-### Finding 2: Deterministic baseline outperforms LLM on Wine Quality Red
+### Finding 2: Deterministic baseline achieved lower holdout RMSE on Wine Quality Red
 On Wine Quality Red, the deterministic baseline achieved lower holdout RMSE than LLM-guided planning (difference: +0.0012 in favour of deterministic).
 
 - The deterministic heuristic candidate pool for small regression datasets includes `knn_reg` alongside `ridge`, `random_forest_reg`, and `gradient_boosting_reg`.
-- The LLM did not propose `knn_reg`. On seed 456, `knn_reg` received significant weight in the deterministic ensemble, contributing to a lower RMSE.
+- The LLM did not propose `knn_reg`. On seed 456, `knn_reg` received weight 0.34 in the deterministic `ensemble_weighted` pipeline, contributing to its lower RMSE on that seed.
 
 ### Finding 3: Ablation shows model selection governs performance
 The `llm_model_only` (Condition B) and `llm_guided` (Condition C) conditions achieved **identical** aggregate holdout scores on both datasets ($0.8220$ Adult; $0.5556$ Wine). The validated LLM-proposed feature operations did not produce measurable additional benefit at this budget (n_trials=0, 3-fold CV), indicating that performance was governed primarily by **candidate model selection** rather than automated feature engineering.

@@ -1,14 +1,30 @@
-"""Check README.md and docs/FINAL_RESULTS.md against benchmark_summary.json.
+"""Check README.md, docs/*.md, and docs/BENCHMARK_REPORT.html against benchmark_summary.json.
 
 Compares parsed JSON values (means, population stds, per-seed scores,
 row counts, n_trials, seeds) with the docs, and forbids stale numbers
 and overclaiming wording outside docs/archive/.
+
+Task-2 wording rules (no negation exceptions):
+  * Forbidden exact phrases (case-insensitive): "LLM win", "Det win",
+    "LLM advantage", "Deterministic advantage", "LLM improvement",
+    "deterministic baseline advantage".
+  * "improvement" is forbidden on any line that also contains "llm" and
+    either "0.0072" or "adult".
+  * Literal row-count strings "800 train / 200 holdout",
+    "640 train / 160 holdout", "1,000" must appear in README.md and
+    docs/FINAL_RESULTS.md; the Wine total must appear as "800 rows" or
+    "800 (640 train / 160 holdout".
+
+Usage: python scripts/check_docs_consistency.py [ROOT]
+ROOT defaults to the repository root; pass a scratch root to prove the
+checker FAILS on a copy containing violations.
 """
 import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = (pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1
+        else pathlib.Path(__file__).resolve().parents[1])
 summary = json.loads((ROOT / "benchmarks" / "results" / "benchmark_summary.json").read_text(encoding="utf-8"))
 
 adult = summary["datasets"]["adult_census_income"]
@@ -38,20 +54,17 @@ def check_doc_numbers(rel):
                                 [f"{c['holdout_mean']}", f"{c['holdout_mean']:.4f}"])
             expect_doc_contains(rel, text, f"{ds_label}/{cond_name} std {c['holdout_std']}",
                                 [f"{c['holdout_std']}", f"{c['holdout_std']:.4f}"])
-    # row counts from JSON: accept plain and comma-formatted variants
-    # (docs write "1,000 rows"; JSON stores 1000)
-    for ds, label in [(adult, "adult"), (wine, "wine")]:
-        for key in ["rows_total", "rows_train", "rows_holdout"]:
-            n = ds[key]
-            variants = [str(n)]
-            if n >= 1000:
-                variants.append(f"{n:,}")
-            expect_doc_contains(rel, text, f"{label} {key}={n}", variants)
-    # train/holdout splits as written in docs
-    expect_doc_contains(rel, text, "adult 800/200 split",
-                        ["800 train / 200 holdout", "800/200", "800 train", "200 holdout"])
-    expect_doc_contains(rel, text, "wine 640/160 split",
-                        ["640 train / 160 holdout", "640/160", "640 train", "160 holdout"])
+    # Literal row-count strings required by Task 2 (no loose variants):
+    # Adult total must appear as "1,000" and its split as
+    # "800 train / 200 holdout"; Wine split as "640 train / 160 holdout",
+    # and the Wine total as "800 rows" or "800 (640 train / 160 holdout".
+    expect_doc_contains(rel, text, "adult total literal '1,000'", ["1,000"])
+    expect_doc_contains(rel, text, "adult split literal '800 train / 200 holdout'",
+                        ["800 train / 200 holdout"])
+    expect_doc_contains(rel, text, "wine split literal '640 train / 160 holdout'",
+                        ["640 train / 160 holdout"])
+    expect_doc_contains(rel, text, "wine total '800 rows' or '800 (640 train / 160 holdout'",
+                        ["800 rows", "800 (640 train / 160 holdout"])
     # protocol
     expect_doc_contains(rel, text, "seeds [42, 123, 456]", ["[42, 123, 456]", "42, 123, 456"])
     expect_doc_contains(rel, text, "n_trials = 0", ["n_trials=0", "n_trials = 0", "n_trials`) | **0**"])
@@ -65,56 +78,42 @@ for rel in ["README.md", "docs/FINAL_RESULTS.md"]:
 
 stale = ["0.0187", "0.0101", "0.0307", "0.0298", "0.7961", "0.8335",
          "2,000", "2000 rows", "N=2,000", "Subsampled to 2,000"]
-forbidden = ["LLM win", "Det win", "LLM advantage", "Deterministic advantage",
-             "LLM improvement", "Deterministic baseline advantage",
-             "LLM improvement driven", "+0.0072$ improvement",
-             "+0.0072 improvement", "improvement"]
 
-# BENCHMARK_REPORT.md/.html are generated artifacts: checked for stale
-# numbers above, but Task-2 forbidden-wording rules do not apply to them
-# (out of Task-2 scope). Every other hand-written doc outside docs/archive/
-# is in scope.
-GENERATED = {"docs/BENCHMARK_REPORT.md"}
-WORDING_SCOPE = ["README.md"] + sorted(
-    f"docs/{md.name}" for md in (ROOT / "docs").glob("*.md")
-    if f"docs/{md.name}" not in GENERATED
-)
-
+# Wording scope: README.md, every docs/*.md outside docs/archive/, and the
+# generated docs/BENCHMARK_REPORT.html (its wording was neutralized by hand
+# along with the interpretation strings in benchmark_summary.json).
 texts = {}
 texts["README.md"] = (ROOT / "README.md").read_text(encoding="utf-8")
 for md in sorted((ROOT / "docs").glob("*.md")):
     texts[f"docs/{md.name}"] = md.read_text(encoding="utf-8")
+html_path = ROOT / "docs" / "BENCHMARK_REPORT.html"
+if html_path.exists():
+    texts["docs/BENCHMARK_REPORT.html"] = html_path.read_text(encoding="utf-8")
+
+# Forbidden exact phrases (case-insensitive). No negation exceptions: these
+# phrasings overclaim regardless of surrounding words, so docs must avoid
+# them entirely and use neutral "difference" wording instead.
+FORBIDDEN_PHRASES = ["llm win", "det win", "llm advantage",
+                     "deterministic advantage", "llm improvement",
+                     "deterministic baseline advantage"]
 
 for rel, text in texts.items():
     for s in stale:
         if s in text:
             failures.append(f"{rel} CONTAINS STALE {s!r}")
-    if rel in WORDING_SCOPE:
-        low = text.lower()
-        for s in forbidden:
-            idx = low.find(s.lower())
-            while idx != -1:
-                # bare "improvement" is only a violation when tied to the LLM
-                # delta claim; generic metric-plumbing uses are fine.
-                if s.lower() == "improvement":
-                    window = low[max(0, idx - 120):idx + 120]
-                    if not ("llm" in window and ("0.0072" in window or "adult" in window)):
-                        idx = low.find(s.lower(), idx + 1)
-                        continue
-                    # allow negated "... not evidence ..." phrasing
-                    pre = low[max(0, idx - 120):idx]
-                    if "not" in pre or "n't" in pre:
-                        idx = low.find(s.lower(), idx + 1)
-                        continue
-                else:
-                    # allow negated "not ... <phrase>" phrasing (Task-2 compliant)
-                    window_start = max(0, idx - 60)
-                    window = low[window_start:idx]
-                    if "not" in window or "n't" in window or "cannot" in window or "never" in window:
-                        idx = low.find(s.lower(), idx + 1)
-                        continue
-                failures.append(f"{rel} CONTAINS FORBIDDEN {s!r}")
-                break
+    low = text.lower()
+    for s in FORBIDDEN_PHRASES:
+        if s in low:
+            failures.append(f"{rel} CONTAINS FORBIDDEN PHRASE {s!r}")
+    # "improvement" is banned on any line tying it to the LLM delta claim;
+    # no negation exception (rewrite as neutral "difference" instead).
+    for lineno, line in enumerate(text.splitlines(), 1):
+        lline = line.lower()
+        if ("improvement" in lline and "llm" in lline
+                and ("0.0072" in lline or "adult" in lline)):
+            failures.append(
+                f"{rel}:{lineno} CONTAINS 'improvement' ON LLM DELTA LINE: "
+                f"{line.strip()[:120]}")
 
 # verify JSON itself matches ground truth headline numbers
 assert adult["conditions"]["deterministic"]["holdout_scores"] == [0.7937, 0.8379, 0.8127]
