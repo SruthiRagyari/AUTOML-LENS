@@ -1,0 +1,136 @@
+﻿AutoML-Lens local smoke test (in-process FastAPI TestClient; no API keys;
+
+temporary database + storage; live backend/automl_lens.db and
+backend/storage fingerprinted before and after to prove they are untouched)
+
+Interpreter:
+  Python 3.11.9
+
+Command: python scripts/smoke_test.py
+
+----- smoke test output -----
+
+[    0.00s] Temporary workspace: C:\Users\sruth\AppData\Local\Temp\automl_lens_smoke_er7ommvu
+[    0.01s] Production baseline: db_counts={'experiments': 11, 'datasets': 12} storage_files=38
+2026-10-11 20:19:45,960 - app.main - INFO - Starting AutoML-Lens...
+2026-10-11 20:19:46,093 - app.main - INFO - Database initialized.
+2026-10-11 20:19:46,094 - app.llm.manager - INFO - LLM Provider: Fallback (Deterministic)
+2026-10-11 20:19:46,094 - app.main - INFO - LLM Provider: Fallback (Deterministic) (available: True)
+2026-10-11 20:19:46,105 - app.main - INFO - AutoML-Lens ready!
+2026-10-11 20:19:46,113 - httpx - INFO - HTTP Request: GET http://testserver/api/health "HTTP/1.1 200 OK"
+[    0.24s] OK  GET /api/health -> 200
+[    0.24s] OK  health status == healthy
+[    0.24s]     health: {'status': 'healthy', 'version': '1.0.0', 'llm_provider': 'Fallback (Deterministic)', 'llm_available': True}
+2026-10-11 20:19:46,134 - httpx - INFO - HTTP Request: POST http://testserver/api/chat "HTTP/1.1 200 OK"
+[    0.27s] OK  POST /api/chat -> 200
+[    0.27s] OK  chat returned a response
+[    0.27s]     chat provider: Fallback (Deterministic)
+[    0.27s] --- classification.csv (target=Churn) ---
+2026-10-11 20:19:46,274 - httpx - INFO - HTTP Request: POST http://testserver/api/datasets/upload "HTTP/1.1 200 OK"
+[    0.41s] OK  upload classification.csv -> 200
+[    0.41s] OK  classification.csv: 300 rows x 12 columns
+[    0.41s]     dataset id=1
+2026-10-11 20:19:46,326 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments "HTTP/1.1 200 OK"
+[    0.46s] OK  create experiment for classification.csv -> 200
+[    0.46s]     experiment id=1
+2026-10-11 20:19:46,428 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments/1/analyze "HTTP/1.1 200 OK"
+[    0.56s] OK  analyze classification.csv -> 200
+[    0.56s]     analysis provider: Fallback (Deterministic)
+2026-10-11 20:19:46,435 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/1/status "HTTP/1.1 200 OK"
+[    0.57s] OK  status after analyze == analyzed
+2026-10-11 20:19:46,801 - app.services.feature_engineer - INFO - Feature engineering fitted on training split: 0 datetime, 5 interactions, 0 frequency maps -> 5 new features
+2026-10-11 20:19:46,849 - app.services.preprocessor - INFO - Preprocessing: 14 numerical, 2 categorical, 0 text -> 19 features
+C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\joblib\externals\loky\backend\context.py:136: UserWarning: Could not find the number of physical cores for the following reason:
+[WinError 2] The system cannot find the file specified
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "C:\Users\sruth\.gemini\antigravity\playground\cosmic-nebula\automl-lens\.venv-submit\Lib\site-packages\joblib\externals\loky\backend\context.py", line 257, in _count_physical_cores
+    cpu_info = subprocess.run(
+               ^^^^^^^^^^^^^^^
+  File "C:\Users\sruth\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\sruth\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\sruth\AppData\Local\Programs\Python\Python311\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-11 20:20:23,184 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments/1/train?fast_demo=true&seed=42 "HTTP/1.1 200 OK"
+[   37.31s] OK  train classification.csv -> 200
+[   37.32s] OK  train classification.csv completed
+[   37.32s]     trained models: 3 in 36.75s
+2026-10-11 20:20:23,192 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/1/status "HTTP/1.1 200 OK"
+[   37.32s] OK  poll /status -> completed (1 poll(s))
+2026-10-11 20:20:23,370 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/1/results "HTTP/1.1 200 OK"
+[   37.50s] OK  results classification.csv -> 200
+[   37.50s] OK  best model selected: HistGradientBoosting (holdout score: 0.8817777777777778)
+[   37.50s] --- regression.csv (target=Price) ---
+2026-10-11 20:20:23,412 - httpx - INFO - HTTP Request: POST http://testserver/api/datasets/upload "HTTP/1.1 200 OK"
+[   37.54s] OK  upload regression.csv -> 200
+[   37.54s] OK  regression.csv: 300 rows x 11 columns
+[   37.54s]     dataset id=2
+2026-10-11 20:20:23,433 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments "HTTP/1.1 200 OK"
+[   37.56s] OK  create experiment for regression.csv -> 200
+[   37.56s]     experiment id=2
+2026-10-11 20:20:23,495 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments/2/analyze "HTTP/1.1 200 OK"
+[   37.63s] OK  analyze regression.csv -> 200
+[   37.63s]     analysis provider: Fallback (Deterministic)
+2026-10-11 20:20:23,501 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/2/status "HTTP/1.1 200 OK"
+[   37.63s] OK  status after analyze == analyzed
+2026-10-11 20:20:23,571 - app.services.feature_engineer - INFO - Feature engineering fitted on training split: 0 datetime, 5 interactions, 0 frequency maps -> 5 new features
+2026-10-11 20:20:23,598 - app.services.preprocessor - INFO - Preprocessing: 13 numerical, 2 categorical, 0 text -> 22 features
+2026-10-11 20:20:50,569 - httpx - INFO - HTTP Request: POST http://testserver/api/experiments/2/train?fast_demo=true&seed=42 "HTTP/1.1 200 OK"
+[   64.70s] OK  train regression.csv -> 200
+[   64.70s] OK  train regression.csv completed
+[   64.70s]     trained models: 3 in 27.07s
+2026-10-11 20:20:50,576 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/2/status "HTTP/1.1 200 OK"
+[   64.71s] OK  poll /status -> completed (1 poll(s))
+2026-10-11 20:20:50,702 - httpx - INFO - HTTP Request: GET http://testserver/api/experiments/2/results "HTTP/1.1 200 OK"
+[   64.83s] OK  results regression.csv -> 200
+[   64.83s] OK  best model selected: Ridge Regression (holdout score: 56359.70434391332)
+2026-10-11 20:20:50,705 - app.main - INFO - AutoML-Lens shutting down.
+[   64.84s] OK  production backend/automl_lens.db and backend/storage untouched
+[   64.84s] SMOKE TEST PASSED
+
+----- frontend production build -----
+
+Command: cd frontend && npm ci && npm run build
+
+
+added 413 packages, and audited 414 packages in 3m
+
+95 packages are looking for funding
+  run `npm fund` for details
+
+3 vulnerabilities (2 moderate, 1 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm notice
+npm notice New minor version of npm available! 11.9.0 -> 11.21.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.0
+npm notice To update run: npm install -g npm@11.21.0
+npm notice
+
+> automl-lens-frontend@1.0.0 build
+> vite build
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 299 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m    0.49 kB[22m[1m[22m[2m │ gzip:     0.32 kB[22m
+[2mdist/[22m[35massets/index-DslxPDvT.css  [39m[1m[2m   25.39 kB[22m[1m[22m[2m │ gzip:     5.24 kB[22m
+[2mdist/[22m[36massets/index-CZry5v7E.js   [39m[1m[33m5,406.52 kB[39m[22m[2m │ gzip: 1,658.41 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 30.07s[39m
