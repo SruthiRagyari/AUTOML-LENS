@@ -77,7 +77,7 @@
 > **Comparison vs Deterministic Baseline:**
 > - Deterministic Mean: **0.5544**
 > - LLM-Guided Mean: **0.5556**
-> - **Direction-Adjusted $\Delta$:** **-0.0012** (Deterministic RMSE 0.0012 lower; difference within seed variability)
+> - **Direction-Adjusted $\Delta$:** **-0.0012** (Deterministic showed +0.0012 advantage; difference within seed variability)
 > - Raw Difference: `+0.0012`
 
 ### Per-Seed Execution Records
