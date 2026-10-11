@@ -6,7 +6,6 @@ and overclaiming wording outside docs/archive/.
 """
 import json
 import pathlib
-import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -68,16 +67,18 @@ stale = ["0.0187", "0.0101", "0.0307", "0.0298", "0.7961", "0.8335",
          "2,000", "2000 rows", "N=2,000", "Subsampled to 2,000"]
 forbidden = ["LLM win", "Det win", "LLM advantage", "Deterministic advantage",
              "LLM improvement", "Deterministic baseline advantage",
-             "LLM improvement driven", "+0.0072$ improvement", "+0.0072 improvement"]
+             "LLM improvement driven", "+0.0072$ improvement",
+             "+0.0072 improvement", "improvement"]
 
-# BENCHMARK_REPORT.md/.html are generated artifacts: check them for stale
-# numbers but wording rules apply to the hand-written docs below.
-WORDING_SCOPE = ["README.md", "docs/FINAL_RESULTS.md",
-                 "docs/PROJECT_DOCUMENTATION.md", "docs/RESEARCH_PAPER_DRAFT.md",
-                 "docs/PRESENTATION_OUTLINE.md", "docs/VIVA_QUESTIONS.md",
-                 "docs/DEMO_SCRIPT.md", "docs/DEMO.md",
-                 "docs/ARCHITECTURE_DIAGRAM.md", "docs/LLM_EVALUATION.md",
-                 "docs/DEPLOYMENT.md"]
+# BENCHMARK_REPORT.md/.html are generated artifacts: checked for stale
+# numbers above, but Task-2 forbidden-wording rules do not apply to them
+# (out of Task-2 scope). Every other hand-written doc outside docs/archive/
+# is in scope.
+GENERATED = {"docs/BENCHMARK_REPORT.md"}
+WORDING_SCOPE = ["README.md"] + sorted(
+    f"docs/{md.name}" for md in (ROOT / "docs").glob("*.md")
+    if f"docs/{md.name}" not in GENERATED
+)
 
 texts = {}
 texts["README.md"] = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -93,12 +94,25 @@ for rel, text in texts.items():
         for s in forbidden:
             idx = low.find(s.lower())
             while idx != -1:
-                # allow negated "not ... improvement" phrasing (Task-2 compliant)
-                window_start = max(0, idx - 60)
-                window = low[window_start:idx]
-                if "not" in window or "n't" in window or "cannot" in window or "never" in window:
-                    idx = low.find(s.lower(), idx + 1)
-                    continue
+                # bare "improvement" is only a violation when tied to the LLM
+                # delta claim; generic metric-plumbing uses are fine.
+                if s.lower() == "improvement":
+                    window = low[max(0, idx - 120):idx + 120]
+                    if not ("llm" in window and ("0.0072" in window or "adult" in window)):
+                        idx = low.find(s.lower(), idx + 1)
+                        continue
+                    # allow negated "... not evidence ..." phrasing
+                    pre = low[max(0, idx - 120):idx]
+                    if "not" in pre or "n't" in pre:
+                        idx = low.find(s.lower(), idx + 1)
+                        continue
+                else:
+                    # allow negated "not ... <phrase>" phrasing (Task-2 compliant)
+                    window_start = max(0, idx - 60)
+                    window = low[window_start:idx]
+                    if "not" in window or "n't" in window or "cannot" in window or "never" in window:
+                        idx = low.find(s.lower(), idx + 1)
+                        continue
                 failures.append(f"{rel} CONTAINS FORBIDDEN {s!r}")
                 break
 
