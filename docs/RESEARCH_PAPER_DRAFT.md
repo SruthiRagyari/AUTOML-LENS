@@ -1,6 +1,6 @@
 # Structured LLM-Guided AutoML: Registry-Constrained Pipeline Planning with Fold-Safe Verification
 
-**Draft Manuscript for Academic & Conference Submission**
+**Draft Manuscript for Conference Submission**
 
 ---
 

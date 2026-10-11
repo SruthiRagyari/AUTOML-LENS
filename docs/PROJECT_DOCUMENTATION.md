@@ -112,7 +112,7 @@ Feature engineering is managed by `FeatureEngineer` and `OPERATION_REGISTRY`:
 ---
 
 ## 11. Fold-Safe Preprocessing
-A primary cause of optimistic evaluation bias in academic ML is data snooping. AutoML-Lens enforces **fold-safe execution**:
+A primary cause of optimistic evaluation bias is data snooping. AutoML-Lens enforces **fold-safe execution**:
 - Preprocessing pipelines (`ColumnTransformer`) and feature transformers are instantiated per fold.
 - Statistics (mean, median, variance, category vocabularies) are fit **exclusively** on the $K-1$ training folds.
 - Validation folds and the holdout split are transformed using parameters learned solely on the training partition.

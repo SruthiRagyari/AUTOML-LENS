@@ -1,6 +1,6 @@
 # AutoML-Lens: Final Project Presentation Outline
 
-**Target Audience**: Academic Examiners, Viva Committee, Industry ML Practitioners.  
+**Target Audience**: ML practitioners and technical reviewers.  
 **Format**: 14 Slides (~12–15 Minutes).
 
 ---
@@ -11,7 +11,7 @@
 - **Presenter**: Engineering Research Team
 - **Key Visual**: High-level visual banner showing React UI, FastAPI logo, and pipeline flow.
 - **Presenter Speech**:
-  > "Good morning, respected examiners. Today we present AutoML-Lens, an automated machine learning framework that introduces structured Large Language Model planning into tabular data pipelines while enforcing strict safety air-gaps, fold-safe execution, and zero data leakage."
+  > "Good morning, technical reviewers. Today we present AutoML-Lens, an automated machine learning framework that introduces structured Large Language Model planning into tabular data pipelines while enforcing strict safety air-gaps, fold-safe execution, and zero data leakage."
 
 ---
 

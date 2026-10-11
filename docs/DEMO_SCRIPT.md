@@ -1,6 +1,6 @@
 # AutoML-Lens: Live Demonstration Script (7–10 Minutes)
 
-This runbook guides a seamless, professional live demonstration of **AutoML-Lens** for examiners, project evaluators, or conference attendees.
+This runbook guides a seamless, professional live demonstration of **AutoML-Lens** for technical reviewers, project evaluators, or conference attendees.
 
 ---
 
@@ -122,7 +122,7 @@ This runbook guides a seamless, professional live demonstration of **AutoML-Lens
 - **What to Click**: Return to the Results page and highlight the **"Scientific Reproducibility & Provenance"** card.
 - **What to Show**: Master seed, SHA-256 dataset hash, and Git commit revision.
 - **What to Say**:
-  > *"For academic and audit compliance, every experiment captures its full cryptographic provenance: the raw dataset's SHA-256 hash, the exact Git commit SHA, the random seed, and the metric contract. Any researcher can reproduce these exact results."*
+  > *"For audit compliance, every experiment captures its full cryptographic provenance: the raw dataset's SHA-256 hash, the exact Git commit SHA, the random seed, and the metric contract. Any researcher can reproduce these exact results."*
 - **Expected Result**: Provenance panel shows verified hash and git revision.
 
 ---

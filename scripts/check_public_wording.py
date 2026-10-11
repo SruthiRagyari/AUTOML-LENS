@@ -1,8 +1,14 @@
-"""Check public-facing wording in README.md and docs/ for placeholder text,
-overclaim/hype phrases, and academic-branding phrases that were deliberately
-removed from the public surface (see commit 4e597e8).
+"""Check public-facing wording in README.md, docs/ and the frontend source
+for placeholder text, overclaim/hype phrases, and academic-branding wording
+that was deliberately removed from the public surface.
+
+Scope: README.md, docs/*.md and docs/*.html outside docs/archive/,
+frontend/src/**, and frontend/index.html.
 
 docs/archive/ is excluded: it holds historical documents kept for reference.
+
+Academic-branding terms are matched at a word boundary so that e.g. the
+technical term "Pipeline Synthesis" does not trigger the "thesis" pattern.
 
 Usage (from the repository root):
     python scripts/check_public_wording.py
@@ -12,6 +18,25 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# Academic-branding terms required to be absent from the public surface.
+# Matched case-insensitively at a word boundary (see FORBIDDEN loop below).
+ACADEMIC_TERMS = [
+    "viva",
+    "academic",
+    "examiner",
+    "committee",
+    "thesis",
+    "final year",
+    "svcet",
+    "chittoor",
+    "b.tech",
+    "btech",
+    "capstone",
+    "college",
+    "school project",
+    "student",
+]
 
 # (pattern, human label) — matched case-insensitively.
 FORBIDDEN = [
@@ -45,15 +70,25 @@ FORBIDDEN = [
     (r"\bsemester\b", "branding: semester"),
 ]
 
+for _term in ACADEMIC_TERMS:
+    FORBIDDEN.append((r"\b" + re.escape(_term), f"academic-branding: {_term}"))
+
 
 def collect_files():
     yield REPO_ROOT / "README.md"
-    for path in sorted((REPO_ROOT / "docs").rglob("*")):
-        if path.suffix.lower() not in (".md", ".html", ".txt", ".json"):
-            continue
-        if "archive" in path.relative_to(REPO_ROOT).parts:
-            continue
-        yield path
+    docs = REPO_ROOT / "docs"
+    for pattern in ("*.md", "*.html"):
+        for path in sorted(docs.glob(pattern)):
+            if "archive" in path.relative_to(REPO_ROOT).parts:
+                continue
+            yield path
+    frontend_src = REPO_ROOT / "frontend" / "src"
+    if frontend_src.is_dir():
+        for path in sorted(p for p in frontend_src.rglob("*") if p.is_file()):
+            yield path
+    index_html = REPO_ROOT / "frontend" / "index.html"
+    if index_html.is_file():
+        yield index_html
 
 
 def main() -> int:
