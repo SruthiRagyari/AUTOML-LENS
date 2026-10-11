@@ -116,8 +116,8 @@ All values from `benchmarks/results/benchmark_summary.json`. Std = population st
 
 ### Key Takeaways
 
-1. **Observed difference on Adult Census**: The difference (+0.0072 F1) is smaller than the across-seed standard deviation (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should **not** be interpreted as a significant improvement given N=3 seeds and a 200-row holdout set.
-2. **Deterministic baseline is competitive on Wine Quality**: The deterministic baseline achieved slightly lower holdout RMSE (−0.0012) because its heuristic candidate set included `knn_reg`, which received weight in the winning ensemble on seed 456.
+1. **Observed difference on Adult Census**: The difference (+0.0072 F1) is smaller than the across-seed standard deviation (±0.0181 for deterministic, ±0.0173 for LLM-guided) and should **not** be interpreted as significant evidence that LLM-guided planning is better given N=3 seeds and a 200-row holdout set.
+2. **Deterministic baseline is competitive on Wine Quality**: The deterministic baseline achieved slightly lower holdout RMSE (−0.0012). On seed 456 the deterministic run scored 0.5881 vs 0.5921 for the LLM-guided run (a 0.004 difference on one seed); the deterministic candidate set included `knn_reg`, which received weight in the winning `ensemble_weighted`, while the LLM-guided candidate set did not include `knn_reg`.
 3. **Ablation Findings**: Conditions B and C achieved identical aggregate holdout scores ($0.8220$ on Adult, $0.5556$ on Wine), showing that under this budget, performance deltas were governed primarily by **model candidate selection** rather than automated feature engineering.
 4. **Empirical Honesty**: LLM-guided AutoML is **not** universally superior to deterministic AutoML. LLMs act as an adaptive heuristic that can identify competitive non-standard candidates while occasionally omitting useful heuristics. With N=3 seeds and no p-values, these are descriptive observations only.
 

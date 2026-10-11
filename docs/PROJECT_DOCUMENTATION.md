@@ -184,15 +184,15 @@ Each condition is evaluated over identical seeds (`[42, 123, 456]`) on UCI Adult
 
 ## 19. Experimental Results Summary
 - **UCI Adult Census (`f1_weighted` $\uparrow$)**:
-  - Deterministic: $0.8148 \pm 0.0187$
-  - LLM Model-Only: $0.8220 \pm 0.0101$
-  - Full LLM-Guided: $0.8220 \pm 0.0101$
-  - Delta: $+0.0072$ (LLM advantage driven by `svm_clf` selection on seed 456).
+  - Deterministic: $0.8148 \pm 0.0181$
+  - LLM Model-Only: $0.8220 \pm 0.0173$
+  - Full LLM-Guided: $0.8220 \pm 0.0173$
+  - Delta: $+0.0072$ (difference within seed variability; `svm_clf` selected on seed 456).
 - **UCI Wine Quality Red (`rmse` $\downarrow$)**:
-  - Deterministic: $0.5544 \pm 0.0307$
-  - LLM Model-Only: $0.5556 \pm 0.0298$
-  - Full LLM-Guided: $0.5556 \pm 0.0298$
-  - Delta: $-0.0012$ (Deterministic advantage driven by `knn_reg` in ensemble on seed 456).
+  - Deterministic: $0.5544 \pm 0.0249$
+  - LLM Model-Only: $0.5556 \pm 0.0268$
+  - Full LLM-Guided: $0.5556 \pm 0.0268$
+  - Delta: $-0.0012$ (difference within seed variability; deterministic set included `knn_reg` on seed 456).
 - **Ablation Finding**: Identical holdout means between Model-Only and Full LLM conditions demonstrate that model candidate selection, not feature transforms, drove performance variation under the evaluated budget.
 
 ---

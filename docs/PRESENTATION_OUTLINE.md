@@ -1,6 +1,6 @@
 # AutoML-Lens: Final Project Presentation Outline
 
-**Target Audience**: Technical Reviewers, Industry ML Practitioners.  
+**Target Audience**: Academic Examiners, Viva Committee, Industry ML Practitioners.  
 **Format**: 14 Slides (~12–15 Minutes).
 
 ---
@@ -147,16 +147,16 @@
 
 ### Slide 12: Empirical Results & Key Findings
 - **Adult Census Classification (`f1_weighted` $\uparrow$)**:
-  - Deterministic Baseline: $0.8148 \pm 0.0187$
-  - Full LLM-Guided: $0.8220 \pm 0.0101$
-  - **$\Delta = +0.0072$** (LLM improvement driven by `svm_clf` on seed 456).
+  - Deterministic Baseline: $0.8148 \pm 0.0181$
+  - Full LLM-Guided: $0.8220 \pm 0.0173$
+  - **$\Delta = +0.0072$** (difference within seed variability; `svm_clf` selected on seed 456).
 - **Wine Quality Regression (`rmse` $\downarrow$)**:
-  - Deterministic Baseline: $0.5544 \pm 0.0307$
-  - Full LLM-Guided: $0.5556 \pm 0.0298$
-  - **$\Delta = -0.0012$** (Deterministic baseline advantage driven by `knn_reg` in ensemble).
+  - Deterministic Baseline: $0.5544 \pm 0.0249$
+  - Full LLM-Guided: $0.5556 \pm 0.0268$
+  - **$\Delta = -0.0012$** (difference within seed variability; deterministic set included `knn_reg` in ensemble).
 - **Key Visual**: Bar charts comparing Deterministic vs LLM holdout scores across both datasets.
 - **Presenter Speech**:
-  > "Here are our measured results: On Adult Census, LLM planning improved mean F1 by +0.0072 because it smartly included an SVM classifier. On Wine Quality, the deterministic baseline had a slight 0.0012 RMSE advantage because its default heuristic included KNN. This proves LLM guidance is an adaptive heuristic, not an infallible magic bullet."
+  > "Here are our measured results: On Adult Census, the observed mean F1 difference was +0.0072, which is smaller than the across-seed standard deviation and is not evidence that LLM planning is better. On Wine Quality, the deterministic baseline had a slight 0.0012 RMSE difference. This benchmark ran with n_trials=0, so it measures candidate and pipeline selection, not hyperparameter optimization."
 
 ---
 
