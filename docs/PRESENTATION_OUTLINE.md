@@ -1,6 +1,6 @@
 # AutoML-Lens: Final Project Presentation Outline
 
-**Target Audience**: Academic Examiners, Viva Committee, Industry ML Practitioners.  
+**Target Audience**: Technical Reviewers, Industry ML Practitioners.  
 **Format**: 14 Slides (~12–15 Minutes).
 
 ---
